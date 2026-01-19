@@ -8,7 +8,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
-import type { DailyContentResponse, DailyLog, DailyLogCreate, DailyLogUpdate, Role } from '@/types'
+import type { DailyContentResponse, DailyLog, DailyLogCreate, DailyLogUpdate } from '@/types'
+import { Role } from '@/types'
 
 export default function TodayPage() {
   const router = useRouter()

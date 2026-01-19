@@ -8,7 +8,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
-import type { YearlyContentResponse, Role } from '@/types'
+import type { YearlyContentResponse } from '@/types'
+import { Role } from '@/types'
 
 export default function YearPage() {
   const router = useRouter()

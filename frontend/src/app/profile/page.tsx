@@ -8,7 +8,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
-import type { Profile, ProfileCreate, ProfileUpdate, Gender, Role } from '@/types'
+import type { Profile, ProfileCreate, ProfileUpdate } from '@/types'
+import { Gender, Role } from '@/types'
 
 export default function ProfilePage() {
   const router = useRouter()

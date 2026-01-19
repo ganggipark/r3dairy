@@ -8,7 +8,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
-import type { MonthlyContentResponse, Role } from '@/types'
+import type { MonthlyContentResponse } from '@/types'
+import { Role } from '@/types'
 
 export default function MonthPage() {
   const router = useRouter()
