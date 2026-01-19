@@ -3,7 +3,7 @@ Data models for Rhythm Analysis Engine
 입출력 인터페이스 표준화
 """
 from pydantic import BaseModel, Field
-from datetime import date, time, datetime
+import datetime
 from typing import Optional, Dict, Any, List
 from enum import Enum
 
@@ -21,8 +21,8 @@ class BirthInfo(BaseModel):
     사주명리 계산을 위한 필수 입력값
     """
     name: str = Field(..., description="이름")
-    birth_date: date = Field(..., description="생년월일")
-    birth_time: time = Field(..., description="출생 시간")
+    birth_date: datetime.date = Field(..., description="생년월일")
+    birth_time: datetime.time = Field(..., description="출생 시간")
     gender: Gender = Field(..., description="성별")
     birth_place: str = Field(..., description="출생지 (도시명)")
     birth_place_lat: Optional[float] = Field(None, description="출생지 위도")
@@ -52,7 +52,7 @@ class RhythmSignal(BaseModel):
     내부 전문 용어 (사주명리, 기문둔갑 등) 사용 가능
     사용자 노출 시 Content Assembly Engine에서 변환 필수
     """
-    date: date = Field(..., description="분석 대상 날짜")
+    date: datetime.date = Field(..., description="분석 대상 날짜")
 
     # 내부 계산 결과 (전문 용어 사용)
     saju_data: Dict[str, Any] = Field(
@@ -98,7 +98,7 @@ class RhythmSignal(BaseModel):
 
     # 메타데이터
     calculation_version: str = Field(default="1.0.0", description="계산 버전")
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
 
     class Config:
         json_schema_extra = {
