@@ -1,0 +1,43 @@
+{
+    "date": "YYYY-MM-DD",
+    "summary": "string",
+    "keywords": [
+        "string"
+    ],
+    "rhythm_description": "string",
+    "focus_caution": {
+        "focus": [
+            "string"
+        ],
+        "caution": [
+            "string"
+        ]
+    },
+    "action_guide": {
+        "do": [
+            "string"
+        ],
+        "avoid": [
+            "string"
+        ]
+    },
+    "time_direction": {
+        "good_time": "string",
+        "avoid_time": "string",
+        "good_direction": "string",
+        "avoid_direction": "string",
+        "notes": "string"
+    },
+    "state_trigger": {
+        "gesture": "string",
+        "phrase": "string",
+        "how_to": "string"
+    },
+    "meaning_shift": "string",
+    "rhythm_question": "string",
+    "length_requirements": {
+        "left_page_min_chars": 400,
+        "left_page_target_chars": 900,
+        "left_page_rule": "Left page must include explanatory sentences; no card-only summaries."
+    }
+}

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>R³ 다이어리 - {{ content.date }}</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+    <!-- 헤더 -->
+    <div class="header">
+        <div class="header-title">R³ 다이어리</div>
+        <div class="header-date">{{ content.date }}</div>
+        {% if role %}
+        <span class="header-role">{{ role_display }}</span>
+        {% endif %}
+    </div>
+
+    <!-- 1. 요약 -->
+    <div class="summary-card">
+        <p>{{ content.summary }}</p>
+    </div>
+
+    <!-- 2. 키워드 -->
+    <div class="keywords">
+        <h3>키워드</h3>
+        {% for keyword in content.keywords %}
+        <span class="keyword-tag">{{ keyword }}</span>
+        {% endfor %}
+    </div>
+
+    <!-- 3. 리듬 해설 -->
+    <div class="content-block">
+        <h3 class="content-block-title">리듬 해설</h3>
+        <div class="rhythm-description">
+            <p>{{ content.rhythm_description }}</p>
+        </div>
+    </div>
+
+    <!-- 4. 집중/주의 포인트 -->
+    <div class="content-block">
+        <h3 class="content-block-title">집중/주의 포인트</h3>
+        <div class="two-column">
+            <div class="column column-left">
+                <div class="focus-section">
+                    <h4>집중</h4>
+                    <ul>
+                        {% for item in content.focus_caution.focus %}
+                        <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="column column-right">
+                <div class="caution-section">
+                    <h4>주의</h4>
+                    <ul>
+                        {% for item in content.focus_caution.caution %}
+                        <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. 행동 가이드 -->
+    <div class="content-block">
+        <h3 class="content-block-title">행동 가이드</h3>
+        <div class="two-column">
+            <div class="column column-left">
+                <div class="do-section">
+                    <h4>권장</h4>
+                    <ul>
+                        {% for item in content.action_guide.do %}
+                        <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="column column-right">
+                <div class="avoid-section">
+                    <h4>지양</h4>
+                    <ul>
+                        {% for item in content.action_guide.avoid %}
+                        <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. 시간/방향 -->
+    <div class="content-block">
+        <h3 class="content-block-title">시간/방향</h3>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">좋은 시간</div>
+                <div class="info-value">{{ content.time_direction.good_time }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">피할 시간</div>
+                <div class="info-value">{{ content.time_direction.avoid_time }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">좋은 방향</div>
+                <div class="info-value">{{ content.time_direction.good_direction }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">피할 방향</div>
+                <div class="info-value">{{ content.time_direction.avoid_direction }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">참고</div>
+                <div class="info-value">{{ content.time_direction.notes }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. 상태 전환 트리거 -->
+    <div class="content-block">
+        <h3 class="content-block-title">상태 전환 트리거</h3>
+        <div class="trigger-box">
+            <div class="trigger-item">
+                <span class="trigger-label">제스처</span>
+                <span class="trigger-value">{{ content.state_trigger.gesture }}</span>
+            </div>
+            <div class="trigger-item">
+                <span class="trigger-label">문구</span>
+                <span class="trigger-value">{{ content.state_trigger.phrase }}</span>
+            </div>
+            <div class="trigger-item">
+                <span class="trigger-label">방법</span>
+                <span class="trigger-value">{{ content.state_trigger.how_to }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. 의미 전환 -->
+    <div class="content-block">
+        <h3 class="content-block-title">의미 전환</h3>
+        <div class="meaning-shift-block">
+            <p>{{ content.meaning_shift }}</p>
+        </div>
+    </div>
+
+    <!-- 9. 리듬 질문 -->
+    <div class="content-block">
+        <h3 class="content-block-title">오늘의 질문</h3>
+        <div class="question-block">
+            <p>{{ content.rhythm_question }}</p>
+        </div>
+    </div>
+
+    <!-- 푸터 -->
+    <div class="footer">
+        <p>R³ Diary - Rhythm, Response, Recode</p>
+        <p>{{ generated_at }}</p>
+    </div>
+</body>
+</html>

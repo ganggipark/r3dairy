@@ -1,0 +1,50 @@
+# Render.com 배포 설정
+# 이 파일을 저장소 루트에 두면 Render가 자동으로 인식합니다
+
+services:
+  # Backend API Service (FastAPI)
+  - type: web
+    name: r3-diary-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free  # 무료 티어 (비활성 시 spin down)
+
+    # 환경 변수 (Render Dashboard에서 설정 필요)
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+
+      - key: PORT
+        value: 10000  # Render 기본 포트
+
+      # Supabase 연결 정보 (Dashboard에서 설정)
+      - key: SUPABASE_URL
+        sync: false  # Dashboard에서 수동 입력
+
+      - key: SUPABASE_KEY
+        sync: false  # Dashboard에서 수동 입력
+
+      # CORS 설정 (Frontend URL 확정 후 업데이트)
+      - key: CORS_ORIGINS
+        value: https://r3-diary.vercel.app
+
+    # 헬스체크 설정
+    healthCheckPath: /health
+
+    # 자동 배포 설정
+    autoDeploy: true
+    branch: main
+
+    # 빌드 명령어 (Dockerfile 사용 시 불필요)
+    # buildCommand: 생략
+
+    # 시작 명령어 (Dockerfile CMD 사용)
+    # startCommand: 생략
+
+# 추가 서비스 (필요 시)
+# databases:
+#   - name: postgres-db
+#     databaseName: r3diary
+#     user: r3user
+#     plan: free

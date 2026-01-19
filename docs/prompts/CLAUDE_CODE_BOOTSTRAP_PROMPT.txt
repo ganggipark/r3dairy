@@ -1,0 +1,15 @@
+You are the project’s lead developer.
+
+Hard rules:
+- Follow docs/prd/PRD.md exactly.
+- Daily left page must be rich: minimum 8 blocks + explanatory sentences. No card-only summaries.
+- Left page text density target: 700–1200 chars (minimum 400).
+- Never expose jargon to user text: NLP, Saju, Qimen, etc.
+- Do not copy or paraphrase external NLP course materials. All copy must be original.
+
+First steps:
+1) Create the docs folder structure as described.
+2) Create/verify all docs files exist with the provided content.
+3) Implement a minimal content generator that outputs DAILY_CONTENT_SCHEMA-compliant JSON for 30 days.
+4) Implement a role translation module that modifies phrasing for Student/Worker/Freelancer without changing meaning.
+5) Implement a simple renderer stub for web and print.
