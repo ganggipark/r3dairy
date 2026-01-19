@@ -5,13 +5,12 @@ FROM python:3.11-slim as builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3-dev \
-    libcairo2-dev \
     libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libgdk-pixbuf2.0-dev \
+    libpangoft2-1.0-0 \
+    libharfbuzz-subset0 \
     libffi-dev \
-    shared-mime-info \
-    fonts-dejavu-core \
+    libjpeg-dev \
+    libopenjp2-7-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -29,13 +28,9 @@ FROM python:3.11-slim
 
 # Install runtime dependencies for WeasyPrint
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libcairo2 \
     libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libgdk-pixbuf2.0-0 \
-    libffi-dev \
-    shared-mime-info \
-    fonts-dejavu-core \
+    libpangoft2-1.0-0 \
+    libharfbuzz-subset0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
