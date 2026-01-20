@@ -53,7 +53,8 @@ async def root():
     }
 
 # Import API routers
-from src.api import auth, profile, daily, monthly, logs, pdf
+from src.api import auth, profile, daily, monthly, logs
+# from src.api import pdf  # TODO: Phase 7 - PDF Generator 구현 후 활성화
 
 # Register API routers
 app.include_router(auth.router)
@@ -61,7 +62,7 @@ app.include_router(profile.router)
 app.include_router(daily.router)
 app.include_router(monthly.router)
 app.include_router(logs.router)
-app.include_router(pdf.router)
+# app.include_router(pdf.router)  # TODO: Phase 7 - PDF Generator 구현 후 활성화
 
 if __name__ == "__main__":
     import uvicorn
