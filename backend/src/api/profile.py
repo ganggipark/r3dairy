@@ -4,7 +4,7 @@ Profile API Endpoints
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from supabase import Client
 from typing import Optional
-from src.db.supabase import get_supabase
+from src.db.supabase import get_supabase, get_supabase_service
 from src.api.models import ProfileCreate, ProfileUpdate, ProfileResponse, SuccessResponse
 from src.api.auth import get_current_user
 
@@ -15,7 +15,8 @@ router = APIRouter(prefix="/api/profile", tags=["Profile"])
 async def create_profile(
     request: ProfileCreate,
     authorization: str = Header(...),
-    supabase: Client = Depends(get_supabase)
+    supabase_auth: Client = Depends(get_supabase),
+    supabase_db: Client = Depends(get_supabase_service)
 ):
     """
     프로필 생성
@@ -32,20 +33,20 @@ async def create_profile(
         HTTPException 401: 인증되지 않은 요청
         HTTPException 500: 서버 오류
     """
-    # 현재 사용자 확인
-    user = get_current_user(authorization, supabase)
+    # 현재 사용자 확인 (Auth client 사용)
+    user = get_current_user(authorization, supabase_auth)
     user_id = user.id
 
     try:
-        # 기존 프로필 확인
-        existing = supabase.table("profiles").select("*").eq("id", user_id).execute()
+        # 기존 프로필 확인 (Service client 사용 - RLS 우회)
+        existing = supabase_db.table("profiles").select("*").eq("id", user_id).execute()
         if existing.data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="이미 프로필이 존재합니다."
             )
 
-        # 프로필 생성
+        # 프로필 생성 (Service client 사용 - RLS 우회)
         profile_data = {
             "id": user_id,
             "name": request.name,
@@ -57,7 +58,7 @@ async def create_profile(
             "preferences": request.preferences or {}
         }
 
-        result = supabase.table("profiles").insert(profile_data).execute()
+        result = supabase_db.table("profiles").insert(profile_data).execute()
 
         if not result.data:
             raise HTTPException(
@@ -79,7 +80,8 @@ async def create_profile(
 @router.get("", response_model=ProfileResponse)
 async def get_profile(
     authorization: str = Header(...),
-    supabase: Client = Depends(get_supabase)
+    supabase_auth: Client = Depends(get_supabase),
+    supabase_db: Client = Depends(get_supabase_service)
 ):
     """
     프로필 조회
@@ -94,11 +96,11 @@ async def get_profile(
         HTTPException 404: 프로필이 존재하지 않음
         HTTPException 401: 인증되지 않은 요청
     """
-    user = get_current_user(authorization, supabase)
+    user = get_current_user(authorization, supabase_auth)
     user_id = user.id
 
     try:
-        result = supabase.table("profiles").select("*").eq("id", user_id).execute()
+        result = supabase_db.table("profiles").select("*").eq("id", user_id).execute()
 
         if not result.data:
             raise HTTPException(
@@ -121,7 +123,8 @@ async def get_profile(
 async def update_profile(
     request: ProfileUpdate,
     authorization: str = Header(...),
-    supabase: Client = Depends(get_supabase)
+    supabase_auth: Client = Depends(get_supabase),
+    supabase_db: Client = Depends(get_supabase_service)
 ):
     """
     프로필 수정
@@ -137,12 +140,12 @@ async def update_profile(
         HTTPException 404: 프로필이 존재하지 않음
         HTTPException 401: 인증되지 않은 요청
     """
-    user = get_current_user(authorization, supabase)
+    user = get_current_user(authorization, supabase_auth)
     user_id = user.id
 
     try:
         # 기존 프로필 확인
-        existing = supabase.table("profiles").select("*").eq("id", user_id).execute()
+        existing = supabase_db.table("profiles").select("*").eq("id", user_id).execute()
         if not existing.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -167,7 +170,7 @@ async def update_profile(
             update_data["preferences"] = request.preferences
 
         # 프로필 수정
-        result = supabase.table("profiles").update(update_data).eq("id", user_id).execute()
+        result = supabase_db.table("profiles").update(update_data).eq("id", user_id).execute()
 
         if not result.data:
             raise HTTPException(
@@ -189,7 +192,8 @@ async def update_profile(
 @router.delete("", response_model=SuccessResponse)
 async def delete_profile(
     authorization: str = Header(...),
-    supabase: Client = Depends(get_supabase)
+    supabase_auth: Client = Depends(get_supabase),
+    supabase_db: Client = Depends(get_supabase_service)
 ):
     """
     프로필 삭제
@@ -204,12 +208,12 @@ async def delete_profile(
         HTTPException 404: 프로필이 존재하지 않음
         HTTPException 401: 인증되지 않은 요청
     """
-    user = get_current_user(authorization, supabase)
+    user = get_current_user(authorization, supabase_auth)
     user_id = user.id
 
     try:
         # 프로필 삭제
-        result = supabase.table("profiles").delete().eq("id", user_id).execute()
+        result = supabase_db.table("profiles").delete().eq("id", user_id).execute()
 
         if not result.data:
             raise HTTPException(
