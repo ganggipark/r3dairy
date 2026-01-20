@@ -51,8 +51,8 @@ class ProfileCreate(BaseModel):
 class ProfileUpdate(BaseModel):
     """프로필 수정 요청 (모든 필드 optional)"""
     name: Optional[str] = Field(None, min_length=2, max_length=100)
-    birth_date: Optional[date] = None
-    birth_time: Optional[time] = None
+    birth_date: Optional[datetime.date] = None
+    birth_time: Optional[datetime.time] = None
     gender: Optional[Gender] = None
     birth_place: Optional[str] = Field(None, min_length=2, max_length=200)
     roles: Optional[List[Role]] = None
