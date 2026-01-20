@@ -3,7 +3,7 @@ Daily Log API Endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from supabase import Client
-from datetime import date
+import datetime
 from src.db.supabase import get_supabase
 from src.api.auth import get_current_user
 from src.api.models import DailyLogCreate, DailyLogUpdate, DailyLogResponse, SuccessResponse
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/logs", tags=["Daily Logs"])
 
 @router.post("/{target_date}", response_model=DailyLogResponse, status_code=status.HTTP_201_CREATED)
 async def create_daily_log(
-    target_date: date,
+    target_date: datetime.date,
     request: DailyLogCreate,
     authorization: str = Header(...),
     supabase: Client = Depends(get_supabase)
@@ -80,7 +80,7 @@ async def create_daily_log(
 
 @router.get("/{target_date}", response_model=DailyLogResponse)
 async def get_daily_log(
-    target_date: date,
+    target_date: datetime.date,
     authorization: str = Header(...),
     supabase: Client = Depends(get_supabase)
 ):
@@ -124,7 +124,7 @@ async def get_daily_log(
 
 @router.put("/{target_date}", response_model=DailyLogResponse)
 async def update_daily_log(
-    target_date: date,
+    target_date: datetime.date,
     request: DailyLogUpdate,
     authorization: str = Header(...),
     supabase: Client = Depends(get_supabase)
@@ -197,7 +197,7 @@ async def update_daily_log(
 
 @router.delete("/{target_date}", response_model=SuccessResponse)
 async def delete_daily_log(
-    target_date: date,
+    target_date: datetime.date,
     authorization: str = Header(...),
     supabase: Client = Depends(get_supabase)
 ):

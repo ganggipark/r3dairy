@@ -5,7 +5,7 @@ PDF API Endpoints
 from fastapi import APIRouter, Header, Query, HTTPException
 from fastapi.responses import FileResponse
 from typing import Optional
-from datetime import date
+import datetime
 import os
 import sys
 from pathlib import Path
@@ -29,7 +29,7 @@ pdf_generator = PDFGenerator()
 
 @router.get("/daily/{target_date}")
 async def generate_daily_pdf(
-    target_date: date,
+    target_date: datetime.date,
     role: Optional[Role] = Query(None, description="역할 (학생/직장인/프리랜서)"),
     authorization: str = Header(..., description="Bearer {access_token}")
 ):

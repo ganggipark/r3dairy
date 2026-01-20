@@ -11,7 +11,8 @@
       "WebSearch",
       "Bash(grep:*)",
       "Bash(curl:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(find:*)"
     ]
   }
 }

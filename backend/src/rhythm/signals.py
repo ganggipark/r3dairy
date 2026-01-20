@@ -4,7 +4,7 @@ Rhythm Signal Generator
 
 사주명리 계산 결과를 RhythmSignal 객체로 변환
 """
-from datetime import date, datetime
+import datetime
 from typing import List, Dict, Any
 from .models import BirthInfo, RhythmSignal, MonthlyRhythmSignal, YearlyRhythmSignal
 from .saju import calculate_saju, analyze_daily_fortune
@@ -19,7 +19,7 @@ class RhythmAnalyzer:
     def generate_daily_signal(
         self,
         birth_info: BirthInfo,
-        target_date: date
+        target_date: datetime.date
     ) -> RhythmSignal:
         """
         일간 리듬 신호 생성
@@ -52,7 +52,7 @@ class RhythmAnalyzer:
             opportunities=fortune.get("기회_요소", []),
             challenges=fortune.get("도전_요소", []),
             calculation_version=self.version,
-            created_at=datetime.now()
+            created_at=datetime.datetime.now()
         )
 
         return signal
@@ -219,7 +219,7 @@ class RhythmAnalyzer:
 
 def create_daily_rhythm(
     birth_info: BirthInfo,
-    target_date: date
+    target_date: datetime.date
 ) -> RhythmSignal:
     """
     일간 리듬 신호 생성 (편의 함수)
@@ -227,12 +227,12 @@ def create_daily_rhythm(
     Usage:
         birth_info = BirthInfo(
             name="홍길동",
-            birth_date=date(1990, 1, 15),
-            birth_time=time(14, 30),
+            birth_date=datetime.date(1990, 1, 15),
+            birth_time=datetime.time(14, 30),
             gender=Gender.MALE,
             birth_place="서울"
         )
-        signal = create_daily_rhythm(birth_info, date.today())
+        signal = create_daily_rhythm(birth_info, datetime.date.today())
     """
     analyzer = RhythmAnalyzer()
     return analyzer.generate_daily_signal(birth_info, target_date)

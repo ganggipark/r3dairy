@@ -3,7 +3,7 @@ Monthly/Yearly Content API Endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Query
 from supabase import Client
-from datetime import date, time
+import datetime
 from typing import Optional
 from src.db.supabase import get_supabase
 from src.api.auth import get_current_user

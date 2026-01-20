@@ -16,12 +16,12 @@
 ⚠️ 이 계산 결과는 사용자에게 직접 노출하지 않습니다!
 Content Assembly Engine에서 일반 언어로 변환됩니다.
 """
-from datetime import date, time, datetime
+import datetime
 from typing import Dict, Any, Optional
 from .models import BirthInfo, RhythmSignal
 
 
-def calculate_saju(birth_info: BirthInfo, target_date: date) -> Dict[str, Any]:
+def calculate_saju(birth_info: BirthInfo, target_date: datetime.date) -> Dict[str, Any]:
     """
     사주명리 계산 (기존 로직 통합 지점)
 
@@ -130,7 +130,7 @@ def _get_month_element(month: int) -> str:
 
 def analyze_daily_fortune(
     birth_info: BirthInfo,
-    target_date: date,
+    target_date: datetime.date,
     saju_data: Dict[str, Any]
 ) -> Dict[str, Any]:
     """
@@ -165,7 +165,7 @@ def analyze_daily_fortune(
     return fortune_analysis
 
 
-def get_favorable_times(saju_data: Dict[str, Any], target_date: date) -> list[str]:
+def get_favorable_times(saju_data: Dict[str, Any], target_date: datetime.date) -> list[str]:
     """
     유리한 시간대 계산
 
@@ -178,7 +178,7 @@ def get_favorable_times(saju_data: Dict[str, Any], target_date: date) -> list[st
     return ["오전 9-11시", "오후 2-4시"]
 
 
-def get_favorable_directions(saju_data: Dict[str, Any], target_date: date) -> list[str]:
+def get_favorable_directions(saju_data: Dict[str, Any], target_date: datetime.date) -> list[str]:
     """
     유리한 방향 계산
 
@@ -214,7 +214,7 @@ def get_favorable_directions(saju_data: Dict[str, Any], target_date: date) -> li
     # 기존 라이브러리 사용
     from your_saju_library import SajuCalculator
 
-    def calculate_saju(birth_info: BirthInfo, target_date: date):
+    def calculate_saju(birth_info: BirthInfo, target_date: datetime.date):
         calculator = SajuCalculator()
         result = calculator.calculate(
             birth_date=birth_info.birth_date,

@@ -3,7 +3,7 @@ Daily Content API Endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Query
 from supabase import Client
-from datetime import date, time
+import datetime
 from typing import Optional
 from src.db.supabase import get_supabase
 from src.api.auth import get_current_user
@@ -31,7 +31,7 @@ def _get_profile_data(user_id: str, supabase: Client) -> dict:
 
 @router.get("/{target_date}", response_model=DailyContentResponse)
 async def get_daily_content(
-    target_date: date,
+    target_date: datetime.date,
     role: Optional[Role] = Query(None, description="역할 (student, office_worker, freelancer)"),
     authorization: str = Header(...),
     supabase: Client = Depends(get_supabase)
