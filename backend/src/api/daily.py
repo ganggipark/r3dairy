@@ -100,8 +100,8 @@ async def get_daily_content(
 
 @router.get("/range/{start_date}/{end_date}")
 async def get_daily_content_range(
-    start_date: date,
-    end_date: date,
+    start_date: datetime.date,
+    end_date: datetime.date,
     role: Optional[Role] = Query(None),
     authorization: str = Header(...),
     supabase: Client = Depends(get_supabase)
