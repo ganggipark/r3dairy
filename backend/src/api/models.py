@@ -1,7 +1,7 @@
 """
 API Request/Response Models
 """
-from datetime import date, time
+import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, EmailStr, Field
 from src.rhythm.models import Gender
@@ -40,8 +40,8 @@ class AuthResponse(BaseModel):
 class ProfileCreate(BaseModel):
     """프로필 생성 요청"""
     name: str = Field(..., min_length=2, max_length=100)
-    birth_date: date
-    birth_time: time
+    birth_date: datetime.date
+    birth_time: datetime.time
     gender: Gender
     birth_place: str = Field(..., min_length=2, max_length=200)
     roles: List[Role] = Field(default=[Role.STUDENT])
@@ -63,8 +63,8 @@ class ProfileResponse(BaseModel):
     """프로필 응답"""
     id: str
     name: str
-    birth_date: date
-    birth_time: time
+    birth_date: datetime.date
+    birth_time: datetime.time
     gender: Gender
     birth_place: str
     roles: List[Role]
@@ -79,13 +79,13 @@ class ProfileResponse(BaseModel):
 
 class DailyContentRequest(BaseModel):
     """일간 콘텐츠 요청 파라미터"""
-    date: date
+    date: datetime.date
     role: Optional[Role] = None  # None이면 중립 콘텐츠
 
 
 class DailyContentResponse(BaseModel):
     """일간 콘텐츠 응답"""
-    date: date
+    date: datetime.date
     role: Optional[Role]
     content: Dict[str, Any]  # DailyContent를 dict로 변환
 
@@ -111,7 +111,7 @@ class MonthlyContentResponse(BaseModel):
 
 class DailyLogCreate(BaseModel):
     """일간 기록 생성"""
-    date: date
+    date: datetime.date
     schedule: Optional[str] = None
     todos: Optional[List[str]] = None
     mood: Optional[int] = Field(None, ge=1, le=5)
@@ -134,7 +134,7 @@ class DailyLogResponse(BaseModel):
     """일간 기록 응답"""
     id: str
     profile_id: str
-    date: date
+    date: datetime.date
     schedule: Optional[str]
     todos: Optional[List[str]]
     mood: Optional[int]

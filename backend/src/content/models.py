@@ -3,7 +3,7 @@ Content Assembly Engine - 데이터 모델
 DailyContent 및 관련 모델 정의 (DAILY_CONTENT_SCHEMA.json 기반)
 """
 from pydantic import BaseModel, Field, field_validator
-from datetime import date
+import datetime
 from typing import List, Optional, Dict, Any
 
 
@@ -55,7 +55,7 @@ class DailyContent(BaseModel):
 
     DAILY_CONTENT_SCHEMA.json을 준수합니다.
     """
-    date: date = Field(..., description="날짜 (YYYY-MM-DD)")
+    date: datetime.date = Field(..., description="날짜 (YYYY-MM-DD)")
 
     # 1. 요약
     summary: str = Field(
