@@ -27,10 +27,12 @@ class LoginRequest(BaseModel):
 
 class AuthResponse(BaseModel):
     """인증 응답"""
-    access_token: str
-    refresh_token: str
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
     user_id: str
     email: str
+    requires_email_confirmation: bool = False
+    message: Optional[str] = None
 
 
 # ============================================================================

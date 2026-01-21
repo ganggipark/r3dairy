@@ -23,10 +23,12 @@ export enum Role {
 // ============================================================================
 
 export interface AuthResponse {
-  access_token: string
-  refresh_token: string
+  access_token?: string
+  refresh_token?: string
   user_id: string
   email: string
+  requires_email_confirmation?: boolean
+  message?: string
 }
 
 export interface SignUpRequest {

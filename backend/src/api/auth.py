@@ -47,16 +47,19 @@ async def signup(
 
         # Session이 없는 경우 (이메일 확인 대기 중)
         if not response.session:
-            raise HTTPException(
-                status_code=status.HTTP_201_CREATED,
-                detail="회원가입이 완료되었습니다. 이메일 인증이 필요합니다."
+            return AuthResponse(
+                user_id=response.user.id,
+                email=response.user.email or request.email,
+                requires_email_confirmation=True,
+                message="회원가입이 완료되었습니다. 이메일을 확인해주세요."
             )
 
         return AuthResponse(
             access_token=response.session.access_token,
             refresh_token=response.session.refresh_token,
             user_id=response.user.id,
-            email=response.user.email
+            email=response.user.email or request.email,
+            requires_email_confirmation=False
         )
 
     except HTTPException:

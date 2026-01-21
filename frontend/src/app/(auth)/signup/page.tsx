@@ -19,6 +19,7 @@ export default function SignUpPage() {
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -61,6 +62,7 @@ export default function SignUpPage() {
     }
 
     setIsLoading(true)
+    setSuccessMessage('')
 
     try {
       const response = await api.auth.signUp({
@@ -69,15 +71,24 @@ export default function SignUpPage() {
         name: formData.name
       })
 
-      // 토큰 저장
-      localStorage.setItem('access_token', response.access_token)
-      localStorage.setItem('refresh_token', response.refresh_token)
-      localStorage.setItem('user_id', response.user_id)
+      // 이메일 확인이 필요한 경우
+      if (response.requires_email_confirmation) {
+        setSuccessMessage(response.message || '회원가입이 완료되었습니다. 이메일을 확인해주세요.')
+        return
+      }
 
-      // 프로필 페이지로 이동 (추가 정보 입력 필요)
-      router.push('/profile')
+      // 토큰 저장 (이메일 확인이 필요없는 경우에만)
+      if (response.access_token && response.refresh_token) {
+        localStorage.setItem('access_token', response.access_token)
+        localStorage.setItem('refresh_token', response.refresh_token)
+        localStorage.setItem('user_id', response.user_id)
+
+        // 프로필 페이지로 이동 (추가 정보 입력 필요)
+        router.push('/profile')
+      }
     } catch (err: any) {
-      setError(err.message || '회원가입에 실패했습니다')
+      console.error('Signup error:', err)
+      setError(err.message || err.details || '회원가입에 실패했습니다')
     } finally {
       setIsLoading(false)
     }
@@ -170,18 +181,31 @@ export default function SignUpPage() {
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
+            <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-md">{error}</div>
           )}
 
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
-            >
-              {isLoading ? '회원가입 중...' : '회원가입'}
-            </button>
-          </div>
+          {successMessage && (
+            <div className="text-green-600 text-sm text-center bg-green-50 p-3 rounded-md">
+              {successMessage}
+              <div className="mt-2">
+                <Link href="/login" className="font-medium text-green-700 hover:text-green-800 underline">
+                  로그인 페이지로 이동
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {!successMessage && (
+            <div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
+              >
+                {isLoading ? '회원가입 중...' : '회원가입'}
+              </button>
+            </div>
+          )}
 
           <div className="text-center text-sm">
             <span className="text-gray-600">이미 계정이 있으신가요? </span>
