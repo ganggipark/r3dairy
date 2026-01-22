@@ -34,11 +34,18 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
+    import subprocess
+    try:
+        git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
+    except:
+        git_hash = "unknown"
+
     return JSONResponse(
         content={
             "status": "healthy",
             "version": "0.1.0",
-            "environment": os.getenv("ENVIRONMENT", "development")
+            "environment": os.getenv("ENVIRONMENT", "development"),
+            "git_commit": git_hash
         }
     )
 
@@ -54,7 +61,8 @@ async def root():
 
 # Import API routers
 from src.api import auth, profile, daily, monthly, logs
-# from src.api import pdf  # TODO: Phase 7 - PDF Generator 구현 후 활성화
+# PDF router disabled on Windows (WeasyPrint requires GTK+)
+# from src.api import pdf
 
 # Register API routers
 app.include_router(auth.router)
@@ -62,7 +70,7 @@ app.include_router(profile.router)
 app.include_router(daily.router)
 app.include_router(monthly.router)
 app.include_router(logs.router)
-# app.include_router(pdf.router)  # TODO: Phase 7 - PDF Generator 구현 후 활성화
+# app.include_router(pdf.router)
 
 if __name__ == "__main__":
     import uvicorn
