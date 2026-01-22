@@ -5,20 +5,25 @@ from fastapi import APIRouter, Depends, HTTPException, status, Header, Query
 from supabase import Client
 import datetime
 from typing import Optional
-from src.db.supabase import get_supabase
+from src.db.supabase import get_supabase, get_supabase_service
 from src.api.auth import get_current_user
 from src.api.models import DailyContentResponse
 from src.rhythm.models import BirthInfo, Gender
-from src.rhythm.signals import create_daily_rhythm
-from src.content.assembly import create_daily_content
-from src.translation import translate_content, Role
+from src.rhythm.saju import calculate_saju, analyze_daily_fortune
+from src.content.assembly import assemble_daily_content
+from src.translation import translate_daily_content, Role
 
 router = APIRouter(prefix="/api/daily", tags=["Daily Content"])
 
 
-def _get_profile_data(user_id: str, supabase: Client) -> dict:
-    """프로필 데이터 조회 (내부 헬퍼)"""
-    result = supabase.table("profiles").select("*").eq("id", user_id).execute()
+def _get_profile_data(user_id: str, supabase_db: Client) -> dict:
+    """프로필 데이터 조회 (내부 헬퍼)
+
+    Args:
+        user_id: 사용자 ID
+        supabase_db: Service role Supabase client (RLS 우회용)
+    """
+    result = supabase_db.table("profiles").select("*").eq("id", user_id).execute()
 
     if not result.data:
         raise HTTPException(
@@ -34,7 +39,8 @@ async def get_daily_content(
     target_date: datetime.date,
     role: Optional[Role] = Query(None, description="역할 (student, office_worker, freelancer)"),
     authorization: str = Header(...),
-    supabase: Client = Depends(get_supabase)
+    supabase_auth: Client = Depends(get_supabase),
+    supabase_db: Client = Depends(get_supabase_service)
 ):
     """
     일간 콘텐츠 조회
@@ -56,37 +62,40 @@ async def get_daily_content(
         GET /api/daily/2026-01-20?role=student
         → 학생용 일간 콘텐츠 반환
     """
-    user = get_current_user(authorization, supabase)
+    user = get_current_user(authorization, supabase_auth)
     user_id = user.id
 
     try:
-        # 1. 프로필 데이터 조회
-        profile = _get_profile_data(user_id, supabase)
+        # 1. 프로필 데이터 조회 (Service client 사용 - RLS 우회)
+        profile = _get_profile_data(user_id, supabase_db)
 
         # 2. BirthInfo 생성
         birth_info = BirthInfo(
             name=profile["name"],
-            birth_date=date.fromisoformat(profile["birth_date"]),
-            birth_time=time.fromisoformat(profile["birth_time"]),
+            birth_date=datetime.date.fromisoformat(profile["birth_date"]),
+            birth_time=datetime.time.fromisoformat(profile["birth_time"]),
             gender=Gender(profile["gender"]),
             birth_place=profile["birth_place"]
         )
 
-        # 3. RhythmSignal 생성 (내부 계산)
-        rhythm_signal = create_daily_rhythm(birth_info, target_date)
+        # 3. 사주 계산 (내부 계산)
+        saju_result = calculate_saju(birth_info, target_date)
 
-        # 4. DailyContent 생성 (중립 콘텐츠)
-        daily_content = create_daily_content(rhythm_signal)
+        # 4. 일간 리듬 분석 (내부 해석)
+        daily_rhythm = analyze_daily_fortune(birth_info, target_date, saju_result)
 
-        # 5. 역할별 변환 (role 파라미터가 있으면)
+        # 5. 사용자 노출 콘텐츠 생성 (중립 콘텐츠)
+        daily_content = assemble_daily_content(target_date, saju_result, daily_rhythm)
+
+        # 6. 역할별 변환 (role 파라미터가 있으면)
         if role:
-            daily_content = translate_content(daily_content, role)
+            daily_content = translate_daily_content(daily_content, role.value)
 
-        # 6. 응답 생성
+        # 7. 응답 생성
         return DailyContentResponse(
             date=target_date,
             role=role,
-            content=daily_content.model_dump()
+            content=daily_content
         )
 
     except HTTPException:
@@ -104,7 +113,8 @@ async def get_daily_content_range(
     end_date: datetime.date,
     role: Optional[Role] = Query(None),
     authorization: str = Header(...),
-    supabase: Client = Depends(get_supabase)
+    supabase_auth: Client = Depends(get_supabase),
+    supabase_db: Client = Depends(get_supabase_service)
 ):
     """
     기간별 일간 콘텐츠 조회
@@ -126,7 +136,7 @@ async def get_daily_content_range(
         GET /api/daily/range/2026-01-01/2026-01-31?role=office_worker
         → 2026년 1월 전체 일간 콘텐츠 (직장인용)
     """
-    user = get_current_user(authorization, supabase)
+    user = get_current_user(authorization, supabase_auth)
     user_id = user.id
 
     try:
@@ -138,14 +148,14 @@ async def get_daily_content_range(
                 detail="날짜 범위는 최대 31일까지 가능합니다."
             )
 
-        # 프로필 데이터 조회
-        profile = _get_profile_data(user_id, supabase)
+        # 프로필 데이터 조회 (Service client 사용 - RLS 우회)
+        profile = _get_profile_data(user_id, supabase_db)
 
         # BirthInfo 생성
         birth_info = BirthInfo(
             name=profile["name"],
-            birth_date=date.fromisoformat(profile["birth_date"]),
-            birth_time=time.fromisoformat(profile["birth_time"]),
+            birth_date=datetime.date.fromisoformat(profile["birth_date"]),
+            birth_time=datetime.time.fromisoformat(profile["birth_time"]),
             gender=Gender(profile["gender"]),
             birth_place=profile["birth_place"]
         )
@@ -154,23 +164,23 @@ async def get_daily_content_range(
         results = []
         current_date = start_date
         while current_date <= end_date:
-            # RhythmSignal → DailyContent 생성
-            rhythm_signal = create_daily_rhythm(birth_info, current_date)
-            daily_content = create_daily_content(rhythm_signal)
+            # 사주 계산 → 리듬 분석 → 콘텐츠 생성
+            saju_result = calculate_saju(birth_info, current_date)
+            daily_rhythm = analyze_daily_fortune(birth_info, current_date, saju_result)
+            daily_content = assemble_daily_content(current_date, saju_result, daily_rhythm)
 
             # 역할별 변환
             if role:
-                daily_content = translate_content(daily_content, role)
+                daily_content = translate_daily_content(daily_content, role.value)
 
             results.append({
                 "date": current_date.isoformat(),
                 "role": role.value if role else None,
-                "content": daily_content.model_dump()
+                "content": daily_content
             })
 
             # 다음 날로 이동
-            from datetime import timedelta
-            current_date += timedelta(days=1)
+            current_date += datetime.timedelta(days=1)
 
         return results
 
