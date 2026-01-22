@@ -34,18 +34,11 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    import subprocess
-    try:
-        git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
-    except:
-        git_hash = "unknown"
-
     return JSONResponse(
         content={
             "status": "healthy",
-            "version": "0.1.0",
-            "environment": os.getenv("ENVIRONMENT", "development"),
-            "git_commit": git_hash
+            "version": "0.2.0",  # 버전 업데이트하여 배포 확인
+            "environment": os.getenv("ENVIRONMENT", "development")
         }
     )
 
