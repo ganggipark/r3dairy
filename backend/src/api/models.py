@@ -2,6 +2,7 @@
 API Request/Response Models
 """
 import datetime
+from datetime import date, time
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, EmailStr, Field
 from src.rhythm.models import Gender
