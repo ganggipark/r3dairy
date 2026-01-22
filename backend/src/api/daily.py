@@ -92,11 +92,12 @@ async def get_daily_content(
             daily_content = translate_daily_content(daily_content, role.value)
 
         # 7. 응답 생성
-        return DailyContentResponse(
-            date=target_date,
-            role=role,
-            content=daily_content
-        )
+        # Note: Pydantic V2는 datetime.date를 자동으로 직렬화하지만 명시적으로 변환
+        return {
+            "date": target_date.isoformat(),
+            "role": role.value if role else None,
+            "content": daily_content
+        }
 
     except HTTPException:
         raise
