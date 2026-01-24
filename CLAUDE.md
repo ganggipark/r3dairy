@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 개발 환경 설정 원칙 ⚠️
+- **프론트엔드**: 무조건 localhost:3000에서만 개발
+- **백엔드**: localhost:8000에서 개발
+- **환경변수**: .env.local은 항상 localhost:8000을 가리켜야 함
+- **배포 테스트**: 별도 지침이 있을 때만 Render URL 사용
+
 ## 프로젝트 개요
 
 R³ 다이어리 시스템 - 출생 정보 기반 리듬 분석과 사용자 기록을 결합한 개인 맞춤 다이어리 애플리케이션. 웹과 인쇄(PDF) 출력을 동시 지원.
@@ -584,6 +590,39 @@ node -v
 - [ ] 내부 용어 사용자 노출 0건
 - [ ] 일간/월간 PDF 생성 성공
 - [ ] 모바일/데스크톱 반응형 동작
+
+## 최근 작업 이력
+
+### 2026-01-24: API 에러 처리 수정 및 로컬 개발 환경 설정
+
+#### 문제 해결
+1. **프론트엔드 API 에러 처리 개선** (`frontend/src/lib/api.ts:56-67`)
+   - FastAPI는 에러를 `detail` 필드로 반환하는데, 프론트엔드는 `error` 또는 `message` 필드를 찾고 있었음
+   - 수정: `error.detail || error.error || error.message || 'API Error'` 순서로 체크
+   - 결과: 백엔드의 구체적인 에러 메시지가 사용자에게 정상 표시됨
+
+2. **백엔드 API 검증** (Render 배포 서버)
+   - 회원가입 API 테스트: ✅ 성공 (영문 이름 사용 시)
+   - 로그인 API 테스트: ✅ 성공
+   - 프로필 생성 API 테스트: ✅ 성공
+   - 테스트 계정: `newtest@example.com` / `Test1234!`
+
+3. **로컬 개발 환경 강제 정책 수립**
+   - `frontend/.env.local`을 `localhost:8000`으로 고정
+   - CLAUDE.md에 "개발 환경 설정 원칙" 섹션 추가
+   - 배포 테스트는 별도 지침이 있을 때만 수행
+
+#### 서버 실행 확인
+- **백엔드**: http://localhost:8000 (uvicorn, PID 48352)
+- **프론트엔드**: http://localhost:3000 (Next.js dev server, PID 57996)
+- **API 문서**: http://localhost:8000/docs
+
+#### 주의사항
+- 한글 이름은 curl로 테스트 시 인코딩 문제 발생 가능 (영문 이름 권장)
+- FastAPI 에러 응답은 항상 `detail` 필드 사용
+- 로컬 개발은 무조건 localhost:3000 ↔ localhost:8000 사용
+
+---
 
 ## 참고 문서
 
