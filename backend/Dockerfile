@@ -26,11 +26,17 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Production stage
 FROM python:3.11-slim
 
-# Install runtime dependencies for WeasyPrint
+# Install runtime dependencies for WeasyPrint and Node.js
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libpangoft2-1.0-0 \
     libharfbuzz-subset0 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 18.x (LTS)
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -42,6 +48,9 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
 COPY . .
+
+# Install saju-calculator npm dependencies
+RUN cd saju-calculator && npm install --production && cd ..
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser && \
