@@ -87,3 +87,48 @@ coverage/
 # Temporary files
 tmp/
 temp/
+
+# Claude Code / OMC
+.claude/settings.json
+.omc/
+.playwright-mcp/
+.sisyphus/
+
+# Screenshots
+screenshots/
+
+# Temporary build files
+nul
+*.zip
+*-temp/
+*-backup/
+saju-calculator-temp/
+
+# Session files
+*.backup
+*.old
+SESSION*.txt
+SESSSION*.txt
+
+# Temporary scripts (root only)
+/inspect_*.py
+/test_auth*.py
+/test_direct*.py
+/test_full*.py
+/test_journey*.py
+/verify_*.sh
+/measure_*.py
+/expand_*.py
+/simple-*.js
+/run-test.js
+
+# Deployment docs (temporary)
+/*_CHECKLIST.md
+/*_REPORT.md
+/*_SUMMARY.md
+/CURRENT_TASKS.md
+
+# Build artifacts (root only)
+/opencode.json
+/package.json
+/playwright.config.ts
