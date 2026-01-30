@@ -267,8 +267,8 @@ export default function TodayPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-2 print:gap-4">
           {/* 좌측: 오늘의 안내 */}
-          <div className="space-y-4 print:w-[210mm] print:min-h-[297mm] print:p-4 print:border print:border-gray-300">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 print:shadow-none print:border-none">
+          <div className="w-full h-full min-h-[900px] print:w-[210mm] print:min-h-[297mm]">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full print:shadow-none print:border print:border-gray-300">
               {/* 제목 */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 px-6 py-3 print:bg-white print:border-b-2 print:border-gray-800">
                 <h2 className="text-xl font-bold text-gray-900">오늘의 안내</h2>
@@ -386,8 +386,8 @@ export default function TodayPage() {
           </div>
 
           {/* 우측: 사용자 기록 (시간 그리드 포함) */}
-          <div className="space-y-4 print:w-[210mm] print:min-h-[297mm] print:p-4 print:border print:border-gray-300 print:page-break-before">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 print:shadow-none print:border-none">
+          <div className="w-full h-full min-h-[900px] print:w-[210mm] print:min-h-[297mm] print:page-break-before">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full print:shadow-none print:border print:border-gray-300">
               {/* 제목 */}
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-200 px-6 py-3 print:bg-white print:border-b-2 print:border-gray-800">
                 <h2 className="text-xl font-bold text-gray-900">오늘의 기록</h2>
