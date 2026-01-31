@@ -1,0 +1,191 @@
+{
+  "example_student": {
+    "name": "김학생",
+    "email": "student@example.com",
+    "birth_date": "2005-03-15",
+    "gender": "여성",
+    "primary_role": "학생",
+    "p_extroversion": 4,
+    "p_structured": 3,
+    "p_openness": 4,
+    "p_empathy": 4,
+    "p_calm": 3,
+    "p_focus": 4,
+    "p_creative": 3,
+    "p_logical": 3,
+    "topics": ["자기개발", "교육 / 학습", "커리어 / 일자리"],
+    "tone_preference": "따뜻하고 지지적인",
+    "diary_preference": "하이브리드 (앱 + 월간 인쇄본)",
+    "paper_size": "A5 (컴팩트)",
+    "delivery_frequency": "월간",
+    "delivery_address": "서울특별시 강남구 테헤란로 123, 101호, 06234, 대한민국",
+    "email_frequency": "주간 요약",
+    "privacy_consent": true,
+    "marketing_consent": true,
+    "research_consent": true
+  },
+
+  "example_office_worker": {
+    "name": "박직장",
+    "email": "worker@company.com",
+    "birth_date": "1990-07-22",
+    "gender": "남성",
+    "primary_role": "직장인",
+    "p_extroversion": 3,
+    "p_structured": 5,
+    "p_openness": 3,
+    "p_empathy": 4,
+    "p_calm": 4,
+    "p_focus": 5,
+    "p_creative": 2,
+    "p_logical": 5,
+    "topics": ["커리어 / 일자리", "재무", "건강 / 피트니스", "인간관계"],
+    "tone_preference": "직접적이고 실용적인",
+    "diary_preference": "앱 전용 (웹/모바일)",
+    "email_frequency": "주간 요약",
+    "privacy_consent": true,
+    "marketing_consent": false,
+    "research_consent": false
+  },
+
+  "example_freelancer": {
+    "name": "이자유",
+    "email": "freelancer@creative.co",
+    "birth_date": "1988-11-30",
+    "gender": "기타",
+    "primary_role": "프리랜서 / 자영업",
+    "p_extroversion": 4,
+    "p_structured": 2,
+    "p_openness": 5,
+    "p_empathy": 5,
+    "p_calm": 3,
+    "p_focus": 3,
+    "p_creative": 5,
+    "p_logical": 3,
+    "topics": ["취미 / 창작", "자기개발", "재무", "여행", "영성 / 철학"],
+    "tone_preference": "동기부여적이고 활력적인",
+    "diary_preference": "종이 다이어리 전용 (월간 배송)",
+    "paper_size": "A4 (표준)",
+    "delivery_frequency": "월간",
+    "delivery_address": "부산광역시 해운대구 해운대로 456, 202호, 48099, 대한민국",
+    "email_frequency": "월간 뉴스레터",
+    "privacy_consent": true,
+    "marketing_consent": true,
+    "research_consent": true
+  },
+
+  "example_parent": {
+    "name": "최부모",
+    "email": "parent@family.net",
+    "birth_date": "1985-04-18",
+    "gender": "여성",
+    "primary_role": "부모",
+    "p_extroversion": 3,
+    "p_structured": 4,
+    "p_openness": 4,
+    "p_empathy": 5,
+    "p_calm": 4,
+    "p_focus": 4,
+    "p_creative": 4,
+    "p_logical": 3,
+    "topics": ["건강 / 피트니스", "인간관계", "자기개발", "재무"],
+    "tone_preference": "차분하고 성찰적인",
+    "diary_preference": "하이브리드 (앱 + 월간 인쇄본)",
+    "paper_size": "A5 (컴팩트)",
+    "delivery_frequency": "월간",
+    "delivery_address": "경기도 성남시 분당구 판교로 789, 303호, 13529, 대한민국",
+    "email_frequency": "매일 인사이트",
+    "privacy_consent": true,
+    "marketing_consent": true,
+    "research_consent": false
+  },
+
+  "example_minimal": {
+    "name": "Test User",
+    "email": "test@example.com",
+    "birth_date": "1995-01-01",
+    "primary_role": "Other",
+    "p_extroversion": 3,
+    "p_structured": 3,
+    "p_openness": 3,
+    "p_empathy": 3,
+    "p_calm": 3,
+    "p_focus": 3,
+    "p_creative": 3,
+    "p_logical": 3,
+    "topics": ["Personal Growth"],
+    "tone_preference": "Warm and supportive",
+    "diary_preference": "App only (web/mobile)",
+    "email_frequency": "Weekly summary",
+    "privacy_consent": true,
+    "marketing_consent": false,
+    "research_consent": false
+  },
+
+  "normalized_example_student": {
+    "profile": {
+      "name": "김학생",
+      "email": "student@example.com",
+      "birth_date": "2005-03-15",
+      "gender": "female",
+      "role": "student"
+    },
+    "personality": {
+      "extroversion": 4,
+      "conscientiousness": 3.5,
+      "openness": 4,
+      "agreeableness": 4,
+      "emotional_stability": 3,
+      "focus": 4,
+      "creativity": 3,
+      "thinking_vs_feeling": 3
+    },
+    "interests": {
+      "topics": ["personal_growth", "education", "career"],
+      "tone_preference": "warm_supportive"
+    },
+    "format": {
+      "diary_type": "hybrid",
+      "paper_size": "a5",
+      "delivery_frequency": "monthly",
+      "delivery_address": "서울특별시 강남구 테헤란로 123, 101호, 06234, 대한민국"
+    },
+    "communication": {
+      "email_frequency": "weekly",
+      "consents": {
+        "privacy": true,
+        "marketing": true,
+        "research": true
+      }
+    },
+    "metadata": {
+      "submitted_at": "2026-01-29T10:30:00Z",
+      "form_version": "1.0",
+      "locale": "ko-KR",
+      "source": "web"
+    }
+  },
+
+  "validation_test_cases": {
+    "missing_required_field": {
+      "email": "test@example.com",
+      "birth_date": "1995-01-01"
+    },
+    "invalid_email": {
+      "name": "Test User",
+      "email": "not-an-email",
+      "birth_date": "1995-01-01"
+    },
+    "invalid_date": {
+      "name": "Test User",
+      "email": "test@example.com",
+      "birth_date": "not-a-date"
+    },
+    "likert_out_of_range": {
+      "name": "Test User",
+      "email": "test@example.com",
+      "birth_date": "1995-01-01",
+      "p_extroversion": 10
+    }
+  }
+}
