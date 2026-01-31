@@ -24,13 +24,24 @@ export default function LoginPage() {
     try {
       const response = await api.auth.login({ email, password })
 
+      if (!response.access_token || !response.refresh_token || !response.user_id) {
+        throw new Error('로그인 응답이 올바르지 않습니다')
+      }
+
       // 토큰 저장
       localStorage.setItem('access_token', response.access_token)
       localStorage.setItem('refresh_token', response.refresh_token)
       localStorage.setItem('user_id', response.user_id)
 
-      // 프로필 페이지로 이동
-      router.push('/profile')
+      // 프로필 확인 후 리다이렉트
+      try {
+        const profile = await api.profile.get(response.access_token)
+        // 프로필이 있으면 today 페이지로
+        router.push('/today')
+      } catch (profileErr) {
+        // 프로필이 없으면 프로필 생성 페이지로
+        router.push('/profile')
+      }
     } catch (err: any) {
       setError(err.message || '로그인에 실패했습니다')
     } finally {

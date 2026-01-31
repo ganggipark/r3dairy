@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import TimeGrid from '@/components/TimeGrid'
+import DailyMarkdown from '@/components/DailyMarkdown'
 
 export default function TodayPage() {
   const router = useRouter()
@@ -27,6 +28,7 @@ export default function TodayPage() {
   const [dailyContent, setDailyContent] = useState<DailyContentResponse | null>(null)
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [userRoles, setUserRoles] = useState<Role[]>([])
+  const [viewMode, setViewMode] = useState<'standard' | 'markdown'>('standard')
 
   // 기록 상태
   const [log, setLog] = useState<DailyLog | null>(null)
@@ -69,49 +71,9 @@ export default function TodayPage() {
         setUserRoles(roles)
         setSelectedRole(roles[0])
 
-        // 일간 콘텐츠 로드
-        let content: DailyContentResponse | null = null
-        try {
-          content = await api.daily.getContent(token, today, roles[0])
-        } catch (err) {
-          // API 실패 시 mock 데이터 사용
-          console.warn('콘텐츠 로드 실패, 데모 데이터 사용:', err)
-          content = {
-            date: today,
-            role: roles[0],
-            content: {
-              summary: '오늘은 차분한 에너지가 흐르는 날입니다. 겨울의 에너지, 신강 상태을 경험하게 됩니다.',
-              keywords: ['휴식', '집중', '업무', '관계', '소통', '실행', '결단', '기회'],
-              rhythm_description: '오늘의 흐름은 \'겨울의 에너지, 신강 상태\'으로 요약됩니다. 에너지가 차분하게 흐르므로 충분한 휴식과 재충전이 필요합니다. 집중력이 뛰어나 깊은 사고와 업무에 유리한 시간입니다. 사람들과의 교류가 활발해질 수 있으니 소통의 기회를 적극 활용하세요. 결단력이 강화되어 중요한 선택이나 실행에 적합한 날입니다. 오늘은 자신의 페이스를 존중하는 것이 중요합니다. 외부의 기대나 속도에 맞추려 하기보다, 내면의 리듬에 귀 기울여보세요. 작은 성취를 하나씩 쌓아가는 것이 오늘의 가장 현명한 전략입니다.',
-              focus_caution: {
-                focus: ['중요한 작업에 대한 깊은 집중', '관계 형성과 네트워킹', '결정이 필요한 사안의 처리'],
-                caution: ['무리한 활동으로 인한 피로 누적']
-              },
-              action_guide: {
-                do: ['충분한 휴식 취하기', '내면 성찰과 기록', '가벼운 정리 활동'],
-                avoid: ['과도한 일정 잡기', '중요한 결정 서두르기', '무리한 약속']
-              },
-              time_direction: {
-                good_time: '오전 10-12시, 오후 3-5시',
-                avoid_time: '자정 전후',
-                good_direction: '중앙, 서쪽',
-                avoid_direction: '특별히 피할 방향 없음',
-                notes: '오늘은 오전 10-12시, 오후 3-5시에 집중력과 효율이 높아집니다. 가능하다면 중앙, 서쪽 방향으로의 활동이나 이동을 고려해보세요. 자정 전후에는 중요한 일을 피하는 것이 좋습니다.'
-              },
-              state_trigger: {
-                gesture: '어깨를 가볍게 으쓱이며 긴장 풀기',
-                phrase: '"충분한 휴식이 나를 채운다"',
-                how_to: '에너지가 낮게 느껴질 때, 의자에 앉아 어깨를 천천히 으쓱이며 긴장을 풀어주세요. 이 동작과 함께 \'휴식도 생산적인 활동이다\'라는 인식을 상기하면 불필요한 죄책감을 내려놓을 수 있습니다.'
-              },
-              meaning_shift: '에너지가 낮다는 것은 무능력이 아니라, 충전이 필요한 자연스러운 신호입니다. 휴식을 선택하는 것도 자기 돌봄의 적극적 행동입니다. 지금 이 순간 쉬어가는 것이 내일의 나를 위한 가장 현명한 투자라는 점을 기억하세요.',
-              rhythm_question: '지금 나에게 필요한 휴식의 형태는 무엇일까요?'
-            }
-          }
-        }
-
-        if (content) {
-          setDailyContent(content)
-        }
+        // 일간 콘텐츠 로드 (목업 데이터 사용 금지 - 실제 API만 사용)
+        const content = await api.daily.getContent(token, today, roles[0])
+        setDailyContent(content)
 
         // 기존 기록 로드 (있으면)
         try {
@@ -228,6 +190,11 @@ export default function TodayPage() {
 
   const content = dailyContent.content;
 
+  // Markdown 뷰 렌더링
+  if (viewMode === 'markdown') {
+    return <DailyMarkdown date={today} />
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 print:bg-white">
       {/* 헤더 (인쇄 시 숨김) */}
@@ -239,20 +206,41 @@ export default function TodayPage() {
               <p className="text-sm text-gray-600 mt-1">{today}</p>
             </div>
 
-            {/* 역할 선택 */}
-            {userRoles.length > 1 && (
-              <div className="flex gap-2">
-                {userRoles.map(role => (
-                  <Button
-                    key={role}
-                    onClick={() => handleRoleChange(role)}
-                    variant={selectedRole === role ? "default" : "outline"}
-                  >
-                    {role === Role.STUDENT ? '학생' : role === Role.OFFICE_WORKER ? '직장인' : '프리랜서'}
-                  </Button>
-                ))}
+            <div className="flex gap-3">
+              {/* 뷰 모드 토글 */}
+              <div className="flex gap-2 border-r pr-3">
+                <Button
+                  onClick={() => setViewMode('standard')}
+                  variant={viewMode === 'standard' ? 'default' : 'outline'}
+                  size="sm"
+                >
+                  표준 뷰
+                </Button>
+                <Button
+                  onClick={() => setViewMode('markdown')}
+                  variant={viewMode === 'markdown' ? 'default' : 'outline'}
+                  size="sm"
+                >
+                  Markdown
+                </Button>
               </div>
-            )}
+
+              {/* 역할 선택 */}
+              {userRoles.length > 1 && (
+                <div className="flex gap-2">
+                  {userRoles.map(role => (
+                    <Button
+                      key={role}
+                      onClick={() => handleRoleChange(role)}
+                      variant={selectedRole === role ? "default" : "outline"}
+                      size="sm"
+                    >
+                      {role === Role.STUDENT ? '학생' : role === Role.OFFICE_WORKER ? '직장인' : '프리랜서'}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -279,6 +267,9 @@ export default function TodayPage() {
                 <section className="pb-3 border-b border-gray-100 print:border-gray-300">
                   <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">요약</h3>
                   <p className="text-sm text-gray-700 leading-relaxed print:text-xs">{content.summary}</p>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: 사주(일간 {dailyContent?.content?.gyeokGuk?.dayMaster || '?'}, {dailyContent?.content?.gyeokGuk?.strength || '?'}) + 십성 분석
+                  </p>
                 </section>
 
                 {/* 키워드 */}
@@ -294,12 +285,18 @@ export default function TodayPage() {
                       </span>
                     ))}
                   </div>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: 십성(용신 {dailyContent?.content?.yongSin?.yongSin?.join(', ') || '?'}) + 오행 균형
+                  </p>
                 </section>
 
                 {/* 리듬 해설 */}
                 <section className="pb-3 border-b border-gray-100 print:border-gray-300">
                   <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">리듬 해설</h3>
                   <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed print:text-xs">{content.rhythm_description}</p>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: 일주({dailyContent?.content?.fourPillars?.day?.gan}{dailyContent?.content?.fourPillars?.day?.ji}) + 월지({dailyContent?.content?.gyeokGuk?.monthBranch}) 상호작용
+                  </p>
                 </section>
 
               {/* 집중/주의 포인트 */}
@@ -323,6 +320,9 @@ export default function TodayPage() {
                     </ul>
                   </div>
                 </div>
+                <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                  📐 기반: 용신(喜) vs 기신(忌) 오행 분류
+                </p>
               </section>
 
               {/* 행동 가이드 */}
@@ -346,41 +346,205 @@ export default function TodayPage() {
                     </ul>
                   </div>
                 </div>
+                <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                  📐 기반: 십성 분석 + 역할({selectedRole}) 맞춤 번역
+                </p>
               </section>
 
-              {/* 시간/방향 */}
-              <section className="pb-3 border-b border-gray-100 print:border-gray-300">
-                <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">시간/방향</h3>
-                <div className="space-y-1 text-xs text-gray-700 print:text-[10px]">
-                  <p><span className="font-medium">좋은 시간:</span> {content.time_direction.good_time}</p>
-                  <p><span className="font-medium">피할 시간:</span> {content.time_direction.avoid_time}</p>
-                  <p><span className="font-medium">좋은 방향:</span> {content.time_direction.good_direction}</p>
-                  <p><span className="font-medium">피할 방향:</span> {content.time_direction.avoid_direction}</p>
-                  <p><span className="font-medium">참고:</span> {content.time_direction.notes}</p>
-                </div>
-              </section>
+              {/* 라이프스타일 블록 */}
+              {content.daily_health_sports && (
+                <section className="pb-3 border-b border-gray-100 print:border-gray-300">
+                  <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">🏃 건강/운동</h3>
+                  <div className="text-xs text-gray-700 space-y-1 print:text-[10px]">
+                    <p><span className="font-medium">추천:</span> {content.daily_health_sports.recommended_activities.join(', ')}</p>
+                    <p><span className="font-medium">팁:</span> {content.daily_health_sports.health_tips.join(', ')}</p>
+                    <p className="text-gray-600">{content.daily_health_sports.explanation}</p>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: 오행 균형 + 계절(월지 {dailyContent?.content?.gyeokGuk?.season})
+                  </p>
+                </section>
+              )}
 
-              {/* 상태 전환 트리거 */}
-              <section className="pb-3 border-b border-gray-100 print:border-gray-300">
-                <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">상태 전환 트리거</h3>
-                <div className="space-y-1 text-xs text-gray-700 print:text-[10px]">
-                  <p><span className="font-medium">제스처:</span> {content.state_trigger.gesture}</p>
-                  <p><span className="font-medium">문구:</span> {content.state_trigger.phrase}</p>
-                  <p><span className="font-medium">방법:</span> {content.state_trigger.how_to}</p>
-                </div>
-              </section>
+              {content.daily_meal_nutrition && (
+                <section className="pb-3 border-b border-gray-100 print:border-gray-300">
+                  <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">🍽️ 음식/영양</h3>
+                  <div className="text-xs text-gray-700 space-y-1 print:text-[10px]">
+                    <p><span className="font-medium">권장:</span> {content.daily_meal_nutrition.recommended_foods.join(', ')}</p>
+                    <p><span className="font-medium">피하기:</span> {content.daily_meal_nutrition.avoid_foods.join(', ')}</p>
+                    <p className="text-gray-600">{content.daily_meal_nutrition.explanation}</p>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: 용신 오행 매핑
+                  </p>
+                </section>
+              )}
 
-              {/* 의미 전환 */}
-              <section className="pb-3 border-b border-gray-100 print:border-gray-300">
-                <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">의미 전환</h3>
-                <p className="text-xs text-gray-700 whitespace-pre-line leading-relaxed print:text-[10px]">{content.meaning_shift}</p>
-              </section>
+              {content.daily_fashion_beauty && (
+                <section className="pb-3 border-b border-gray-100 print:border-gray-300">
+                  <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">👔 패션/뷰티</h3>
+                  <div className="text-xs text-gray-700 space-y-1 print:text-[10px]">
+                    <p><span className="font-medium">좋은 색상:</span> {content.daily_fashion_beauty.color_suggestions.join(', ')}</p>
+                    <p><span className="font-medium">스타일:</span> {content.daily_fashion_beauty.clothing_style.join(', ')}</p>
+                    <p className="text-gray-600">{content.daily_fashion_beauty.explanation}</p>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: 오행 → 색상 변환
+                  </p>
+                </section>
+              )}
 
-              {/* 리듬 질문 */}
-              <section>
-                <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">리듬 질문</h3>
-                <p className="text-xs text-gray-700 italic print:text-[10px]">{content.rhythm_question}</p>
-              </section>
+              {content.daily_shopping_finance && (
+                <section className="pb-3 border-b border-gray-100 print:border-gray-300">
+                  <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">💰 쇼핑/금융</h3>
+                  <div className="text-xs text-gray-700 space-y-1 print:text-[10px]">
+                    <p><span className="font-medium">구매:</span> {content.daily_shopping_finance.good_to_buy.join(', ')}</p>
+                    <p><span className="font-medium">조언:</span> {content.daily_shopping_finance.finance_advice.join(', ')}</p>
+                    <p className="text-gray-600">{content.daily_shopping_finance.explanation}</p>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: 재성(財星) 십성 분석 + 용신 오행
+                  </p>
+                </section>
+              )}
+
+              {content.daily_living_space && (
+                <section className="pb-3 border-b border-gray-100 print:border-gray-300">
+                  <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">🏡 생활 공간</h3>
+                  <div className="text-xs text-gray-700 space-y-1 print:text-[10px]">
+                    <p><span className="font-medium">정리:</span> {content.daily_living_space.space_organization.join(', ')}</p>
+                    <p><span className="font-medium">환경:</span> {content.daily_living_space.environmental_tips.join(', ')}</p>
+                    <p className="text-gray-600">{content.daily_living_space.explanation}</p>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: 용신 오행 → 방위/공간 배치 + 인성(印星) 분석
+                  </p>
+                </section>
+              )}
+
+              {content.daily_routines && (
+                <section className="pb-3 border-b border-gray-100 print:border-gray-300">
+                  <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">⏰ 일상 루틴</h3>
+                  <div className="text-xs text-gray-700 space-y-1 print:text-[10px]">
+                    <p><span className="font-medium">아침:</span> {content.daily_routines.morning_routine.join(', ')}</p>
+                    <p><span className="font-medium">저녁:</span> {content.daily_routines.evening_routine.join(', ')}</p>
+                    <p className="text-gray-600">{content.daily_routines.explanation}</p>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: 일지(日支) 분석 + 시간대별 십이운성
+                  </p>
+                </section>
+              )}
+
+              {content.digital_communication && (
+                <section className="pb-3 border-b border-gray-100 print:border-gray-300">
+                  <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">📱 디지털 소통</h3>
+                  <div className="text-xs text-gray-700 space-y-1 print:text-[10px]">
+                    <p><span className="font-medium">기기 사용:</span> {content.digital_communication.device_usage.join(', ')}</p>
+                    <p><span className="font-medium">SNS:</span> {content.digital_communication.social_media.join(', ')}</p>
+                    <p className="text-gray-600">{content.digital_communication.explanation}</p>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: 식상(食傷) + 비겁(比劫) 십성 에너지
+                  </p>
+                </section>
+              )}
+
+              {content.hobbies_creativity && (
+                <section className="pb-3 border-b border-gray-100 print:border-gray-300">
+                  <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">🎨 취미/창작</h3>
+                  <div className="text-xs text-gray-700 space-y-1 print:text-[10px]">
+                    <p><span className="font-medium">창작:</span> {content.hobbies_creativity.creative_activities.join(', ')}</p>
+                    <p><span className="font-medium">학습:</span> {content.hobbies_creativity.learning_recommendations.join(', ')}</p>
+                    <p className="text-gray-600">{content.hobbies_creativity.explanation}</p>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: 식상(食傷) 창작력 + 인성(印星) 학습 에너지
+                  </p>
+                </section>
+              )}
+
+              {content.relationships_social && (
+                <section className="pb-3 border-b border-gray-100 print:border-gray-300">
+                  <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">👥 관계/사회</h3>
+                  <div className="text-xs text-gray-700 space-y-1 print:text-[10px]">
+                    <p><span className="font-medium">소통:</span> {content.relationships_social.communication_style.join(', ')}</p>
+                    <p><span className="font-medium">관계 팁:</span> {content.relationships_social.relationship_tips.join(', ')}</p>
+                    <p className="text-gray-600">{content.relationships_social.explanation}</p>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: 비겁(比劫) + 관살(官殺) 십성 상호작용
+                  </p>
+                </section>
+              )}
+
+              {content.seasonal_environment && (
+                <section className="pb-3 border-b border-gray-100 print:border-gray-300">
+                  <h3 className="text-base font-semibold text-gray-800 mb-2 print:text-sm">🌤️ 계절/환경</h3>
+                  <div className="text-xs text-gray-700 space-y-1 print:text-[10px]">
+                    <p><span className="font-medium">날씨:</span> {content.seasonal_environment.weather_adaptation.join(', ')}</p>
+                    <p><span className="font-medium">활동:</span> {content.seasonal_environment.seasonal_activities.join(', ')}</p>
+                    <p className="text-gray-600">{content.seasonal_environment.explanation}</p>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: 월지({dailyContent?.content?.gyeokGuk?.monthBranch}) 계절 오행 + 대운 흐름
+                  </p>
+                </section>
+              )}
+
+              {/* === NLP 섹션 (가장 아래) === */}
+              <div className="pt-4 mt-4 border-t-2 border-gray-300">
+                <h3 className="text-sm font-bold text-purple-700 mb-3 print:text-xs">🧠 마음 설계 (NLP)</h3>
+
+                {/* 앵커링 (상태 전환 트리거) */}
+                <section className="pb-3 border-b border-gray-100 print:border-gray-300 mb-3">
+                  <div className="mb-2">
+                    <h4 className="text-sm font-semibold text-gray-800 inline print:text-xs">앵커링</h4>
+                    <span className="text-xs text-gray-600 ml-2 print:text-[10px]">(원하는 상태를 즉시 불러오는 스위치)</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-2 italic print:text-[10px]">
+                    불안할 때, 긴장될 때 특정 제스처나 문구로 평온한 상태로 전환
+                  </p>
+                  <div className="space-y-1 text-xs text-gray-700 print:text-[10px]">
+                    <p><span className="font-medium">제스처:</span> {content.state_trigger.gesture}</p>
+                    <p><span className="font-medium">문구:</span> {content.state_trigger.phrase}</p>
+                    <p><span className="font-medium">방법:</span> {content.state_trigger.how_to}</p>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: NLP 앵커링 기법 + 오늘의 불안 트리거 감지
+                  </p>
+                </section>
+
+                {/* 리프레이밍 (의미 전환) */}
+                <section className="pb-3 border-b border-gray-100 print:border-gray-300 mb-3">
+                  <div className="mb-2">
+                    <h4 className="text-sm font-semibold text-gray-800 inline print:text-xs">리프레이밍</h4>
+                    <span className="text-xs text-gray-600 ml-2 print:text-[10px]">(같은 상황을 다르게 해석하기)</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-2 italic print:text-[10px]">
+                    부정적 상황을 긍정적 의미로 재해석하여 감정 전환
+                  </p>
+                  <p className="text-xs text-gray-700 whitespace-pre-line leading-relaxed print:text-[10px]">{content.meaning_shift}</p>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: NLP 리프레이밍 + 용신/기신 관점 전환
+                  </p>
+                </section>
+
+                {/* 메타 질문 (리듬 질문) */}
+                <section>
+                  <div className="mb-2">
+                    <h4 className="text-sm font-semibold text-gray-800 inline print:text-xs">메타 질문</h4>
+                    <span className="text-xs text-gray-600 ml-2 print:text-[10px]">(생각의 관점을 바꾸는 질문)</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-2 italic print:text-[10px]">
+                    자동 반응에서 벗어나 새로운 선택지를 발견하도록 유도
+                  </p>
+                  <p className="text-xs text-gray-700 italic print:text-[10px]">{content.rhythm_question}</p>
+                  <p className="text-[10px] text-gray-400 mt-1 print:hidden">
+                    📐 기반: NLP 메타모델 질문 + 오늘의 핵심 십성 과제
+                  </p>
+                </section>
+              </div>
               </div>
             </div>
           </div>
@@ -396,7 +560,12 @@ export default function TodayPage() {
               <div className="p-6 space-y-4 print:p-4 print:space-y-3">
                 {/* 시간대별 그리드 (30분 단위) */}
                 <div className="print:mb-4">
-                  <TimeGrid schedule={logForm.schedule} height="full" />
+                  <TimeGrid
+                    schedule={logForm.schedule}
+                    height="full"
+                    goodTime={content.time_direction.good_time}
+                    avoidTime={content.time_direction.avoid_time}
+                  />
                 </div>
 
                 {/* 기분/에너지 (인쇄 시 간소화) */}

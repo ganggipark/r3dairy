@@ -108,7 +108,7 @@ export interface StateTrigger {
 }
 
 export interface DailyContent {
-  date: string
+date: string
   summary: string
   keywords: string[]
   rhythm_description: string
@@ -118,12 +118,26 @@ export interface DailyContent {
   state_trigger: StateTrigger
   meaning_shift: string
   rhythm_question: string
+  // Extended content blocks (optional)
+  saju_summary?: string
+  sinsal_influence?: string
+  direction_detail?: string
+  palace_insight?: string
+  yongsin_utilization?: string
+  daewoon_entry?: string
+  sewon_summary?: string
 }
 
 export interface DailyContentResponse {
   date: string
   role: Role | null
   content: DailyContent
+}
+
+export interface DailyMarkdownResponse {
+  date: string
+  role: Role | null
+  markdown: string
 }
 
 export interface MonthlyContentResponse {

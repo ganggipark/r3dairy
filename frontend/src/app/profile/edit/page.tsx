@@ -40,15 +40,26 @@ export default function ProfilePage() {
 
       try {
         const profile = await api.profile.get(token)
-        // 프로필이 이미 있으면 today 페이지로 리다이렉트
-        router.push('/today')
+        setExistingProfile(profile)
+        setIsEditMode(true)
+        setFormData({
+          name: profile.name,
+          birth_date: profile.birth_date,
+          birth_time: profile.birth_time,
+          gender: profile.gender,
+          birth_place: profile.birth_place,
+          roles: profile.roles,
+          preferences: profile.preferences || {}
+        })
       } catch (err: any) {
-        // 프로필이 없으면 신규 생성 모드
+        // 프로필이 없으면 프로필 생성 페이지로
         if (err.status === 404) {
-          setIsEditMode(false)
+          router.push('/profile')
+          return
         } else {
           setError('프로필을 불러오는 데 실패했습니다')
         }
+      } finally {
         setIsLoading(false)
       }
     }
