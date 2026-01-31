@@ -1,3 +1,4 @@
+"use strict";
 /**
  * 음양력 변환 모듈
  *
@@ -7,15 +8,26 @@
  * @author SajuApp
  * @version 1.0.0
  */
-import KoreanLunarCalendar from 'korean-lunar-calendar';
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SOLAR_TERMS = void 0;
+exports.solarToLunar = solarToLunar;
+exports.lunarToSolar = lunarToSolar;
+exports.formatLunarDate = formatLunarDate;
+exports.getSolarTerm = getSolarTerm;
+exports.getSpecialLunarDay = getSpecialLunarDay;
+exports.getLunarMonthName = getLunarMonthName;
+const korean_lunar_calendar_1 = __importDefault(require("korean-lunar-calendar"));
 /**
  * 양력 날짜를 음력으로 변환
  * @param date 양력 Date 객체
  * @returns 음력 날짜 정보
  */
-export function solarToLunar(date) {
+function solarToLunar(date) {
     try {
-        const calendar = new KoreanLunarCalendar();
+        const calendar = new korean_lunar_calendar_1.default();
         calendar.setSolarDate(date.getFullYear(), date.getMonth() + 1, date.getDate());
         const lunar = calendar.lunarCalendar;
         return {
@@ -43,9 +55,9 @@ export function solarToLunar(date) {
  * @param isLeapMonth 윤달 여부
  * @returns 양력 Date 객체
  */
-export function lunarToSolar(year, month, day, isLeapMonth = false) {
+function lunarToSolar(year, month, day, isLeapMonth = false) {
     try {
-        const calendar = new KoreanLunarCalendar();
+        const calendar = new korean_lunar_calendar_1.default();
         calendar.setLunarDate(year, month, day, isLeapMonth);
         const solar = calendar.solarCalendar;
         return new Date(solar.year || year, (solar.month || month) - 1, solar.day || day);
@@ -58,7 +70,7 @@ export function lunarToSolar(year, month, day, isLeapMonth = false) {
 /**
  * 음력 날짜를 포맷팅된 문자열로 반환
  */
-export function formatLunarDate(date, includeYear = false) {
+function formatLunarDate(date, includeYear = false) {
     const lunar = solarToLunar(date);
     if (includeYear) {
         return `음 ${lunar.year}.${lunar.month}.${lunar.day}${lunar.isLeapMonth ? '(윤)' : ''}`;
@@ -68,7 +80,7 @@ export function formatLunarDate(date, includeYear = false) {
 /**
  * 24절기 데이터 (양력 기준 근사값)
  */
-export const SOLAR_TERMS = {
+exports.SOLAR_TERMS = {
     '입춘': { month: 2, day: 4 },
     '우수': { month: 2, day: 19 },
     '경칩': { month: 3, day: 6 },
@@ -97,10 +109,10 @@ export const SOLAR_TERMS = {
 /**
  * 24절기인지 확인
  */
-export function getSolarTerm(date) {
+function getSolarTerm(date) {
     const month = date.getMonth() + 1;
     const day = date.getDate();
-    for (const [term, termDate] of Object.entries(SOLAR_TERMS)) {
+    for (const [term, termDate] of Object.entries(exports.SOLAR_TERMS)) {
         if (termDate.month === month && termDate.day === day) {
             return term;
         }
@@ -110,7 +122,7 @@ export function getSolarTerm(date) {
 /**
  * 특별한 음력 날짜인지 확인 (명절)
  */
-export function getSpecialLunarDay(date) {
+function getSpecialLunarDay(date) {
     const solarTerm = getSolarTerm(date);
     if (solarTerm)
         return solarTerm;
@@ -134,7 +146,7 @@ export function getSpecialLunarDay(date) {
 /**
  * 음력 월의 한글 이름 반환
  */
-export function getLunarMonthName(month) {
+function getLunarMonthName(month) {
     const monthNames = [
         '정월', '이월', '삼월', '사월', '오월', '유월',
         '칠월', '팔월', '구월', '시월', '동월', '섣달',

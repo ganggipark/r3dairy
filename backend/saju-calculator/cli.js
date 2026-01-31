@@ -24,7 +24,7 @@ process.stdin.on('end', async () => {
     const input = JSON.parse(inputData);
 
     // 필수 필드 검증
-    if (!input.year || !input.month || !input.day || !input.hour || !input.gender) {
+    if (input.year == null || input.month == null || input.day == null || input.hour == null || !input.gender) {
       throw new Error('필수 필드 누락: year, month, day, hour, gender');
     }
 

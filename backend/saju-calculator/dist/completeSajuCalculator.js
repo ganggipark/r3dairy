@@ -1,3 +1,4 @@
+"use strict";
 /**
  * 완전한 사주 데이터 계산기
  *
@@ -6,9 +7,11 @@
  * @author SajuApp
  * @version 2.0.0
  */
-import { getExactSolarMonth } from './solarTermsCalculator.js';
-import { lunarToSolar } from './lunarCalendar.js';
-import { applyTrueSolarTimeByCity } from './trueSolarTimeCalculator.js';
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.calculateCompleteSajuData = calculateCompleteSajuData;
+const solarTermsCalculator_1 = require("./solarTermsCalculator");
+const lunarCalendar_1 = require("./lunarCalendar");
+const trueSolarTimeCalculator_1 = require("./trueSolarTimeCalculator");
 // ============================================================
 // 상수 정의
 // ============================================================
@@ -88,7 +91,7 @@ const DAY_MASTER_PERSONALITY = {
 // ============================================================
 // 메인 계산 함수
 // ============================================================
-export function calculateCompleteSajuData(input) {
+function calculateCompleteSajuData(input) {
     const { year, month, day, hour, minute = 0, gender, isLunar = false, isLeapMonth = false, useTrueSolarTime = true, birthPlace = '서울' } = input;
     const fourPillars = calculateFourPillars(year, month, day, hour, minute, isLunar, isLeapMonth, useTrueSolarTime, birthPlace);
     const ohHaeng = analyzeOhHaeng(fourPillars);
@@ -127,14 +130,14 @@ export function calculateCompleteSajuData(input) {
 function calculateFourPillars(year, month, day, hour, minute, isLunar, isLeapMonth, useTrueSolarTime, birthPlace) {
     let solarYear = year, solarMonth = month, solarDay = day;
     if (isLunar) {
-        const solarDate = lunarToSolar(year, month, day, isLeapMonth);
+        const solarDate = (0, lunarCalendar_1.lunarToSolar)(year, month, day, isLeapMonth);
         solarYear = solarDate.getFullYear();
         solarMonth = solarDate.getMonth() + 1;
         solarDay = solarDate.getDate();
     }
     let adjustedHour = hour;
     if (useTrueSolarTime) {
-        const trueSolarResult = applyTrueSolarTimeByCity(hour, minute, birthPlace);
+        const trueSolarResult = (0, trueSolarTimeCalculator_1.applyTrueSolarTimeByCity)(hour, minute, birthPlace);
         adjustedHour = trueSolarResult.adjustedHour;
     }
     let adjustedYear = solarYear;
@@ -145,7 +148,7 @@ function calculateFourPillars(year, month, day, hour, minute, isLunar, isLeapMon
     const yearJiIndex = ((adjustedYear - 4) % 12 + 12) % 12;
     const yearGan = CHEON_GAN[yearGanIndex];
     const yearJi = JI_JI[yearJiIndex];
-    const solarMonthIndex = getExactSolarMonth(solarYear, solarMonth, solarDay, hour, minute);
+    const solarMonthIndex = (0, solarTermsCalculator_1.getExactSolarMonth)(solarYear, solarMonth, solarDay, hour, minute);
     const monthJiIndex = (solarMonthIndex + 1) % 12;
     const monthJi = JI_JI[monthJiIndex];
     const monthGanBase = ((yearGanIndex % 5) * 2 + 2) % 10;
@@ -526,6 +529,4 @@ function createLegacyFields(fourPillars, ohHaeng, sipSung) {
         },
     };
 }
-// Export
-export { calculateFourPillars, analyzeOhHaeng, analyzeSipSung, analyzeGyeokGuk, analyzeYongSin };
 //# sourceMappingURL=completeSajuCalculator.js.map

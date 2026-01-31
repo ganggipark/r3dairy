@@ -1,3 +1,4 @@
+"use strict";
 /**
  * 정확한 절기(節氣) 계산 시스템
  *
@@ -9,10 +10,18 @@
  * @author SajuApp
  * @version 2.0.0
  */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SOLAR_TERMS_DATA = exports.TERM_TO_SOLAR_MONTH = exports.MONTH_START_TERMS = exports.SOLAR_TERM_NAMES = void 0;
+exports.getSolarTermsForYear = getSolarTermsForYear;
+exports.getSolarTermByDate = getSolarTermByDate;
+exports.getExactSolarMonth = getExactSolarMonth;
+exports.getDaysToNextSolarTerm = getDaysToNextSolarTerm;
+exports.getDaysToPrevSolarTerm = getDaysToPrevSolarTerm;
+exports.calculateDaewoonStartFromSolarTerms = calculateDaewoonStartFromSolarTerms;
 // ============================================================
 // 24절기 정의
 // ============================================================
-export const SOLAR_TERM_NAMES = [
+exports.SOLAR_TERM_NAMES = [
     '소한', '대한',
     '입춘', '우수',
     '경칩', '춘분',
@@ -26,7 +35,7 @@ export const SOLAR_TERM_NAMES = [
     '입동', '소설',
     '대설', '동지',
 ];
-export const MONTH_START_TERMS = {
+exports.MONTH_START_TERMS = {
     1: '입춘',
     2: '경칩',
     3: '청명',
@@ -40,7 +49,7 @@ export const MONTH_START_TERMS = {
     11: '대설',
     12: '소한',
 };
-export const TERM_TO_SOLAR_MONTH = {
+exports.TERM_TO_SOLAR_MONTH = {
     '소한': 12, '대한': 12,
     '입춘': 1, '우수': 1,
     '경칩': 2, '춘분': 2,
@@ -135,7 +144,7 @@ const SOLAR_TERMS_2026 = [
     { year: 2026, term: '대설', date: '2026-12-07', time: '11:52', month: 12, day: 7, solarMonth: 11 },
     { year: 2026, term: '동지', date: '2026-12-22', time: '05:50', month: 12, day: 22, solarMonth: 11 },
 ];
-export const SOLAR_TERMS_DATA = {
+exports.SOLAR_TERMS_DATA = {
     2024: SOLAR_TERMS_2024,
     2025: SOLAR_TERMS_2025,
     2026: SOLAR_TERMS_2026,
@@ -171,24 +180,24 @@ function termToMinutes(term) {
 // ============================================================
 // 공개 API
 // ============================================================
-export function getSolarTermsForYear(year) {
-    return SOLAR_TERMS_DATA[year] || [];
+function getSolarTermsForYear(year) {
+    return exports.SOLAR_TERMS_DATA[year] || [];
 }
-export function getSolarTermByDate(year, month, day) {
-    const terms = SOLAR_TERMS_DATA[year];
+function getSolarTermByDate(year, month, day) {
+    const terms = exports.SOLAR_TERMS_DATA[year];
     if (!terms)
         return null;
     return terms.find(t => t.month === month && t.day === day) || null;
 }
-export function getExactSolarMonth(year, month, day, hour, minute) {
-    const currentYearTerms = SOLAR_TERMS_DATA[year] || [];
-    const prevYearTerms = SOLAR_TERMS_DATA[year - 1] || [];
-    const nextYearTerms = SOLAR_TERMS_DATA[year + 1] || [];
+function getExactSolarMonth(year, month, day, hour, minute) {
+    const currentYearTerms = exports.SOLAR_TERMS_DATA[year] || [];
+    const prevYearTerms = exports.SOLAR_TERMS_DATA[year - 1] || [];
+    const nextYearTerms = exports.SOLAR_TERMS_DATA[year + 1] || [];
     if (currentYearTerms.length === 0 && prevYearTerms.length === 0 && nextYearTerms.length === 0) {
         return getApproximateSolarMonth(month, day);
     }
     const targetMinutes = dateTimeToMinutes(year, month, day, hour, minute);
-    const monthStartTermNames = Object.values(MONTH_START_TERMS);
+    const monthStartTermNames = Object.values(exports.MONTH_START_TERMS);
     const allTerms = [
         ...prevYearTerms.filter(t => monthStartTermNames.includes(t.term)),
         ...currentYearTerms.filter(t => monthStartTermNames.includes(t.term)),
@@ -197,7 +206,7 @@ export function getExactSolarMonth(year, month, day, hour, minute) {
     for (let i = allTerms.length - 1; i >= 0; i--) {
         const termMinutes = termToMinutes(allTerms[i]);
         if (targetMinutes >= termMinutes) {
-            return TERM_TO_SOLAR_MONTH[allTerms[i].term];
+            return exports.TERM_TO_SOLAR_MONTH[allTerms[i].term];
         }
     }
     return getApproximateSolarMonth(month, day);
@@ -209,11 +218,11 @@ function minutesToDaysHoursMinutes(totalMinutes) {
     const minutes = remainingMinutes % 60;
     return { days, hours, minutes, totalMinutes };
 }
-export function getDaysToNextSolarTerm(year, month, day, hour, minute) {
+function getDaysToNextSolarTerm(year, month, day, hour, minute) {
     const targetMinutes = dateTimeToMinutes(year, month, day, hour, minute);
-    const monthStartTermNames = Object.values(MONTH_START_TERMS);
-    const currentYearTerms = SOLAR_TERMS_DATA[year] || [];
-    const nextYearTerms = SOLAR_TERMS_DATA[year + 1] || [];
+    const monthStartTermNames = Object.values(exports.MONTH_START_TERMS);
+    const currentYearTerms = exports.SOLAR_TERMS_DATA[year] || [];
+    const nextYearTerms = exports.SOLAR_TERMS_DATA[year + 1] || [];
     const allTerms = [
         ...currentYearTerms.filter(t => monthStartTermNames.includes(t.term)),
         ...nextYearTerms.filter(t => monthStartTermNames.includes(t.term)),
@@ -227,11 +236,11 @@ export function getDaysToNextSolarTerm(year, month, day, hour, minute) {
     }
     return { days: 0, hours: 0, minutes: 0, totalMinutes: 0 };
 }
-export function getDaysToPrevSolarTerm(year, month, day, hour, minute) {
+function getDaysToPrevSolarTerm(year, month, day, hour, minute) {
     const targetMinutes = dateTimeToMinutes(year, month, day, hour, minute);
-    const monthStartTermNames = Object.values(MONTH_START_TERMS);
-    const prevYearTerms = SOLAR_TERMS_DATA[year - 1] || [];
-    const currentYearTerms = SOLAR_TERMS_DATA[year] || [];
+    const monthStartTermNames = Object.values(exports.MONTH_START_TERMS);
+    const prevYearTerms = exports.SOLAR_TERMS_DATA[year - 1] || [];
+    const currentYearTerms = exports.SOLAR_TERMS_DATA[year] || [];
     const allTerms = [
         ...prevYearTerms.filter(t => monthStartTermNames.includes(t.term)),
         ...currentYearTerms.filter(t => monthStartTermNames.includes(t.term)),
@@ -245,7 +254,7 @@ export function getDaysToPrevSolarTerm(year, month, day, hour, minute) {
     }
     return { days: 0, hours: 0, minutes: 0, totalMinutes: 0 };
 }
-export function calculateDaewoonStartFromSolarTerms(birthYear, birthMonth, birthDay, birthHour, birthMinute, isForward) {
+function calculateDaewoonStartFromSolarTerms(birthYear, birthMonth, birthDay, birthHour, birthMinute, isForward) {
     let daysInfo;
     if (isForward) {
         daysInfo = getDaysToNextSolarTerm(birthYear, birthMonth, birthDay, birthHour, birthMinute);

@@ -1,3 +1,4 @@
+"use strict";
 /**
  * 진태양시(真太陽時) 계산 모듈
  *
@@ -12,13 +13,22 @@
  * @author SajuApp
  * @version 1.0.0
  */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MAJOR_CITIES = exports.KST_STANDARD_LONGITUDE = void 0;
+exports.calculateTrueSolarTimeCorrection = calculateTrueSolarTimeCorrection;
+exports.applyTrueSolarTime = applyTrueSolarTime;
+exports.applyTrueSolarTimeByCity = applyTrueSolarTimeByCity;
+exports.getTrueSolarTimeCorrectionByCity = getTrueSolarTimeCorrectionByCity;
+exports.getAvailableCities = getAvailableCities;
+exports.getCityInfo = getCityInfo;
+exports.getTrueSolarTimeDescription = getTrueSolarTimeDescription;
 // ============================================================
 // 상수 정의
 // ============================================================
 /** 한국 표준시 기준 경도 (동경 135도) */
-export const KST_STANDARD_LONGITUDE = 135.0;
+exports.KST_STANDARD_LONGITUDE = 135.0;
 /** 주요 도시 경도 데이터 */
-export const MAJOR_CITIES = {
+exports.MAJOR_CITIES = {
     // 대한민국
     서울: { name: '서울', longitude: 126.9780, latitude: 37.5665 },
     부산: { name: '부산', longitude: 129.0756, latitude: 35.1796 },
@@ -50,8 +60,8 @@ export const MAJOR_CITIES = {
  * calculateTrueSolarTimeCorrection(126.978); // 서울 → -32.088분
  * calculateTrueSolarTimeCorrection(129.076); // 부산 → -23.696분
  */
-export function calculateTrueSolarTimeCorrection(longitude) {
-    const correction = (longitude - KST_STANDARD_LONGITUDE) * 4;
+function calculateTrueSolarTimeCorrection(longitude) {
+    const correction = (longitude - exports.KST_STANDARD_LONGITUDE) * 4;
     return correction;
 }
 /**
@@ -63,7 +73,7 @@ export function calculateTrueSolarTimeCorrection(longitude) {
  * @param locationName 지역명 (선택)
  * @returns 보정된 시간 정보
  */
-export function applyTrueSolarTime(hour, minute, longitude, locationName = '사용자 지정') {
+function applyTrueSolarTime(hour, minute, longitude, locationName = '사용자 지정') {
     const correctionMinutes = calculateTrueSolarTimeCorrection(longitude);
     let totalMinutes = hour * 60 + minute + correctionMinutes;
     while (totalMinutes < 0) {
@@ -90,33 +100,33 @@ export function applyTrueSolarTime(hour, minute, longitude, locationName = '사�
  * @param cityName 도시명 (예: '서울', '부산', '평양')
  * @returns 보정된 시간 정보
  */
-export function applyTrueSolarTimeByCity(hour, minute, cityName) {
-    const city = MAJOR_CITIES[cityName] || MAJOR_CITIES['기본'];
+function applyTrueSolarTimeByCity(hour, minute, cityName) {
+    const city = exports.MAJOR_CITIES[cityName] || exports.MAJOR_CITIES['기본'];
     return applyTrueSolarTime(hour, minute, city.longitude, city.name);
 }
 /**
  * 진태양시 보정량만 계산 (도시명으로)
  */
-export function getTrueSolarTimeCorrectionByCity(cityName) {
-    const city = MAJOR_CITIES[cityName] || MAJOR_CITIES['기본'];
+function getTrueSolarTimeCorrectionByCity(cityName) {
+    const city = exports.MAJOR_CITIES[cityName] || exports.MAJOR_CITIES['기본'];
     return calculateTrueSolarTimeCorrection(city.longitude);
 }
 /**
  * 도시 목록 조회
  */
-export function getAvailableCities() {
-    return Object.keys(MAJOR_CITIES).filter(city => city !== '기본');
+function getAvailableCities() {
+    return Object.keys(exports.MAJOR_CITIES).filter(city => city !== '기본');
 }
 /**
  * 도시 정보 조회
  */
-export function getCityInfo(cityName) {
-    return MAJOR_CITIES[cityName] || MAJOR_CITIES['기본'];
+function getCityInfo(cityName) {
+    return exports.MAJOR_CITIES[cityName] || exports.MAJOR_CITIES['기본'];
 }
 /**
  * 진태양시 보정 설명 텍스트 생성
  */
-export function getTrueSolarTimeDescription(cityName) {
+function getTrueSolarTimeDescription(cityName) {
     const city = getCityInfo(cityName);
     const correction = calculateTrueSolarTimeCorrection(city.longitude);
     const absCorrection = Math.abs(correction);

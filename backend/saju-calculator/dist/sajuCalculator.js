@@ -1,3 +1,4 @@
+"use strict";
 /**
  * 사주 계산 모듈 (만세력)
  *
@@ -10,20 +11,28 @@
  * @author SajuApp
  * @version 1.0.0
  */
-import { lunarToSolar } from './lunarCalendar.js';
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SIXTY_CYCLE = exports.EARTHLY_BRANCHES = exports.HEAVENLY_STEMS = void 0;
+exports.calculateDayPillar = calculateDayPillar;
+exports.calculateFourPillars = calculateFourPillars;
+exports.formatFourPillars = formatFourPillars;
+exports.calculateFiveElements = calculateFiveElements;
+exports.getDayMaster = getDayMaster;
+exports.getZodiac = getZodiac;
+const lunarCalendar_1 = require("./lunarCalendar");
 // ============================================================
 // 상수 정의
 // ============================================================
 /** 천간(天干) - 10개 */
-export const HEAVENLY_STEMS = [
+exports.HEAVENLY_STEMS = [
     '갑', '을', '병', '정', '무', '기', '경', '신', '임', '계',
 ];
 /** 지지(地支) - 12개 */
-export const EARTHLY_BRANCHES = [
+exports.EARTHLY_BRANCHES = [
     '자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해',
 ];
 /** 60갑자 순환표 */
-export const SIXTY_CYCLE = [
+exports.SIXTY_CYCLE = [
     '갑자', '을축', '병인', '정묘', '무진', '기사', '경오', '신미', '임신', '계유',
     '갑술', '을해', '병자', '정축', '무인', '기묘', '경진', '신사', '임오', '계미',
     '갑신', '을유', '병술', '정해', '무자', '기축', '경인', '신묘', '임진', '계사',
@@ -97,7 +106,7 @@ function calculateYearPillar(year, month, day) {
     if (cycleIndex < 0) {
         cycleIndex += 60;
     }
-    const combined = SIXTY_CYCLE[cycleIndex];
+    const combined = exports.SIXTY_CYCLE[cycleIndex];
     return {
         heavenly: combined[0],
         earthly: combined[1],
@@ -160,7 +169,7 @@ function calculateMonthPillar(year, month, day) {
  * 일주 계산
  * 기준일: 1900년 1월 1일 = 갑술(甲戌, index 10)
  */
-export function calculateDayPillar(year, month, day) {
+function calculateDayPillar(year, month, day) {
     const baseDate = Date.UTC(1900, 0, 1);
     const targetDate = Date.UTC(year, month - 1, day);
     const dayDiff = Math.floor((targetDate - baseDate) / (1000 * 60 * 60 * 24));
@@ -168,7 +177,7 @@ export function calculateDayPillar(year, month, day) {
     if (cycleIndex < 0) {
         cycleIndex += 60;
     }
-    const combined = SIXTY_CYCLE[cycleIndex];
+    const combined = exports.SIXTY_CYCLE[cycleIndex];
     return {
         heavenly: combined[0],
         earthly: combined[1],
@@ -233,11 +242,11 @@ function calculateHourPillar(year, month, day, hour, minute = 0) {
 /**
  * 사주팔자 계산 (메인 함수)
  */
-export function calculateFourPillars(birthInfo, useTrueSolarTime = true, birthPlace = '서울') {
+function calculateFourPillars(birthInfo, useTrueSolarTime = true, birthPlace = '서울') {
     let { year, month, day, hour, minute = 0 } = birthInfo;
     if (birthInfo.isLunar) {
         try {
-            const solarDate = lunarToSolar(year, month, day, birthInfo.isLeapMonth || false);
+            const solarDate = (0, lunarCalendar_1.lunarToSolar)(year, month, day, birthInfo.isLeapMonth || false);
             year = solarDate.getFullYear();
             month = solarDate.getMonth() + 1;
             day = solarDate.getDate();
@@ -263,13 +272,13 @@ export function calculateFourPillars(birthInfo, useTrueSolarTime = true, birthPl
 /**
  * 사주 결과를 문자열로 포맷팅
  */
-export function formatFourPillars(pillars) {
+function formatFourPillars(pillars) {
     return `${pillars.year.combined}년 ${pillars.month.combined}월 ${pillars.day.combined}일 ${pillars.hour.combined}시`;
 }
 /**
  * 오행 균형 계산
  */
-export function calculateFiveElements(pillars) {
+function calculateFiveElements(pillars) {
     const elements = { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 };
     const elementMap = {
         '갑': 'wood', '을': 'wood', '인': 'wood', '묘': 'wood',
@@ -295,13 +304,13 @@ export function calculateFiveElements(pillars) {
 /**
  * 일간(日干) 추출
  */
-export function getDayMaster(pillars) {
+function getDayMaster(pillars) {
     return pillars.day.heavenly;
 }
 /**
  * 띠(12지신) 반환
  */
-export function getZodiac(year) {
+function getZodiac(year) {
     const zodiacNames = [
         '쥐', '소', '호랑이', '토끼', '용', '뱀',
         '말', '양', '원숭이', '닭', '개', '돼지'

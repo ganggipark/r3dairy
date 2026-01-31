@@ -2,21 +2,43 @@
  * 완전한 사주 데이터 계산기
  *
  * 모든 사주 분석 데이터를 한 번에 계산하여 CompleteSajuData 구조로 반환
+ * Customer.saju_data에 저장될 데이터를 생성
  *
- * @author SajuApp
+ * @author Claude Code
  * @version 2.0.0
+ * @updated 2026-01-12 - 정확한 절기월 계산 적용, 윤달 파라미터 지원
  */
 
 import type {
-  CompleteSajuData, CheonGan, JiJi, OhHaeng, Gender,
-  SajuPillar, FourPillars, OhHaengBalance, OhHaengAnalysis,
-  SipSungBalance, SipSungDetail, SipSungAnalysis,
-  GyeokGukAnalysis, YongSinAnalysis, DaewoonItem, DaewoonAnalysis,
-  SewoonItem, SinsalAnalysis, PillarRelations, PersonalityAnalysis,
-} from './types';
+  CompleteSajuData,
+  CheonGan,
+  JiJi,
+  OhHaeng,
+  Gender,
+  SajuPillar,
+  FourPillars,
+  OhHaengBalance,
+  OhHaengAnalysis,
+  SipSungBalance,
+  SipSungDetail,
+  SipSungAnalysis,
+  GyeokGukAnalysis,
+  YongSinAnalysis,
+  DaewoonItem,
+  DaewoonAnalysis,
+  SewoonItem,
+  SinsalAnalysis,
+  PillarRelations,
+  PersonalityAnalysis,
+} from '../types/completeSajuData';
 import { getExactSolarMonth } from './solarTermsCalculator';
 import { lunarToSolar } from './lunarCalendar';
 import { applyTrueSolarTimeByCity } from './trueSolarTimeCalculator';
+import { calculateBodyStrength } from './saju/bodyStrength';
+import { calculateDaeunStartAge } from './saju/daewoonAnalysis/daeunStartAge';
+import { analyzeYongSinGiSin } from './saju/yongSinGiSin';
+import { analyzeAllSinsal } from './saju/sinsal';
+import { determineGeukGuk } from './saju/geukGuk';
 
 // ============================================================
 // 상수 정의
@@ -25,24 +47,30 @@ import { applyTrueSolarTimeByCity } from './trueSolarTimeCalculator';
 const CHEON_GAN: CheonGan[] = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
 const JI_JI: JiJi[] = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
 
+// 60갑자 배열 (일주 계산용)
 const SIXTY_CYCLE: string[] = [
-  '갑자', '을축', '병인', '정묘', '무진', '기사', '경오', '신미', '임신', '계유',
-  '갑술', '을해', '병자', '정축', '무인', '기묘', '경진', '신사', '임오', '계미',
-  '갑신', '을유', '병술', '정해', '무자', '기축', '경인', '신묘', '임진', '계사',
-  '갑오', '을미', '병신', '정유', '무술', '기해', '경자', '신축', '임인', '계묘',
-  '갑진', '을사', '병오', '정미', '무신', '기유', '경술', '신해', '임자', '계축',
-  '갑인', '을묘', '병진', '정사', '무오', '기미', '경신', '신유', '임술', '계해',
+  '갑자', '을축', '병인', '정묘', '무진', '기사', '경오', '신미', '임신', '계유', // 0-9
+  '갑술', '을해', '병자', '정축', '무인', '기묘', '경진', '신사', '임오', '계미', // 10-19
+  '갑신', '을유', '병술', '정해', '무자', '기축', '경인', '신묘', '임진', '계사', // 20-29
+  '갑오', '을미', '병신', '정유', '무술', '기해', '경자', '신축', '임인', '계묘', // 30-39
+  '갑진', '을사', '병오', '정미', '무신', '기유', '경술', '신해', '임자', '계축', // 40-49
+  '갑인', '을묘', '병진', '정사', '무오', '기미', '경신', '신유', '임술', '계해', // 50-59
 ];
 
 const CHEON_GAN_OH_HAENG: Record<CheonGan, OhHaeng> = {
-  '갑': '목', '을': '목', '병': '화', '정': '화', '무': '토',
-  '기': '토', '경': '금', '신': '금', '임': '수', '계': '수',
+  '갑': '목', '을': '목',
+  '병': '화', '정': '화',
+  '무': '토', '기': '토',
+  '경': '금', '신': '금',
+  '임': '수', '계': '수',
 };
 
 const JI_JI_OH_HAENG: Record<JiJi, OhHaeng> = {
-  '인': '목', '묘': '목', '사': '화', '오': '화',
+  '인': '목', '묘': '목',
+  '사': '화', '오': '화',
   '진': '토', '술': '토', '축': '토', '미': '토',
-  '신': '금', '유': '금', '해': '수', '자': '수',
+  '신': '금', '유': '금',
+  '해': '수', '자': '수',
 };
 
 const JI_JI_ANIMAL: Record<JiJi, string> = {
@@ -58,6 +86,7 @@ const JI_JI_SEASON: Record<JiJi, '봄' | '여름' | '가을' | '겨울'> = {
   '해': '겨울', '자': '겨울', '축': '겨울',
 };
 
+// 십성 관계 테이블 (일간 기준)
 const TEN_GODS_RELATIONS: Record<CheonGan, Record<CheonGan, keyof SipSungDetail>> = {
   '갑': { '갑': '비견', '을': '겁재', '병': '식신', '정': '상관', '무': '편재', '기': '정재', '경': '편관', '신': '정관', '임': '편인', '계': '정인' },
   '을': { '을': '비견', '갑': '겁재', '정': '식신', '병': '상관', '기': '편재', '무': '정재', '신': '편관', '경': '정관', '계': '편인', '임': '정인' },
@@ -71,29 +100,52 @@ const TEN_GODS_RELATIONS: Record<CheonGan, Record<CheonGan, keyof SipSungDetail>
   '계': { '계': '비견', '임': '겁재', '을': '식신', '갑': '상관', '정': '편재', '병': '정재', '기': '편관', '무': '정관', '신': '편인', '경': '정인' },
 };
 
+// 장간 (지지에 숨은 천간)
 const HIDDEN_STEMS: Record<JiJi, CheonGan[]> = {
-  '자': ['계'], '축': ['기', '계', '신'], '인': ['갑', '병', '무'], '묘': ['을'],
-  '진': ['무', '을', '계'], '사': ['병', '무', '경'], '오': ['정', '기'], '미': ['기', '정', '을'],
-  '신': ['경', '임', '무'], '유': ['신'], '술': ['무', '신', '정'], '해': ['임', '갑'],
+  '자': ['계'],
+  '축': ['기', '계', '신'],
+  '인': ['갑', '병', '무'],
+  '묘': ['을'],
+  '진': ['무', '을', '계'],
+  '사': ['병', '무', '경'],
+  '오': ['정', '기'],
+  '미': ['기', '정', '을'],
+  '신': ['경', '임', '무'],
+  '유': ['신'],
+  '술': ['무', '신', '정'],
+  '해': ['임', '갑'],
 };
 
+// 지지 충
 const JI_JI_CHUNG: Record<JiJi, JiJi> = {
-  '자': '오', '오': '자', '축': '미', '미': '축',
-  '인': '신', '신': '인', '묘': '유', '유': '묘',
-  '진': '술', '술': '진', '사': '해', '해': '사',
+  '자': '오', '오': '자',
+  '축': '미', '미': '축',
+  '인': '신', '신': '인',
+  '묘': '유', '유': '묘',
+  '진': '술', '술': '진',
+  '사': '해', '해': '사',
 };
 
+// 지지 육합
 const JI_JI_YUK_HAP: Record<JiJi, JiJi> = {
-  '자': '축', '축': '자', '인': '해', '해': '인',
-  '묘': '술', '술': '묘', '진': '유', '유': '진',
-  '사': '신', '신': '사', '오': '미', '미': '오',
+  '자': '축', '축': '자',
+  '인': '해', '해': '인',
+  '묘': '술', '술': '묘',
+  '진': '유', '유': '진',
+  '사': '신', '신': '사',
+  '오': '미', '미': '오',
 };
 
+// 천간 합
 const CHEON_GAN_HAP: Record<CheonGan, CheonGan> = {
-  '갑': '기', '기': '갑', '을': '경', '경': '을',
-  '병': '신', '신': '병', '정': '임', '임': '정', '무': '계', '계': '무',
+  '갑': '기', '기': '갑',
+  '을': '경', '경': '을',
+  '병': '신', '신': '병',
+  '정': '임', '임': '정',
+  '무': '계', '계': '무',
 };
 
+// 일간별 성격
 const DAY_MASTER_PERSONALITY: Record<CheonGan, { keyword: string; strengths: string[]; weaknesses: string[]; advice: string }> = {
   '갑': { keyword: '큰 나무, 리더', strengths: ['리더십', '추진력', '정의감'], weaknesses: ['고집', '융통성 부족'], advice: '유연함을 기르세요' },
   '을': { keyword: '작은 풀, 적응력', strengths: ['유연함', '적응력', '섬세함'], weaknesses: ['우유부단', '의존적'], advice: '결단력을 키우세요' },
@@ -119,9 +171,9 @@ export interface SajuCalculationInput {
   minute?: number;
   gender: Gender;
   isLunar?: boolean;
-  isLeapMonth?: boolean;
-  useTrueSolarTime?: boolean;
-  birthPlace?: string;
+  isLeapMonth?: boolean; // 윤달 여부 (음력일 때만)
+  useTrueSolarTime?: boolean; // 진태양시 보정 적용 여부
+  birthPlace?: string; // 출생 지역 (기본값: '서울')
 }
 
 // ============================================================
@@ -131,35 +183,67 @@ export interface SajuCalculationInput {
 export function calculateCompleteSajuData(input: SajuCalculationInput): CompleteSajuData {
   const { year, month, day, hour, minute = 0, gender, isLunar = false, isLeapMonth = false, useTrueSolarTime = true, birthPlace = '서울' } = input;
 
+  // 1. 사주 팔자 계산
   const fourPillars = calculateFourPillars(year, month, day, hour, minute, isLunar, isLeapMonth, useTrueSolarTime, birthPlace);
+
+  // 2. 오행 분석
   const ohHaeng = analyzeOhHaeng(fourPillars);
+
+  // 3. 십성 분석
   const sipSung = analyzeSipSung(fourPillars);
+
+  // 4. 격국 분석
   const gyeokGuk = analyzeGyeokGuk(fourPillars, ohHaeng);
-  const yongSin = analyzeYongSin(gyeokGuk);
+
+  // 5. 용신/기신 분석
+  const yongSin = analyzeYongSin(gyeokGuk, ohHaeng, fourPillars);
+
+  // 6. 대운 계산
   const currentAge = new Date().getFullYear() - year;
-  const daewoon = calculateDaewoon(fourPillars, year, gender, yongSin, currentAge);
+  const daewoon = calculateDaewoon(fourPillars, year, month, day, hour, minute, gender, yongSin, currentAge);
+
+  // 7. 세운 계산 (올해/내년)
   const currentYear = new Date().getFullYear();
-  const currentYearSewoon = calculateSewoon(currentYear, currentAge, yongSin, daewoon);
-  const nextYearSewoon = calculateSewoon(currentYear + 1, currentAge + 1, yongSin, daewoon);
+  const currentYearSewoon = calculateSewoon(currentYear, currentAge, fourPillars, yongSin, daewoon);
+  const nextYearSewoon = calculateSewoon(currentYear + 1, currentAge + 1, fourPillars, yongSin, daewoon);
+
+  // 8. 신살 분석
   const sinsal = analyzeSinsal(fourPillars);
+
+  // 9. 관계 분석
   const relations = analyzeRelations(fourPillars);
+
+  // 10. 성격/적성 분석
   const personality = analyzePersonality(fourPillars, sipSung);
+
+  // 11. 레거시 호환 필드 생성
   const legacyFields = createLegacyFields(fourPillars, ohHaeng, sipSung);
 
   return {
     version: '1.0.0',
     calculatedAt: new Date().toISOString(),
     isComplete: true,
+
     birthInfo: {
       year, month, day, hour, minute, gender, isLunar,
       birthDateString: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
       birthTimeString: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
     },
+
     fourPillars,
     fullSajuString: `${fourPillars.year.ganJi} ${fourPillars.month.ganJi} ${fourPillars.day.ganJi} ${fourPillars.time.ganJi}`,
-    ohHaeng, sipSung, gyeokGuk, yongSin, daewoon,
-    currentYearSewoon, nextYearSewoon,
-    sinsal, relations, personality,
+
+    ohHaeng,
+    sipSung,
+    gyeokGuk,
+    yongSin,
+    daewoon,
+    currentYearSewoon,
+    nextYearSewoon,
+    sinsal,
+    relations,
+    personality,
+
     ...legacyFields,
   };
 }
@@ -169,10 +253,20 @@ export function calculateCompleteSajuData(input: SajuCalculationInput): Complete
 // ============================================================
 
 function calculateFourPillars(
-  year: number, month: number, day: number, hour: number, minute: number,
-  isLunar: boolean, isLeapMonth: boolean, useTrueSolarTime: boolean, birthPlace: string,
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  isLunar: boolean,
+  isLeapMonth: boolean,
+  useTrueSolarTime: boolean,
+  birthPlace: string,
 ): FourPillars {
-  let solarYear = year, solarMonth = month, solarDay = day;
+  // 음력 → 양력 변환 (윤달 지원)
+  let solarYear = year;
+  let solarMonth = month;
+  let solarDay = day;
 
   if (isLunar) {
     const solarDate = lunarToSolar(year, month, day, isLeapMonth);
@@ -181,28 +275,44 @@ function calculateFourPillars(
     solarDay = solarDate.getDate();
   }
 
+  // 진태양시 보정 (시주 계산용)
   let adjustedHour = hour;
+  let _adjustedMinute = minute;
+
   if (useTrueSolarTime) {
     const trueSolarResult = applyTrueSolarTimeByCity(hour, minute, birthPlace);
     adjustedHour = trueSolarResult.adjustedHour;
+    _adjustedMinute = trueSolarResult.adjustedMinute;
   }
 
+  // 년주 계산 - 입춘(立春) 기준 적용
+  // 입춘 전(1월~2월 3일)은 전년도 간지 사용
   let adjustedYear = solarYear;
   if (solarMonth === 1 || (solarMonth === 2 && solarDay < 4)) {
-    adjustedYear -= 1;
+    adjustedYear -= 1; // 입춘 전이면 전년도 간지 사용
   }
   const yearGanIndex = ((adjustedYear - 4) % 10 + 10) % 10;
   const yearJiIndex = ((adjustedYear - 4) % 12 + 12) % 12;
   const yearGan = CHEON_GAN[yearGanIndex];
   const yearJi = JI_JI[yearJiIndex];
 
+  // 절기월 계산 (정확한 시분 고려) ⭐ 핵심 개선!
   const solarMonthIndex = getExactSolarMonth(solarYear, solarMonth, solarDay, hour, minute);
-  const monthJiIndex = (solarMonthIndex + 1) % 12;
+
+  // 월주 계산 (절기월 기준)
+  // solarMonthIndex: 1=인월, 2=묘월, ..., 12=축월
+  // JI_JI 배열: [0]=자, [1]=축, [2]=인, [3]=묘, ...
+  const monthJiIndex = (solarMonthIndex + 1) % 12; // 인월(1) → JI_JI[2], 축월(12) → JI_JI[1]
   const monthJi = JI_JI[monthJiIndex];
+
+  // 년간에 따른 월간 결정 (오호십이법/五虎遁月法)
+  // 甲己年: 丙寅始(2), 乙庚年: 戊寅始(4), 丙辛年: 庚寅始(6), 丁壬年: 壬寅始(8), 戊癸年: 甲寅始(0)
   const monthGanBase = ((yearGanIndex % 5) * 2 + 2) % 10;
   const monthGanIndex = (monthGanBase + solarMonthIndex - 1) % 10;
   const monthGan = CHEON_GAN[monthGanIndex];
 
+  // 일주 계산 (1900년 1월 1일 = 갑술일, 60갑자 index 10)
+  // 검증: 1971-11-17 → (10 + 26252) % 60 = 42 → SIXTY_CYCLE[42] = 병오 ✓
   const baseDate = Date.UTC(1900, 0, 1);
   const targetDate = Date.UTC(solarYear, solarMonth - 1, solarDay);
   const diffDays = Math.floor((targetDate - baseDate) / (1000 * 60 * 60 * 24));
@@ -211,8 +321,9 @@ function calculateFourPillars(
   const dayGanJi = SIXTY_CYCLE[dayCycleIndex];
   const dayGan = dayGanJi[0] as CheonGan;
   const dayJi = dayGanJi[1] as JiJi;
-  const dayGanIndex = dayCycleIndex % 10;
+  const dayGanIndex = dayCycleIndex % 10; // 시주 계산용
 
+  // 시주 계산 (진태양시 보정된 시간 사용)
   const timeJiIndex = Math.floor((adjustedHour + 1) / 2) % 12;
   const timeJi = JI_JI[timeJiIndex];
   const timeGanBase = (dayGanIndex % 5) * 2;
@@ -229,7 +340,8 @@ function calculateFourPillars(
 
 function createPillar(gan: CheonGan, ji: JiJi): SajuPillar {
   return {
-    gan, ji,
+    gan,
+    ji,
     ganJi: `${gan}${ji}`,
     ganOhHaeng: CHEON_GAN_OH_HAENG[gan],
     jiOhHaeng: JI_JI_OH_HAENG[ji],
@@ -242,30 +354,39 @@ function createPillar(gan: CheonGan, ji: JiJi): SajuPillar {
 
 function analyzeOhHaeng(fourPillars: FourPillars): OhHaengAnalysis {
   const balance: OhHaengBalance = { 목: 0, 화: 0, 토: 0, 금: 0, 수: 0 };
+
+  // 각 기둥의 천간/지지 오행 점수 부여
   const pillars = [fourPillars.year, fourPillars.month, fourPillars.day, fourPillars.time];
-  const weights = [15, 15, 20, 15];
+  const weights = [15, 15, 20, 15]; // 일주 가중치 높게
 
   pillars.forEach((pillar, index) => {
     balance[pillar.ganOhHaeng] += weights[index];
     balance[pillar.jiOhHaeng] += weights[index] - 5;
-    HIDDEN_STEMS[pillar.ji].forEach(stem => {
+
+    // 장간 추가
+    const hiddenStems = HIDDEN_STEMS[pillar.ji];
+    hiddenStems.forEach(stem => {
       balance[CHEON_GAN_OH_HAENG[stem]] += 5;
     });
   });
 
+  // 정규화 (100점 만점)
   const total = Object.values(balance).reduce((sum, v) => sum + v, 0);
   const normalized: OhHaengBalance = { 목: 0, 화: 0, 토: 0, 금: 0, 수: 0 };
   for (const key of Object.keys(balance) as OhHaeng[]) {
     normalized[key] = Math.round((balance[key] / total) * 100);
   }
 
+  // 가장 강한/약한 오행 찾기
   const entries = Object.entries(normalized) as [OhHaeng, number][];
   const sorted = entries.sort((a, b) => b[1] - a[1]);
+  const dominant = sorted[0][0];
+  const weak = sorted[sorted.length - 1][0];
 
   return {
     balance: normalized,
-    dominant: sorted[0][0],
-    weak: sorted[sorted.length - 1][0],
+    dominant,
+    weak,
     dominantScore: sorted[0][1],
     weakScore: sorted[sorted.length - 1][1],
     isBalanced: sorted[0][1] - sorted[sorted.length - 1][1] < 15,
@@ -280,18 +401,29 @@ function analyzeSipSung(fourPillars: FourPillars): SipSungAnalysis {
   const dayGan = fourPillars.day.gan;
   const detail: SipSungDetail = {
     비견: 0, 겁재: 0, 식신: 0, 상관: 0,
-    정재: 0, 편재: 0, 정관: 0, 편관: 0, 정인: 0, 편인: 0,
+    정재: 0, 편재: 0, 정관: 0, 편관: 0,
+    정인: 0, 편인: 0,
   };
 
+  // 각 기둥의 천간과 장간 분석
   const pillars = [fourPillars.year, fourPillars.month, fourPillars.day, fourPillars.time];
+
   pillars.forEach((pillar, index) => {
-    const weight = index === 2 ? 15 : 10;
-    detail[TEN_GODS_RELATIONS[dayGan][pillar.gan]] += weight;
-    HIDDEN_STEMS[pillar.ji].forEach(stem => {
-      detail[TEN_GODS_RELATIONS[dayGan][stem]] += 5;
+    const weight = index === 2 ? 15 : 10; // 일주 가중치
+
+    // 천간 십성
+    const ganRelation = TEN_GODS_RELATIONS[dayGan][pillar.gan];
+    detail[ganRelation] += weight;
+
+    // 장간 십성
+    const hiddenStems = HIDDEN_STEMS[pillar.ji];
+    hiddenStems.forEach(stem => {
+      const hiddenRelation = TEN_GODS_RELATIONS[dayGan][stem];
+      detail[hiddenRelation] += 5;
     });
   });
 
+  // 그룹별 합계
   const balance: SipSungBalance = {
     비겁: detail.비견 + detail.겁재,
     식상: detail.식신 + detail.상관,
@@ -300,194 +432,154 @@ function analyzeSipSung(fourPillars: FourPillars): SipSungAnalysis {
     인성: detail.정인 + detail.편인,
   };
 
+  // 가장 강한/약한 십성 그룹
   const entries = Object.entries(balance) as [keyof SipSungBalance, number][];
   const sorted = entries.sort((a, b) => b[1] - a[1]);
 
-  return { balance, detail, dominant: sorted[0][0], weak: sorted[sorted.length - 1][0] };
+  return {
+    balance,
+    detail,
+    dominant: sorted[0][0],
+    weak: sorted[sorted.length - 1][0],
+  };
 }
 
 // ============================================================
-// 격국 분석 - 신강/신약 판정
+// 격국 분석
 // ============================================================
 
-/**
- * 득령(得令) 점수 계산
- * 월지가 일간을 생하거나 같은 오행이면 득령
- */
-function calculateDeukRyeong(dayMaster: CheonGan, monthBranch: JiJi): number {
-  const dayMasterOhHaeng = CHEON_GAN_OH_HAENG[dayMaster];
-  const monthOhHaeng = JI_JI_OH_HAENG[monthBranch];
-
-  // 오행 상생 관계: 목생화, 화생토, 토생금, 금생수, 수생목
-  const shengMap: Record<OhHaeng, OhHaeng> = {
-    '목': '화', '화': '토', '토': '금', '금': '수', '수': '목'
-  };
-
-  if (monthOhHaeng === dayMasterOhHaeng) {
-    return 30; // 같은 오행
-  } else if (shengMap[monthOhHaeng] === dayMasterOhHaeng) {
-    return 25; // 월지가 일간을 생함
-  } else if (shengMap[dayMasterOhHaeng] === monthOhHaeng) {
-    return 5; // 일간이 월지를 생함 (설기)
-  }
-  return 0; // 득령 없음
-}
-
-/**
- * 득지(得地) 강도 계산
- * 지지(일지, 월지, 시지, 년지)에서 일간을 돕는 오행 개수
- */
-function calculateDeukJi(dayMaster: CheonGan, fourPillars: FourPillars): number {
-  const dayMasterOhHaeng = CHEON_GAN_OH_HAENG[dayMaster];
-  const shengMap: Record<OhHaeng, OhHaeng> = {
-    '목': '화', '화': '토', '토': '금', '금': '수', '수': '목'
-  };
-
-  const branches = [
-    fourPillars.year.ji,
-    fourPillars.month.ji,
-    fourPillars.day.ji,
-    fourPillars.hour.ji
-  ];
-
-  let count = 0;
-  branches.forEach(ji => {
-    const jiOhHaeng = JI_JI_OH_HAENG[ji];
-    // 같은 오행이거나 일간을 생하는 오행
-    if (jiOhHaeng === dayMasterOhHaeng || shengMap[jiOhHaeng] === dayMasterOhHaeng) {
-      count++;
-    }
-  });
-
-  return count;
-}
-
-/**
- * 득세(得勢) 수 계산
- * 천간(일간, 월간, 시간, 년간)에서 일간을 돕는 오행 개수
- */
-function calculateDeukSe(dayMaster: CheonGan, fourPillars: FourPillars): number {
-  const dayMasterOhHaeng = CHEON_GAN_OH_HAENG[dayMaster];
-  const shengMap: Record<OhHaeng, OhHaeng> = {
-    '목': '화', '화': '토', '토': '금', '금': '수', '수': '목'
-  };
-
-  const stems = [
-    fourPillars.year.gan,
-    fourPillars.month.gan,
-    fourPillars.day.gan,
-    fourPillars.hour.gan
-  ];
-
-  let count = 0;
-  stems.forEach(gan => {
-    const ganOhHaeng = CHEON_GAN_OH_HAENG[gan];
-    // 같은 오행이거나 일간을 생하는 오행
-    if (ganOhHaeng === dayMasterOhHaeng || shengMap[ganOhHaeng] === dayMasterOhHaeng) {
-      count++;
-    }
-  });
-
-  return count;
-}
-
-function analyzeGyeokGuk(fourPillars: FourPillars, ohHaeng: OhHaengAnalysis): GyeokGukAnalysis {
+function analyzeGyeokGuk(fourPillars: FourPillars, _ohHaeng: OhHaengAnalysis): GyeokGukAnalysis {
   const dayMaster = fourPillars.day.gan;
   const dayMasterOhHaeng = CHEON_GAN_OH_HAENG[dayMaster];
   const monthBranch = fourPillars.month.ji;
   const season = JI_JI_SEASON[monthBranch];
 
-  // 새로운 신강/신약 판정 기준
-  const deukRyeongScore = calculateDeukRyeong(dayMaster, monthBranch);
-  const deukJiCount = calculateDeukJi(dayMaster, fourPillars);
-  const deukSeCount = calculateDeukSe(dayMaster, fourPillars);
+  // Calculate body strength using precision module (already integrated)
+  const bodyStrengthInput = {
+    dayGan: dayMaster,
+    monthJi: monthBranch,
+    fourPillarGan: [fourPillars.year.gan, fourPillars.month.gan, fourPillars.day.gan, fourPillars.time.gan],
+    fourPillarJi: [fourPillars.year.ji, fourPillars.month.ji, fourPillars.day.ji, fourPillars.time.ji],
+  };
+  const bodyResult = calculateBodyStrength(bodyStrengthInput);
 
-  // 점수 = 득령점수×0.4 + 득지강도×0.35 + 득세수×10×0.83
-  const totalScore = deukRyeongScore * 0.4 + deukJiCount * 0.35 + deukSeCount * 10 * 0.83;
-
-  // 3개 조건 충족 여부
-  const hasDeukRyeong = deukRyeongScore >= 25;
-  const hasDeukJi = deukJiCount >= 2;
-  const hasDeukSe = deukSeCount >= 2;
-  const conditionCount = [hasDeukRyeong, hasDeukJi, hasDeukSe].filter(x => x).length;
-
+  // Map 5-grade to 3-grade for backward compatibility
   let strength: '신강' | '신약' | '중화';
-  let gyeokGukType: string;
-  let description: string;
-
-  // 판정 기준:
-  // - 3개 충족 & 75점↑ = 극신강
-  // - 2개 충족 or 55점↑ = 신강
-  // - 40~54점 = 중화
-  // - 25~39점 = 신약
-  // - 25점↓ = 극신약
-
-  if (conditionCount === 3 && totalScore >= 75) {
+  if (bodyResult.grade === '극신강' || bodyResult.grade === '신강') {
     strength = '신강';
-    gyeokGukType = '극신강격';
-    description = `일간이 매우 강합니다 (득령${deukRyeongScore}점 + 득지${deukJiCount}개 + 득세${deukSeCount}개 = ${totalScore.toFixed(1)}점). 재성과 관성이 크게 필요합니다.`;
-  } else if (conditionCount >= 2 || totalScore >= 55) {
-    strength = '신강';
-    gyeokGukType = '신강격';
-    description = `일간이 강합니다 (득령${deukRyeongScore}점 + 득지${deukJiCount}개 + 득세${deukSeCount}개 = ${totalScore.toFixed(1)}점). 재성과 관성이 필요합니다.`;
-  } else if (totalScore >= 40) {
-    strength = '중화';
-    gyeokGukType = '중화격';
-    description = `일간이 균형잡혀 있습니다 (득령${deukRyeongScore}점 + 득지${deukJiCount}개 + 득세${deukSeCount}개 = ${totalScore.toFixed(1)}점). 식상과 재성이 유리합니다.`;
-  } else if (totalScore >= 25) {
+  } else if (bodyResult.grade === '극신약' || bodyResult.grade === '신약') {
     strength = '신약';
-    gyeokGukType = '신약격';
-    description = `일간이 약합니다 (득령${deukRyeongScore}점 + 득지${deukJiCount}개 + 득세${deukSeCount}개 = ${totalScore.toFixed(1)}점). 인성과 비겁이 필요합니다.`;
   } else {
-    strength = '신약';
-    gyeokGukType = '극신약격';
-    description = `일간이 매우 약합니다 (득령${deukRyeongScore}점 + 득지${deukJiCount}개 + 득세${deukSeCount}개 = ${totalScore.toFixed(1)}점). 인성과 비겁이 크게 필요합니다.`;
+    strength = '중화';
   }
 
-  return { dayMaster, dayMasterOhHaeng, strength, monthBranch, season, gyeokGukType, description };
+  // Use precision module for detailed geukguk determination
+  const geukGukResult = determineGeukGuk({
+    dayGan: dayMaster,
+    monthJi: monthBranch,
+    fourPillarGan: bodyStrengthInput.fourPillarGan,
+    fourPillarJi: bodyStrengthInput.fourPillarJi,
+  });
+
+  // Extract geukguk type (use specific type from precision module)
+  const gyeokGukType = geukGukResult.geukguk;
+
+  // Generate description using precision module's explanation
+  const strengthDescription = `일간이 ${strength === '신강' ? '강하므로' : strength === '신약' ? '약하므로' : '균형잡혀 있으므로'}`;
+  const geukGukDescription = geukGukResult.description || '';
+  const description = `${strengthDescription} ${geukGukDescription}`;
+
+  return {
+    dayMaster,
+    dayMasterOhHaeng,
+    strength,
+    monthBranch,
+    season,
+    gyeokGukType,  // Now returns specific 격국 type (e.g., "편인격", "종재격")
+    description,
+    // Optional fields from bodyStrength module
+    strengthDetail: bodyResult.grade,
+    strengthScore: bodyResult.score,
+    strengthGrade: bodyResult.grade,
+  };
 }
 
 // ============================================================
 // 용신/기신 분석
 // ============================================================
 
-function analyzeYongSin(gyeokGuk: GyeokGukAnalysis): YongSinAnalysis {
-  const { dayMasterOhHaeng, strength } = gyeokGuk;
-  const ohHaengOrder: OhHaeng[] = ['목', '화', '토', '금', '수'];
-  const index = ohHaengOrder.indexOf(dayMasterOhHaeng);
+function analyzeYongSin(
+  gyeokGuk: GyeokGukAnalysis,
+  _ohHaeng: OhHaengAnalysis,
+  fourPillars: FourPillars,
+): YongSinAnalysis {
+  const dayGan = fourPillars.day.gan;
+  const monthJi = fourPillars.month.ji;
 
-  const 생하는오행 = ohHaengOrder[(index + 4) % 5];
-  const 내가생하는 = ohHaengOrder[(index + 1) % 5];
-  const 극하는오행 = ohHaengOrder[(index + 3) % 5];
-  const 내가극하는 = ohHaengOrder[(index + 2) % 5];
+  // Use precision module for comprehensive yongsin analysis
+  const precisionResult = analyzeYongSinGiSin({
+    dayGan,
+    monthJi,
+    bodyStrength: (gyeokGuk.strengthDetail || gyeokGuk.strength) as any,
+    fourPillars: {
+      year: { gan: fourPillars.year.gan, ji: fourPillars.year.ji },
+      month: { gan: fourPillars.month.gan, ji: fourPillars.month.ji },
+      day: { gan: fourPillars.day.gan, ji: fourPillars.day.ji },
+      time: { gan: fourPillars.time.gan, ji: fourPillars.time.ji },
+    },
+  });
 
-  let yongSin: OhHaeng[] = [], giSin: OhHaeng[] = [], huiSin: OhHaeng[] = [];
-  let yongSinReason = '', giSinReason = '';
+  // Convert to YongSinAnalysis format
+  const yongSin = precisionResult.yongSin.primary;
+  const giSin = precisionResult.giSin.primary;
+  const huiSin = precisionResult.johu.yongSin || []; // 조후용신을 희신으로 매핑
 
-  if (strength === '신강') {
-    yongSin = [내가생하는, 내가극하는];
-    giSin = [생하는오행, dayMasterOhHaeng];
-    huiSin = [극하는오행];
-    yongSinReason = '일간이 강하여 기운을 빼주는 오행이 필요합니다.';
-    giSinReason = '일간을 더 강하게 하는 오행은 피해야 합니다.';
-  } else if (strength === '신약') {
-    yongSin = [생하는오행, dayMasterOhHaeng];
-    giSin = [극하는오행, 내가극하는];
-    huiSin = [내가생하는];
-    yongSinReason = '일간이 약하여 기운을 보충해주는 오행이 필요합니다.';
-    giSinReason = '일간을 더 약하게 하는 오행은 피해야 합니다.';
-  } else {
-    yongSin = [내가생하는, 내가극하는]; giSin = []; huiSin = [생하는오행];
-    yongSinReason = '일간이 균형잡혀 있어 활동성을 높이는 오행이 좋습니다.';
-    giSinReason = '특별히 피해야 할 오행은 없습니다.';
+  // Generate descriptions with johu and mediating info
+  let yongSinReason = `용신은 ${yongSin.join(', ')}입니다.`;
+  if (precisionResult.johu.necessity === '높음') {
+    yongSinReason += ` ${precisionResult.johu.reason}`;
+  }
+  if (precisionResult.mediating) {
+    yongSinReason += ` ${precisionResult.mediating.reason}`;
   }
 
+  const giSinReason = giSin.length > 0
+    ? `기신은 ${giSin.join(', ')}이므로 주의가 필요합니다.`
+    : '특별한 기신은 없습니다.';
+
+  // Create yongSinScore mapping (merge all beneficial elements)
   const yongSinScore: Record<OhHaeng, number> = { 목: 50, 화: 50, 토: 50, 금: 50, 수: 50 };
+
+  // Primary yongsin gets highest score
   yongSin.forEach(oh => { yongSinScore[oh] = 80; });
-  huiSin.forEach(oh => { yongSinScore[oh] = 65; });
+
+  // Johu yongsin gets high score (slightly lower if different from primary)
+  huiSin.forEach(oh => {
+    if (!yongSin.includes(oh)) {
+      yongSinScore[oh] = 70;
+    }
+  });
+
+  // Mediating yongsin gets moderate score
+  if (precisionResult.mediating) {
+    precisionResult.mediating.yongSin.forEach(oh => {
+      if (!yongSin.includes(oh) && !huiSin.includes(oh)) {
+        yongSinScore[oh] = 65;
+      }
+    });
+  }
+
+  // Gisin gets low score
   giSin.forEach(oh => { yongSinScore[oh] = 30; });
 
-  return { yongSin, giSin, huiSin, yongSinReason, giSinReason, yongSinScore };
+  return {
+    yongSin,
+    giSin,
+    huiSin,
+    yongSinReason,
+    giSinReason,
+    yongSinScore,
+  };
 }
 
 // ============================================================
@@ -495,23 +587,47 @@ function analyzeYongSin(gyeokGuk: GyeokGukAnalysis): YongSinAnalysis {
 // ============================================================
 
 function calculateDaewoon(
-  fourPillars: FourPillars, birthYear: number, gender: Gender,
-  yongSin: YongSinAnalysis, currentAge: number,
+  fourPillars: FourPillars,
+  birthYear: number,
+  birthMonth: number,
+  birthDay: number,
+  birthHour: number,
+  birthMinute: number,
+  gender: Gender,
+  yongSin: YongSinAnalysis,
+  currentAge: number,
 ): DaewoonAnalysis {
-  const yearGanIndex = ((birthYear - 4) % 10 + 10) % 10;
-  const yearGan = CHEON_GAN[yearGanIndex];
-  const isYangYear = ['갑', '병', '무', '경', '임'].includes(yearGan);
+  // 년간 확인 (사주 4기둥의 년간 사용 - 입춘 기준)
+  const actualYearGan = fourPillars.year.gan;
+
+  // 양간/음간 판단
+  const isYangYear = ['갑', '병', '무', '경', '임'].includes(actualYearGan);
+
+  // 순행 여부
   const isForward = (gender === 'male' && isYangYear) || (gender === 'female' && !isYangYear);
   const direction: '순행' | '역행' = isForward ? '순행' : '역행';
-  const startAge = 3;
 
+  // 대운 시작 나이 (정밀 계산)
+  const birthDate = new Date(birthYear, birthMonth - 1, birthDay);
+  const birthTime = `${String(birthHour).padStart(2, '0')}:${String(birthMinute).padStart(2, '0')}`;
+  const daeunResult = calculateDaeunStartAge({
+    birthDate,
+    birthTime,
+    gender,
+    yearGan: fourPillars.year.gan as any,
+  });
+  const startAge = daeunResult.startAge;
+
+  // 월주 기준으로 대운 생성
   const monthGanIndex = CHEON_GAN.indexOf(fourPillars.month.gan);
   const monthJiIndex = JI_JI.indexOf(fourPillars.month.ji);
 
   const list: DaewoonItem[] = [];
 
   for (let i = 0; i < 10; i++) {
-    let ganIndex: number, jiIndex: number;
+    let ganIndex: number;
+    let jiIndex: number;
+
     if (isForward) {
       ganIndex = (monthGanIndex + i + 1) % 10;
       jiIndex = (monthJiIndex + i + 1) % 12;
@@ -524,54 +640,93 @@ function calculateDaewoon(
     const ji = JI_JI[jiIndex];
     const ohHaeng = CHEON_GAN_OH_HAENG[gan];
     const jiOhHaeng = JI_JI_OH_HAENG[ji];
+
     const isYongSin = yongSin.yongSin.includes(ohHaeng);
     const isGiSin = yongSin.giSin.includes(ohHaeng);
 
+    // 점수 계산
     let score = 50;
     if (isYongSin) score += 30;
     if (isGiSin) score -= 20;
     if (yongSin.huiSin.includes(ohHaeng)) score += 15;
     score = Math.max(20, Math.min(95, score));
 
+    // 설명 생성
     let description = '';
-    if (isYongSin) description = `용신 대운! ${ohHaeng} 기운이 도와줍니다.`;
-    else if (isGiSin) description = `기신 대운. ${ohHaeng} 기운에 주의하세요.`;
-    else description = `${ohHaeng} 기운의 평범한 대운입니다.`;
+    if (isYongSin) {
+      description = `용신 대운! ${ohHaeng} 기운이 도와줍니다.`;
+    } else if (isGiSin) {
+      description = `기신 대운. ${ohHaeng} 기운에 주의하세요.`;
+    } else {
+      description = `${ohHaeng} 기운의 평범한 대운입니다.`;
+    }
 
     list.push({
-      cycle: i + 1, startAge: startAge + i * 10, endAge: startAge + (i + 1) * 10 - 1,
-      gan, ji, ganJi: `${gan}${ji}`, ohHaeng, jiOhHaeng, score, description, isYongSin, isGiSin,
+      cycle: i + 1,
+      startAge: startAge + i * 10,
+      endAge: startAge + (i + 1) * 10 - 1,
+      gan,
+      ji,
+      ganJi: `${gan}${ji}`,
+      ohHaeng,
+      jiOhHaeng,
+      score,
+      description,
+      isYongSin,
+      isGiSin,
     });
   }
 
+  // 현재 대운 찾기
   const current = list.find(d => currentAge >= d.startAge && currentAge <= d.endAge) || null;
+
+  // 최고/최악 대운
   const sorted = [...list].sort((a, b) => b.score - a.score);
+  const bestPeriod = sorted[0];
+  const worstPeriod = sorted[sorted.length - 1];
 
   return {
-    startAge, direction, list, current, currentAge,
-    bestPeriod: sorted[0], worstPeriod: sorted[sorted.length - 1],
+    startAge,
+    direction,
+    list,
+    current,
+    currentAge,
+    bestPeriod,
+    worstPeriod,
   };
 }
+
+// calculateDaewoonStartAge 함수는 정밀 계산 모듈로 대체됨
+// (saju/daewoonAnalysis/daeunStartAge.ts의 calculateDaeunStartAge 사용)
 
 // ============================================================
 // 세운 계산
 // ============================================================
 
-function calculateSewoon(year: number, age: number, yongSin: YongSinAnalysis, daewoon: DaewoonAnalysis): SewoonItem {
+function calculateSewoon(
+  year: number,
+  age: number,
+  fourPillars: FourPillars,
+  yongSin: YongSinAnalysis,
+  daewoon: DaewoonAnalysis,
+): SewoonItem {
   const ganIndex = ((year - 4) % 10 + 10) % 10;
   const jiIndex = ((year - 4) % 12 + 12) % 12;
   const gan = CHEON_GAN[ganIndex];
   const ji = JI_JI[jiIndex];
   const ohHaeng = CHEON_GAN_OH_HAENG[gan];
   const animal = JI_JI_ANIMAL[ji];
+
   const isYongSin = yongSin.yongSin.includes(ohHaeng);
   const isGiSin = yongSin.giSin.includes(ohHaeng);
 
+  // 점수 계산
   let score = 50;
   if (isYongSin) score += 25;
   if (isGiSin) score -= 15;
   if (yongSin.huiSin.includes(ohHaeng)) score += 10;
 
+  // 대운과의 상호작용
   let daewoonInteraction = 0;
   const currentDaewoon = daewoon.list.find(d => age >= d.startAge && age <= d.endAge);
   if (currentDaewoon) {
@@ -580,14 +735,32 @@ function calculateSewoon(year: number, age: number, yongSin: YongSinAnalysis, da
     if (JI_JI_CHUNG[currentDaewoon.ji] === ji) daewoonInteraction -= 20;
   }
 
-  score = Math.max(20, Math.min(95, score + daewoonInteraction));
+  score += daewoonInteraction;
+  score = Math.max(20, Math.min(95, score));
 
+  // 설명
   let description = `${year}년은 ${gan}${ji}년(${animal}띠 해)입니다. `;
-  if (isYongSin) description += `용신 오행(${ohHaeng})이 작용하여 유리한 해입니다.`;
-  else if (isGiSin) description += `기신 오행(${ohHaeng})이 작용하여 주의가 필요한 해입니다.`;
-  else description += `${ohHaeng} 기운이 작용하는 평범한 해입니다.`;
+  if (isYongSin) {
+    description += `용신 오행(${ohHaeng})이 작용하여 유리한 해입니다.`;
+  } else if (isGiSin) {
+    description += `기신 오행(${ohHaeng})이 작용하여 주의가 필요한 해입니다.`;
+  } else {
+    description += `${ohHaeng} 기운이 작용하는 평범한 해입니다.`;
+  }
 
-  return { year, age, gan, ji, ganJi: `${gan}${ji}`, ohHaeng, animal, score, description, isYongSin, daewoonInteraction };
+  return {
+    year,
+    age,
+    gan,
+    ji,
+    ganJi: `${gan}${ji}`,
+    ohHaeng,
+    animal,
+    score,
+    description,
+    isYongSin,
+    daewoonInteraction,
+  };
 }
 
 // ============================================================
@@ -596,68 +769,137 @@ function calculateSewoon(year: number, age: number, yongSin: YongSinAnalysis, da
 
 function analyzeSinsal(fourPillars: FourPillars): SinsalAnalysis {
   const dayGan = fourPillars.day.gan;
+  const yearJi = fourPillars.year.ji;
+  const monthJi = fourPillars.month.ji;
+  const dayJi = fourPillars.day.ji;
+  const hourJi = fourPillars.time.ji;  // FIX: fourPillars uses 'time' not 'hour'
+
+  // Use precision module for comprehensive sinsal analysis
+  const precisionResult = analyzeAllSinsal({
+    year: { gan: fourPillars.year.gan, ji: yearJi },
+    month: { gan: fourPillars.month.gan, ji: monthJi },
+    day: { gan: dayGan, ji: dayJi },
+    time: { gan: fourPillars.time.gan, ji: hourJi },  // FIX: fourPillars uses 'time' not 'hour'
+  });
+
+  // Convert to SinsalAnalysis format
   const gilSin: string[] = [];
   const hyungSin: string[] = [];
 
-  const guiInTable: Record<CheonGan, JiJi[]> = {
-    '갑': ['축', '미'], '을': ['자', '신'], '병': ['해', '유'], '정': ['해', '유'],
-    '무': ['축', '미'], '기': ['자', '신'], '경': ['축', '미'], '신': ['인', '오'],
-    '임': ['묘', '사'], '계': ['묘', '사'],
-  };
-  const hasCheonEulGuiIn = [fourPillars.year.ji, fourPillars.month.ji, fourPillars.time.ji].some(ji => guiInTable[dayGan].includes(ji));
-  if (hasCheonEulGuiIn) gilSin.push('천을귀인');
+  // Categorize sinsal into beneficial (gilSin) and harmful (hyungSin)
+  const beneficialSinsal = ['천을귀인', '문창귀인', '천덕귀인', '월덕귀인', '장성', '화개'];
+  const harmfulSinsal = ['역마살', '도화살', '양인살', '겁살', '공망', '귀문관살', '원진살', '백호살', '홍염살', '현침살', '삼재'];
 
-  const hasMunChangGuiIn = false;
-  const hasYeokMaSal = false;
-  const hasDoHwaSal = false;
-  const hasYangInSal = false;
-  const hasGeopSal = false;
-  const hasGongMang = false;
+  // Add from good/bad sinsal lists
+  gilSin.push(...precisionResult.goodSinsal);
+  hyungSin.push(...precisionResult.badSinsal);
 
-  let summary = '';
-  if (gilSin.length > 0) summary += `길신: ${gilSin.join(', ')}. `;
-  if (hyungSin.length > 0) summary += `흉신: ${hyungSin.join(', ')}. `;
-  if (!summary) summary = '특별한 신살이 없습니다.';
+  // Extract individual sinsal flags
+  const hasCheonEulGuiIn = precisionResult.cheonEulGwiIn?.present || false;
+  const hasMunChangGuiIn = precisionResult.twelveSinsalByYear.some(s =>
+    s.name.includes('문창') && s.present
+  ) || precisionResult.twelveSinsalByDay.some(s =>
+    s.name.includes('문창') && s.present
+  );
+  const hasYeokMaSal = precisionResult.twelveSinsalByYear.some(s =>
+    s.type === 'yeokMaSal' && s.present
+  );
+  const hasDoHwaSal = precisionResult.twelveSinsalByYear.some(s =>
+    s.type === 'nyeonSal' && s.present
+  );
+  const hasYangInSal = precisionResult.yangInSal?.present || false;
+  const hasGeopSal = precisionResult.twelveSinsalByYear.some(s =>
+    s.type === 'geobSal' && s.present
+  );
+
+  // Extract gongmang status from precision result (FIX CRITICAL BUG)
+  const hasGongMang = precisionResult.gongMang?.present || false;
+
+  // Generate description from precision module's summary
+  const summary = precisionResult.summaryText || '신살 분석이 완료되었습니다.';
 
   return {
-    gilSin, hyungSin, hasCheonEulGuiIn, hasMunChangGuiIn,
-    hasYeokMaSal, hasDoHwaSal, hasGongMang, hasYangInSal, hasGeopSal, summary,
+    gilSin,
+    hyungSin,
+    hasCheonEulGuiIn,
+    hasMunChangGuiIn,
+    hasYeokMaSal,
+    hasDoHwaSal,
+    hasYangInSal,
+    hasGeopSal,
+    hasGongMang,  // Now uses actual precision calculation instead of hardcoded false
+    hasGoeGangSal: false,  // TODO: Implement in future
+    summary,
   };
 }
+
 
 // ============================================================
 // 관계 분석
 // ============================================================
 
 function analyzeRelations(fourPillars: FourPillars): PillarRelations {
-  const cheonganHap: string[] = [], cheonganChung: string[] = [];
-  const jijiYukHap: string[] = [], jijiChung: string[] = [];
-  const jijiSamHap: string[] = [], jijiHyung: string[] = [];
-  const jijiBan: string[] = [], jijiPa: string[] = [], jijiHae: string[] = [];
+  const cheonganHap: string[] = [];
+  const cheonganChung: string[] = [];
+  const jijiYukHap: string[] = [];
+  const jijiChung: string[] = [];
+  const jijiSamHap: string[] = [];
+  const jijiHyung: string[] = [];
+  const jijiBan: string[] = [];
+  const jijiPa: string[] = [];
+  const jijiHae: string[] = [];
 
   const pillars = [
-    { name: '년', pillar: fourPillars.year }, { name: '월', pillar: fourPillars.month },
-    { name: '일', pillar: fourPillars.day }, { name: '시', pillar: fourPillars.time },
+    { name: '년', pillar: fourPillars.year },
+    { name: '월', pillar: fourPillars.month },
+    { name: '일', pillar: fourPillars.day },
+    { name: '시', pillar: fourPillars.time },
   ];
 
+  // 천간합/충 체크
   for (let i = 0; i < pillars.length; i++) {
     for (let j = i + 1; j < pillars.length; j++) {
-      const gan1 = pillars[i].pillar.gan, gan2 = pillars[j].pillar.gan;
-      if (CHEON_GAN_HAP[gan1] === gan2) cheonganHap.push(`${pillars[i].name}${pillars[j].name} ${gan1}${gan2}합`);
+      const gan1 = pillars[i].pillar.gan;
+      const gan2 = pillars[j].pillar.gan;
 
-      const ji1 = pillars[i].pillar.ji, ji2 = pillars[j].pillar.ji;
-      if (JI_JI_YUK_HAP[ji1] === ji2) jijiYukHap.push(`${pillars[i].name}${pillars[j].name} ${ji1}${ji2}합`);
-      if (JI_JI_CHUNG[ji1] === ji2) jijiChung.push(`${pillars[i].name}${pillars[j].name} ${ji1}${ji2}충`);
+      if (CHEON_GAN_HAP[gan1] === gan2) {
+        cheonganHap.push(`${pillars[i].name}${pillars[j].name} ${gan1}${gan2}합`);
+      }
     }
   }
 
+  // 지지 육합/충 체크
+  for (let i = 0; i < pillars.length; i++) {
+    for (let j = i + 1; j < pillars.length; j++) {
+      const ji1 = pillars[i].pillar.ji;
+      const ji2 = pillars[j].pillar.ji;
+
+      if (JI_JI_YUK_HAP[ji1] === ji2) {
+        jijiYukHap.push(`${pillars[i].name}${pillars[j].name} ${ji1}${ji2}합`);
+      }
+
+      if (JI_JI_CHUNG[ji1] === ji2) {
+        jijiChung.push(`${pillars[i].name}${pillars[j].name} ${ji1}${ji2}충`);
+      }
+    }
+  }
+
+  // 요약 생성
   const summaryParts: string[] = [];
   if (cheonganHap.length > 0) summaryParts.push(`천간합: ${cheonganHap.length}개`);
   if (jijiYukHap.length > 0) summaryParts.push(`지지합: ${jijiYukHap.length}개`);
   if (jijiChung.length > 0) summaryParts.push(`지지충: ${jijiChung.length}개`);
 
   return {
-    cheonganHap, cheonganChung, jijiYukHap, jijiSamHap, jijiChung, jijiHyung, jijiBan, jijiPa, jijiHae,
+    cheonganHap,
+    cheonganChung,
+    jijiYukHap,
+    jijiSamHap,
+    jijiChung,
+    jijiHyung,
+    jijiBan,
+    jijiPa,
+    jijiHae,
     summary: summaryParts.length > 0 ? summaryParts.join(', ') : '특별한 합충 관계 없음',
   };
 }
@@ -669,8 +911,8 @@ function analyzeRelations(fourPillars: FourPillars): PillarRelations {
 function analyzePersonality(fourPillars: FourPillars, sipSung: SipSungAnalysis): PersonalityAnalysis {
   const dayMaster = fourPillars.day.gan;
   const dayMasterTraits = DAY_MASTER_PERSONALITY[dayMaster];
-  const dominantSipsung = sipSung.dominant;
 
+  const dominantSipsung = sipSung.dominant;
   const sipsungTraits: Record<keyof SipSungBalance, string[]> = {
     비겁: ['독립심', '경쟁심', '자존심'],
     식상: ['창의성', '표현력', '자유로움'],
@@ -687,24 +929,31 @@ function analyzePersonality(fourPillars: FourPillars, sipSung: SipSungAnalysis):
     인성: ['학자', '교육자', '연구원'],
   };
 
-  const relationshipStyles: Record<keyof SipSungBalance, string> = {
+  return {
+    dayMasterTraits,
+    dominantSipsung: {
+      type: dominantSipsung,
+      traits: sipsungTraits[dominantSipsung],
+    },
+    careerAptitude: careerByDominant[dominantSipsung],
+    relationshipStyle: getRelationshipStyle(dayMaster, sipSung),
+  };
+}
+
+function getRelationshipStyle(dayMaster: CheonGan, sipSung: SipSungAnalysis): string {
+  const dominant = sipSung.dominant;
+  const styles: Record<keyof SipSungBalance, string> = {
     비겁: '독립적이고 주도적인 관계를 선호합니다.',
     식상: '자유롭고 창의적인 소통을 즐깁니다.',
     재성: '실용적이고 현실적인 관계를 추구합니다.',
     관성: '책임감 있고 안정적인 관계를 중시합니다.',
     인성: '깊이 있고 지적인 교류를 선호합니다.',
   };
-
-  return {
-    dayMasterTraits,
-    dominantSipsung: { type: dominantSipsung, traits: sipsungTraits[dominantSipsung] },
-    careerAptitude: careerByDominant[dominantSipsung],
-    relationshipStyle: relationshipStyles[dominantSipsung],
-  };
+  return styles[dominant];
 }
 
 // ============================================================
-// 레거시 호환
+// 레거시 호환 필드 생성
 // ============================================================
 
 function createLegacyFields(fourPillars: FourPillars, ohHaeng: OhHaengAnalysis, sipSung: SipSungAnalysis) {
@@ -718,11 +967,17 @@ function createLegacyFields(fourPillars: FourPillars, ohHaeng: OhHaengAnalysis, 
     fullSaju: `${fourPillars.year.ganJi} ${fourPillars.month.ganJi} ${fourPillars.day.ganJi} ${fourPillars.time.ganJi}`,
     tenGods: sipSung.detail,
     fiveElements: {
-      wood: ohHaeng.balance.목, fire: ohHaeng.balance.화,
-      earth: ohHaeng.balance.토, metal: ohHaeng.balance.금, water: ohHaeng.balance.수,
+      wood: ohHaeng.balance.목,
+      fire: ohHaeng.balance.화,
+      earth: ohHaeng.balance.토,
+      metal: ohHaeng.balance.금,
+      water: ohHaeng.balance.수,
     },
   };
 }
 
+// ============================================================
 // Export
+// ============================================================
+
 export { calculateFourPillars, analyzeOhHaeng, analyzeSipSung, analyzeGyeokGuk, analyzeYongSin };

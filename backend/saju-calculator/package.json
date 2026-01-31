@@ -1,7 +1,6 @@
 {
   "name": "saju-calculator",
   "version": "1.0.0",
-  "type": "module",
   "description": "한국 전통 사주명리학 계산 라이브러리 - 사주팔자, 대운, 세운, 오행, 십성 분석",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

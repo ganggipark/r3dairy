@@ -1,15 +1,28 @@
 /**
- * 사주 계산 패키지 - 메인 Export
+ * saju-engine - 사주팔자 계산 엔진
  *
- * 한국 전통 사주명리학 계산 라이브러리
- *
- * @author SajuApp
- * @version 1.0.0
+ * 전통 명리학 기반의 정밀한 사주팔자 계산을 제공합니다.
  */
-export * from './types';
-export { calculateFourPillars, calculateDayPillar, formatFourPillars, calculateFiveElements, getDayMaster, getZodiac, HEAVENLY_STEMS, EARTHLY_BRANCHES, SIXTY_CYCLE, } from './sajuCalculator';
-export { calculateCompleteSajuData, type SajuCalculationInput, } from './completeSajuCalculator';
-export { solarToLunar, lunarToSolar, formatLunarDate, getSolarTerm, getSpecialLunarDay, getLunarMonthName, SOLAR_TERMS, } from './lunarCalendar';
-export { calculateTrueSolarTimeCorrection, applyTrueSolarTime, applyTrueSolarTimeByCity, getTrueSolarTimeCorrectionByCity, getAvailableCities, getCityInfo, getTrueSolarTimeDescription, MAJOR_CITIES, KST_STANDARD_LONGITUDE, type TrueSolarTimeResult, type Location, } from './trueSolarTimeCalculator';
-export { getExactSolarMonth, getSolarTermsForYear, getSolarTermByDate, getDaysToNextSolarTerm, getDaysToPrevSolarTerm, calculateDaewoonStartFromSolarTerms, SOLAR_TERM_NAMES, MONTH_START_TERMS, TERM_TO_SOLAR_MONTH, SOLAR_TERMS_DATA, type SolarTermData, type DaysToTermResult, } from './solarTermsCalculator';
+export { calculateCompleteSajuData } from './calculators/completeSajuCalculator';
+export type { CompleteSajuData } from './types/completeSajuData';
+export { isCompleteSajuData } from './types/completeSajuData';
+export type { CheonGan, JiJi, OhHaeng, SimpleSajuData, GyeokGuk, CosmicEnergyAnalysis } from './types/saju';
+export { calculateBodyStrength, checkDeukRyeong, checkDeukJi, checkDeukSe, analyzeBodyStrengthDetails } from './analysis/bodyStrength';
+export type { BodyStrengthInput, BodyStrengthResult, BodyStrengthAnalysis, DeukRyeongResult, DeukJiResult, DeukSeResult } from './analysis/bodyStrength';
+export { calculateDaeunStartAge, getSimpleDaeunStartAge } from './analysis/daewoonAnalysis/daeunStartAge';
+export type { DaeunStartAgeInput, DaeunStartAgeResult } from './analysis/daewoonAnalysis/daeunStartAge';
+export { getSolarTermsForYear, getSolarTermDate, isBefore24Jeolip, MONTH_START_TERMS } from './calculators/solarTermsCalculator';
+export type { SolarTerm } from './calculators/solarTermsCalculator';
+export { solarToLunar, lunarToSolar, formatLunarDate, getSolarTerm, getSpecialLunarDay, getLunarMonthName } from './calculators/lunarCalendar';
+export type { LunarDate } from './calculators/lunarCalendar';
+export { applyTrueSolarTime, applyTrueSolarTimeByCity, getTrueSolarTimeCorrectionByCity, getAvailableCities, getCityInfo, getTrueSolarTimeDescription, MAJOR_CITIES, KST_STANDARD_LONGITUDE } from './calculators/trueSolarTimeCalculator';
+export type { TrueSolarTimeResult, Location } from './calculators/trueSolarTimeCalculator';
+export { analyzeYongSinGiSin, getYongSinByEokBu, getYongSinByJohu, determineYongSin, determineGiSin, identifyMediatingYongsin } from './analysis/yongSinGiSin';
+export type { YongSinAnalysis, YongSinInput, YongSinResult, GiSinResult, EokBuResult, JohuResult, MediatingYongSinResult } from './analysis/yongSinGiSin';
+export { determineGeukGuk, analyzeGeukGukDetails, checkHwaGiGyeok, checkJongGyeok, checkTouchul, getMonthlyMainGan } from './analysis/geukGuk';
+export type { GeukGukType, GeukGukResult, GeukGukAnalysis, GeukGukInput, HwaGiGyeokResult, JongGyeokResult } from './analysis/geukGuk';
+export { analyzeAllSinsal, analyzeDateSinsal, analyzeTwelveSinsal, analyzeYangInSal, analyzeGuiMunGwanSal, generateComprehensiveSinsalSummary } from './analysis/sinsal';
+export type { SinsalAnalysis, SinsalResult, TwelveSinsalType, OtherSinsalType } from './analysis/sinsal';
+export { CHEONGAN, JIJI, JIJANGGAN_SIMPLE, SANG_SAENG, SANG_GEUK, SIPSUNG_INFO } from './core';
+export type { FourPillars, CheonganCache, JijiCache, SipSungType } from './core/types';
 //# sourceMappingURL=index.d.ts.map
