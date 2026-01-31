@@ -103,7 +103,7 @@ Blueprint 생성 후, 서비스가 자동으로 생성됩니다:
 |-----|-------|-------------------|
 | `SUPABASE_URL` | `https://xxxxx.supabase.co` | Supabase Dashboard → Settings → API → Project URL |
 | `SUPABASE_KEY` | `sb_publishable_MmUagrOK0ptxcljT09izxg_kGQguOSn` | 이미 있음 (anon public key) |
-| `CORS_ORIGINS` | `http://localhost:3000` | 일단 로컬로 설정 (Vercel 배포 후 업데이트) |
+| `CORS_ORIGINS` | `http://localhost:5000` | 일단 로컬로 설정 (Vercel 배포 후 업데이트) |
 
 4. **Save Changes** 클릭
 
@@ -182,8 +182,8 @@ Frontend URL이 확정되었으므로 Backend CORS를 업데이트합니다:
 
 1. **Render Dashboard** → **r3-diary-backend** → **Environment** 탭
 2. `CORS_ORIGINS` 값 수정:
-   - 기존: `http://localhost:3000`
-   - 변경: `https://r3-diary.vercel.app,http://localhost:3000` (로컬 개발도 유지)
+   - 기존: `http://localhost:5000`
+   - 변경: `https://r3-diary.vercel.app,http://localhost:5000` (로컬 개발도 유지)
 3. **Save Changes** → 자동 재배포 (1-2분 소요)
 
 ---
@@ -272,7 +272,7 @@ https://r3-diary-backend.onrender.com/docs
 **해결**:
 ```bash
 # Render Dashboard → Environment → CORS_ORIGINS 확인
-# 값: https://r3-diary.vercel.app,http://localhost:3000
+# 값: https://r3-diary.vercel.app,http://localhost:5000
 ```
 
 ### 문제 3: PDF 생성 실패

@@ -100,7 +100,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Frontend가 http://localhost:3000 에서 실행됩니다.
+Frontend가 http://localhost:5000 에서 실행됩니다.
 
 ### Supabase 설정
 
