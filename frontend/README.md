@@ -70,7 +70,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 npm run dev
 ```
 
-브라우저에서 http://localhost:3000 을 열어 애플리케이션을 확인하세요.
+브라우저에서 http://localhost:5000 을 열어 애플리케이션을 확인하세요.
 
 ### 4. 프로덕션 빌드
 

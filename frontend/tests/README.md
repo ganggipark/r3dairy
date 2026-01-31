@@ -46,7 +46,7 @@ export default defineConfig({
   testDir: './tests/e2e',
   timeout: 30 * 1000,
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:5000',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
@@ -59,7 +59,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3000',
+    url: 'http://localhost:5000',
     reuseExistingServer: !process.env.CI,
   },
 });
