@@ -1,0 +1,1 @@
+[{"import": "re\nwith open('assembly.py', 'r', encoding='utf-8') as f:", "content = f.read()": {"content.replace": ["content = re.sub(", "50", "500"], "30": "300"}}]

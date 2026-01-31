@@ -1,228 +1,278 @@
 """
-Content Validator
-DAILY_CONTENT_SCHEMA.json 준수 검증 및 품질 체크
+DAILY_CONTENT_SCHEMA.json 검증기
+
+생성된 콘텐츠가 스키마를 준수하는지 검증합니다.
 """
-import json
-from pathlib import Path
 from typing import Dict, Any, List, Tuple
-from .models import DailyContent, MonthlyContent, YearlyContent
+from .char_optimizer import CharOptimizer
 
 
-class ContentValidator:
-    """콘텐츠 검증기"""
-
-    def __init__(self, schema_path: str = None):
-        """
-        Args:
-            schema_path: DAILY_CONTENT_SCHEMA.json 경로
-        """
-        if schema_path is None:
-            # 기본 경로: docs/content/DAILY_CONTENT_SCHEMA.json
-            project_root = Path(__file__).parent.parent.parent.parent
-            schema_path = project_root / "docs" / "content" / "DAILY_CONTENT_SCHEMA.json"
-
-        self.schema_path = Path(schema_path)
-        self.schema = self._load_schema()
-
-    def _load_schema(self) -> Dict[str, Any]:
-        """스키마 파일 로드"""
-        if not self.schema_path.exists():
-            raise FileNotFoundError(f"Schema file not found: {self.schema_path}")
-
-        with open(self.schema_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-
-    def validate_daily_content(self, content: DailyContent) -> Tuple[bool, List[str]]:
-        """
-        DailyContent 검증
-
-        Args:
-            content: 검증할 DailyContent 객체
-
-        Returns:
-            (검증 통과 여부, 오류/경고 메시지 리스트)
-        """
-        errors = []
-        warnings = []
-
-        # 1. Pydantic 모델 검증은 이미 통과 (생성 시 자동 검증)
-
-        # 2. 길이 요구사항 검증
-        is_valid, total_chars, message = content.validate_length_requirements()
-        if not is_valid:
-            errors.append(message)
-        elif total_chars < 600:  # 목표 미달 시 경고
-            warnings.append(message)
-
-        # 3. 키워드 검증
-        if len(content.keywords) < 2:
-            errors.append("키워드가 2개 미만입니다")
-        if len(content.keywords) > 5:
-            errors.append("키워드가 5개를 초과합니다")
-
-        # 4. 내부 전문 용어 사용 검증 (사용자 노출 금지)
-        forbidden_terms = self._check_forbidden_terms(content)
-        if forbidden_terms:
-            errors.append(f"내부 전문 용어 사용 감지: {', '.join(forbidden_terms)}")
-
-        # 5. 설명형 문단 존재 여부 (카드 전용 요약 금지)
-        if len(content.rhythm_description) < 100:
-            errors.append("리듬 해설이 너무 짧습니다 (최소 100자)")
-
-        # 6. 각 블록별 내용 존재 여부
-        if not content.focus_caution.focus:
-            warnings.append("집중 포인트가 비어있습니다")
-        if not content.focus_caution.caution:
-            warnings.append("주의 포인트가 비어있습니다")
-        if not content.action_guide.do:
-            warnings.append("추천 행동이 비어있습니다")
-        if not content.action_guide.avoid:
-            warnings.append("피할 행동이 비어있습니다")
-
-        # 결과 반환
-        all_messages = errors + warnings
-        return (len(errors) == 0, all_messages)
-
-    def _check_forbidden_terms(self, content: DailyContent) -> List[str]:
-        """
-        내부 전문 용어 사용 검증
-
-        금지 용어:
-        - 사주명리, 기문둔갑, 천간, 지지, 오행, 십성
-        - 대운, 세운, 월운, 일운
-        - 천을귀인, 역마, 공망, 도화
-        - NLP, 알고리즘, 엔진, 계산, 분석 모듈
-        """
-        forbidden_terms = [
-            "사주명리", "사주", "기문둔갑", "천간", "지지", "오행", "십성",
-            "대운", "세운", "월운", "일운",
-            "천을귀인", "역마", "공망", "도화",
-            "비견", "겁재", "식신", "상관", "편재", "정재", "편관", "정관", "편인", "정인",
-            "NLP", "알고리즘", "엔진", "분석 모듈", "계산",
-            "甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸",
-            "子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"
-        ]
-
-        # 전체 텍스트 수집
-        all_text = " ".join([
-            content.summary,
-            " ".join(content.keywords),
-            content.rhythm_description,
-            " ".join(content.focus_caution.focus),
-            " ".join(content.focus_caution.caution),
-            " ".join(content.action_guide.do),
-            " ".join(content.action_guide.avoid),
-            content.time_direction.good_time,
-            content.time_direction.avoid_time,
-            content.time_direction.good_direction,
-            content.time_direction.avoid_direction,
-            content.time_direction.notes,
-            content.state_trigger.gesture,
-            content.state_trigger.phrase,
-            content.state_trigger.how_to,
-            content.meaning_shift,
-            content.rhythm_question
-        ])
-
-        # 금지 용어 검색
-        found_terms = []
-        for term in forbidden_terms:
-            if term in all_text:
-                found_terms.append(term)
-
-        return found_terms
-
-    def validate_length_distribution(self, content: DailyContent) -> Dict[str, Any]:
-        """
-        콘텐츠 길이 분포 분석
-
-        Returns:
-            각 블록별 길이 정보
-        """
-        return {
-            "summary": len(content.summary),
-            "keywords_total": sum(len(k) for k in content.keywords),
-            "rhythm_description": len(content.rhythm_description),
-            "focus_points": sum(len(f) for f in content.focus_caution.focus),
-            "caution_points": sum(len(c) for c in content.focus_caution.caution),
-            "do_actions": sum(len(d) for d in content.action_guide.do),
-            "avoid_actions": sum(len(a) for a in content.action_guide.avoid),
-            "time_direction": (
-                len(content.time_direction.good_time) +
-                len(content.time_direction.avoid_time) +
-                len(content.time_direction.good_direction) +
-                len(content.time_direction.avoid_direction) +
-                len(content.time_direction.notes)
-            ),
-            "state_trigger": (
-                len(content.state_trigger.gesture) +
-                len(content.state_trigger.phrase) +
-                len(content.state_trigger.how_to)
-            ),
-            "meaning_shift": len(content.meaning_shift),
-            "rhythm_question": len(content.rhythm_question),
-            "total": content.get_total_text_length()
-        }
-
-    def generate_quality_report(self, content: DailyContent) -> Dict[str, Any]:
-        """
-        품질 리포트 생성
-
-        Returns:
-            검증 결과, 길이 분포, 개선 제안 등
-        """
-        # 검증 실행
-        is_valid, messages = self.validate_daily_content(content)
-
-        # 길이 분포 분석
-        length_dist = self.validate_length_distribution(content)
-
-        # 개선 제안
-        suggestions = []
-        if length_dist["rhythm_description"] < 150:
-            suggestions.append("리듬 해설을 더 풍부하게 작성하세요 (현재: {}자, 권장: 150자 이상)".format(
-                length_dist["rhythm_description"]
-            ))
-        if length_dist["meaning_shift"] < 80:
-            suggestions.append("의미 전환 문장을 더 상세하게 작성하세요")
-        if len(content.focus_caution.focus) < 3:
-            suggestions.append("집중 포인트를 3개 이상 추가하세요")
-
-        return {
-            "is_valid": is_valid,
-            "messages": messages,
-            "length_distribution": length_dist,
-            "total_chars": length_dist["total"],
-            "target_chars": content.length_requirements.left_page_target_chars,
-            "min_chars": content.length_requirements.left_page_min_chars,
-            "completion_rate": (
-                length_dist["total"] / content.length_requirements.left_page_target_chars * 100
-            ),
-            "suggestions": suggestions
-        }
-
-
-def validate_content(content: DailyContent) -> Tuple[bool, List[str]]:
+def validate_daily_content(content: Dict[str, Any]) -> Tuple[bool, List[str]]:
     """
-    편의 함수: DailyContent 검증
+    일간 콘텐츠가 DAILY_CONTENT_SCHEMA.json을 준수하는지 검증
 
-    Usage:
-        is_valid, messages = validate_content(daily_content)
-        if not is_valid:
-            print("검증 실패:", messages)
+    Args:
+        content: 검증할 콘텐츠 딕셔너리
+
+    Returns:
+        (is_valid, errors): 검증 성공 여부와 에러 메시지 리스트
     """
-    validator = ContentValidator()
-    return validator.validate_daily_content(content)
+    errors = []
+
+    # 필수 필드 검증
+    required_fields = [
+        "date",
+        "summary",
+        "keywords",
+        "rhythm_description",
+        "focus_caution",
+        "action_guide",
+        "time_direction",
+        "state_trigger",
+        "meaning_shift",
+        "rhythm_question",
+    ]
+
+    for field in required_fields:
+        if field not in content:
+            errors.append(f"필수 필드 누락: {field}")
+
+    # date 검증
+    if "date" in content:
+        if not isinstance(content["date"], str):
+            errors.append("date는 문자열이어야 합니다")
+        elif not _is_valid_date_format(content["date"]):
+            errors.append("date는 YYYY-MM-DD 형식이어야 합니다")
+
+    # summary 검증
+    if "summary" in content:
+        if not isinstance(content["summary"], str):
+            errors.append("summary는 문자열이어야 합니다")
+        elif len(content["summary"]) < 10:
+            errors.append("summary는 최소 10자 이상이어야 합니다")
+
+    # keywords 검증
+    if "keywords" in content:
+        if not isinstance(content["keywords"], list):
+            errors.append("keywords는 리스트여야 합니다")
+        elif len(content["keywords"]) < 3:
+            errors.append("keywords는 최소 3개 이상이어야 합니다")
+        elif len(content["keywords"]) > 8:
+            errors.append("keywords는 최대 8개 이하여야 합니다")
+
+    # rhythm_description 검증
+    if "rhythm_description" in content:
+        if not isinstance(content["rhythm_description"], str):
+            errors.append("rhythm_description은 문자열이어야 합니다")
+        elif len(content["rhythm_description"]) < 50:
+            errors.append("rhythm_description은 최소 50자 이상이어야 합니다")
+
+    # focus_caution 검증
+    if "focus_caution" in content:
+        fc = content["focus_caution"]
+        if not isinstance(fc, dict):
+            errors.append("focus_caution은 딕셔너리여야 합니다")
+        else:
+            if "focus" not in fc or not isinstance(fc["focus"], list):
+                errors.append("focus_caution.focus는 리스트여야 합니다")
+            if "caution" not in fc or not isinstance(fc["caution"], list):
+                errors.append("focus_caution.caution은 리스트여야 합니다")
+
+    # action_guide 검증
+    if "action_guide" in content:
+        ag = content["action_guide"]
+        if not isinstance(ag, dict):
+            errors.append("action_guide는 딕셔너리여야 합니다")
+        else:
+            if "do" not in ag or not isinstance(ag["do"], list):
+                errors.append("action_guide.do는 리스트여야 합니다")
+            if "avoid" not in ag or not isinstance(ag["avoid"], list):
+                errors.append("action_guide.avoid는 리스트여야 합니다")
+
+    # time_direction 검증
+    if "time_direction" in content:
+        td = content["time_direction"]
+        if not isinstance(td, dict):
+            errors.append("time_direction은 딕셔너리여야 합니다")
+        else:
+            required_td_fields = ["good_time", "avoid_time", "good_direction", "avoid_direction", "notes"]
+            for field in required_td_fields:
+                if field not in td:
+                    errors.append(f"time_direction.{field} 필드 누락")
+
+    # state_trigger 검증
+    if "state_trigger" in content:
+        st = content["state_trigger"]
+        if not isinstance(st, dict):
+            errors.append("state_trigger는 딕셔너리여야 합니다")
+        else:
+            required_st_fields = ["gesture", "phrase", "how_to"]
+            for field in required_st_fields:
+                if field not in st:
+                    errors.append(f"state_trigger.{field} 필드 누락")
+
+    # meaning_shift 검증
+    if "meaning_shift" in content:
+        if not isinstance(content["meaning_shift"], str):
+            errors.append("meaning_shift는 문자열이어야 합니다")
+        elif len(content["meaning_shift"]) < 30:
+            errors.append("meaning_shift는 최소 30자 이상이어야 합니다")
+
+    # rhythm_question 검증
+    if "rhythm_question" in content:
+        if not isinstance(content["rhythm_question"], str):
+            errors.append("rhythm_question은 문자열이어야 합니다")
+        elif len(content["rhythm_question"]) < 10:
+            errors.append("rhythm_question은 최소 10자 이상이어야 합니다")
+
+    # 좌측 페이지 최소 글자 수 검증
+    left_page_length = _calculate_left_page_length(content)
+    if left_page_length < 400:
+        errors.append(f"좌측 페이지 총 글자 수 부족: {left_page_length}자 (최소 400자 필요)")
+
+    # 설명형 문단 존재 여부 검증
+    if not _has_explanatory_paragraphs(content):
+        errors.append("좌측 페이지에 설명형 문단이 필요합니다 (카드 전용 요약만으로는 불충분)")
+
+    # CharOptimizer를 사용한 블록별 글자 수 검증
+    char_valid, total_chars, char_issues = CharOptimizer.validate_page(content)
+    if not char_valid:
+        for issue in char_issues:
+            errors.append(issue.get("message", "글자 수 검증 실패"))
+
+    is_valid = len(errors) == 0
+    return is_valid, errors
 
 
-def get_quality_report(content: DailyContent) -> Dict[str, Any]:
+def _is_valid_date_format(date_str: str) -> bool:
+    """YYYY-MM-DD 형식 검증"""
+    import re
+    pattern = r"^\d{4}-\d{2}-\d{2}$"
+    return bool(re.match(pattern, date_str))
+
+
+def _calculate_left_page_length(content: Dict[str, Any]) -> int:
+    """좌측 페이지 총 글자 수 계산"""
+    total_length = 0
+
+    # summary
+    total_length += len(content.get("summary", ""))
+
+    # rhythm_description (주요 설명 블록)
+    total_length += len(content.get("rhythm_description", ""))
+
+    # focus_caution의 모든 항목
+    fc = content.get("focus_caution", {})
+    for item in fc.get("focus", []):
+        total_length += len(item)
+    for item in fc.get("caution", []):
+        total_length += len(item)
+
+    # action_guide의 모든 항목
+    ag = content.get("action_guide", {})
+    for item in ag.get("do", []):
+        total_length += len(item)
+    for item in ag.get("avoid", []):
+        total_length += len(item)
+
+    # time_direction의 notes (설명)
+    td = content.get("time_direction", {})
+    total_length += len(td.get("notes", ""))
+
+    # state_trigger의 how_to (설명)
+    st = content.get("state_trigger", {})
+    total_length += len(st.get("how_to", ""))
+
+    # meaning_shift (의미 전환 설명)
+    total_length += len(content.get("meaning_shift", ""))
+
+    # rhythm_question
+    total_length += len(content.get("rhythm_question", ""))
+
+    return total_length
+
+
+def _has_explanatory_paragraphs(content: Dict[str, Any]) -> bool:
+    """설명형 문단 존재 여부 확인"""
+    # rhythm_description이 충분히 긴지 확인 (최소 200자)
+    if len(content.get("rhythm_description", "")) >= 200:
+        return True
+
+    # meaning_shift가 충분히 긴지 확인 (최소 80자)
+    if len(content.get("meaning_shift", "")) >= 80:
+        return True
+
+    # time_direction.notes가 충분히 긴지 확인
+    td = content.get("time_direction", {})
+    if len(td.get("notes", "")) >= 30:
+        return True
+
+    # state_trigger.how_to가 충분히 긴지 확인
+    st = content.get("state_trigger", {})
+    if len(st.get("how_to", "")) >= 30:
+        return True
+
+    return False
+
+
+def validate_monthly_content(content: Dict[str, Any]) -> Tuple[bool, List[str]]:
     """
-    편의 함수: 품질 리포트 생성
+    월간 콘텐츠 검증
 
-    Usage:
-        report = get_quality_report(daily_content)
-        print(f"총 글자 수: {report['total_chars']}")
-        print(f"완성도: {report['completion_rate']:.1f}%")
+    Args:
+        content: 검증할 월간 콘텐츠
+
+    Returns:
+        (is_valid, errors)
     """
-    validator = ContentValidator()
-    return validator.generate_quality_report(content)
+    errors = []
+
+    required_fields = ["year_month", "theme", "priorities", "calendar_data"]
+
+    for field in required_fields:
+        if field not in content:
+            errors.append(f"필수 필드 누락: {field}")
+
+    # priorities 검증
+    if "priorities" in content:
+        if not isinstance(content["priorities"], list):
+            errors.append("priorities는 리스트여야 합니다")
+        elif len(content["priorities"]) < 3:
+            errors.append("priorities는 최소 3개 이상이어야 합니다")
+
+    # calendar_data 검증
+    if "calendar_data" in content:
+        if not isinstance(content["calendar_data"], dict):
+            errors.append("calendar_data는 딕셔너리여야 합니다")
+
+    is_valid = len(errors) == 0
+    return is_valid, errors
+
+
+def validate_yearly_content(content: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    """
+    연간 콘텐츠 검증
+
+    Args:
+        content: 검증할 연간 콘텐츠
+
+    Returns:
+        (is_valid, errors)
+    """
+    errors = []
+
+    required_fields = ["year", "theme", "flow_summary", "monthly_signals"]
+
+    for field in required_fields:
+        if field not in content:
+            errors.append(f"필수 필드 누락: {field}")
+
+    # monthly_signals 검증 (12개월)
+    if "monthly_signals" in content:
+        if not isinstance(content["monthly_signals"], dict):
+            errors.append("monthly_signals는 딕셔너리여야 합니다")
+        elif len(content["monthly_signals"]) != 12:
+            errors.append(f"monthly_signals는 12개월이어야 합니다 (현재: {len(content['monthly_signals'])}개)")
+
+    is_valid = len(errors) == 0
+    return is_valid, errors

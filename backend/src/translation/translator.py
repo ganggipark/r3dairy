@@ -170,6 +170,146 @@ def translate_daily_content(
         translated["rhythm_question"], expression_map, target_role
     )
 
+    # 10. Daily Health Sports 번역
+    if "daily_health_sports" in translated:
+        block = translated["daily_health_sports"]
+        block["recommended_activities"] = [
+            _translate_text(item, expression_map) for item in block.get("recommended_activities", [])
+        ]
+        block["health_tips"] = [
+            _translate_text(item, expression_map) for item in block.get("health_tips", [])
+        ]
+        block["wellness_focused"] = [
+            _translate_text(item, expression_map) for item in block.get("wellness_focused", [])
+        ]
+        block["explanation"] = _translate_text(block.get("explanation", ""), expression_map)
+
+    # 11. Daily Meal Nutrition 번역
+    if "daily_meal_nutrition" in translated:
+        block = translated["daily_meal_nutrition"]
+        block["flavor_profile"] = [
+            _translate_text(item, expression_map) for item in block.get("flavor_profile", [])
+        ]
+        block["recommended_foods"] = [
+            _translate_text(item, expression_map) for item in block.get("recommended_foods", [])
+        ]
+        block["avoid_foods"] = [
+            _translate_text(item, expression_map) for item in block.get("avoid_foods", [])
+        ]
+        block["explanation"] = _translate_text(block.get("explanation", ""), expression_map)
+
+    # 12. Daily Fashion Beauty 번역
+    if "daily_fashion_beauty" in translated:
+        block = translated["daily_fashion_beauty"]
+        block["clothing_style"] = [
+            _translate_text(item, expression_map) for item in block.get("clothing_style", [])
+        ]
+        block["color_suggestions"] = [
+            _translate_text(item, expression_map) for item in block.get("color_suggestions", [])
+        ]
+        block["beauty_tips"] = [
+            _translate_text(item, expression_map) for item in block.get("beauty_tips", [])
+        ]
+        block["explanation"] = _translate_text(block.get("explanation", ""), expression_map)
+
+    # 13. Daily Shopping Finance 번역
+    if "daily_shopping_finance" in translated:
+        block = translated["daily_shopping_finance"]
+        block["good_to_buy"] = [
+            _translate_text(item, expression_map) for item in block.get("good_to_buy", [])
+        ]
+        block["finance_advice"] = [
+            _translate_text(item, expression_map) for item in block.get("finance_advice", [])
+        ]
+        block["investment_focus"] = [
+            _translate_text(item, expression_map) for item in block.get("investment_focus", [])
+        ]
+        block["explanation"] = _translate_text(block.get("explanation", ""), expression_map)
+
+    # 14. Daily Living Space 번역
+    if "daily_living_space" in translated:
+        block = translated["daily_living_space"]
+        block["space_organization"] = [
+            _translate_text(item, expression_map) for item in block.get("space_organization", [])
+        ]
+        block["plants_decor"] = [
+            _translate_text(item, expression_map) for item in block.get("plants_decor", [])
+        ]
+        block["environmental_tips"] = [
+            _translate_text(item, expression_map) for item in block.get("environmental_tips", [])
+        ]
+        block["explanation"] = _translate_text(block.get("explanation", ""), expression_map)
+
+    # 15. Daily Routines 번역
+    if "daily_routines" in translated:
+        block = translated["daily_routines"]
+        block["sleep_schedule"] = [
+            _translate_text(item, expression_map) for item in block.get("sleep_schedule", [])
+        ]
+        block["morning_routine"] = [
+            _translate_text(item, expression_map) for item in block.get("morning_routine", [])
+        ]
+        block["evening_routine"] = [
+            _translate_text(item, expression_map) for item in block.get("evening_routine", [])
+        ]
+        block["explanation"] = _translate_text(block.get("explanation", ""), expression_map)
+
+    # 16. Digital Communication 번역
+    if "digital_communication" in translated:
+        block = translated["digital_communication"]
+        block["device_usage"] = [
+            _translate_text(item, expression_map) for item in block.get("device_usage", [])
+        ]
+        block["social_media"] = [
+            _translate_text(item, expression_map) for item in block.get("social_media", [])
+        ]
+        block["online_focus_areas"] = [
+            _translate_text(item, expression_map) for item in block.get("online_focus_areas", [])
+        ]
+        block["explanation"] = _translate_text(block.get("explanation", ""), expression_map)
+
+    # 17. Hobbies Creativity 번역
+    if "hobbies_creativity" in translated:
+        block = translated["hobbies_creativity"]
+        block["creative_activities"] = [
+            _translate_text(item, expression_map) for item in block.get("creative_activities", [])
+        ]
+        block["learning_recommendations"] = [
+            _translate_text(item, expression_map) for item in block.get("learning_recommendations", [])
+        ]
+        block["entertainment_options"] = [
+            _translate_text(item, expression_map) for item in block.get("entertainment_options", [])
+        ]
+        block["explanation"] = _translate_text(block.get("explanation", ""), expression_map)
+
+    # 18. Relationships Social 번역
+    if "relationships_social" in translated:
+        block = translated["relationships_social"]
+        block["communication_style"] = [
+            _translate_text(item, expression_map) for item in block.get("communication_style", [])
+        ]
+        block["social_energies"] = [
+            _translate_text(item, expression_map) for item in block.get("social_energies", [])
+        ]
+        block["relationship_tips"] = [
+            _translate_text(item, expression_map) for item in block.get("relationship_tips", [])
+        ]
+        block["explanation"] = _translate_text(block.get("explanation", ""), expression_map)
+
+    # 19. Seasonal Environment 번역
+    if "seasonal_environment" in translated:
+        block = translated["seasonal_environment"]
+        block["weather_adaptation"] = [
+            _translate_text(item, expression_map) for item in block.get("weather_adaptation", [])
+        ]
+        block["seasonal_activities"] = [
+            _translate_text(item, expression_map) for item in block.get("seasonal_activities", [])
+        ]
+        block["environmental_focus"] = [
+            _translate_text(item, expression_map) for item in block.get("environmental_focus", [])
+        ]
+        block["explanation"] = _translate_text(block.get("explanation", ""), expression_map)
+
     return translated
 
 

@@ -45,6 +45,95 @@ class LengthRequirements(BaseModel):
     )
 
 
+# 새로운 10개 라이프스타일 카테고리 모델들
+
+class DailyHealthSports(BaseModel):
+    """운동/건강"""
+    recommended_activities: List[str] = Field(..., min_length=2, description="추천 활동")
+    health_tips: List[str] = Field(..., min_length=2, description="건강 팁")
+    wellness_focused: List[str] = Field(..., min_length=1, description="웰니스 집중")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class DailyMealNutrition(BaseModel):
+    """음식/영양/건강식단"""
+    flavor_profile: List[str] = Field(..., min_length=2, description="맛 프로필")
+    food_recommendations: List[str] = Field(..., min_length=2, description="음식 추천")
+    nutritional_tips: List[str] = Field(..., min_length=2, description="영양 팁")
+    avoid_foods: List[str] = Field(default_factory=list, description="피해야 할 음식")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class DailyFashionBeauty(BaseModel):
+    """의류/뷰티/화장"""
+    clothing_style: List[str] = Field(..., min_length=2, description="의류 스타일")
+    color_recommendations: List[str] = Field(..., min_length=2, description="색상 추천")
+    grooming_tips: List[str] = Field(..., min_length=2, description="그루밍 팁")
+    avoid_styles: List[str] = Field(default_factory=list, description="피해야 할 스타일")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class DailyShoppingFinance(BaseModel):
+    """쇼핑/재테크/소비"""
+    good_purchases: List[str] = Field(..., min_length=2, description="좋은 구매")
+    spending_tips: List[str] = Field(..., min_length=2, description="소비 팁")
+    value_recommendations: List[str] = Field(..., min_length=1, description="가치 추천")
+    avoid_purchases: List[str] = Field(default_factory=list, description="피해야 할 구매")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class DailyLivingSpace(BaseModel):
+    """주거/인테리어/식물"""
+    interior_style: List[str] = Field(..., min_length=2, description="인테리어 스타일")
+    plant_recommendations: List[str] = Field(..., min_length=2, description="식물 추천")
+    organization_tips: List[str] = Field(..., min_length=2, description="정리 팁")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class DailyRoutines(BaseModel):
+    """수면/기상/일상루틴"""
+    sleep_pattern: List[str] = Field(..., min_length=2, description="수면 패턴")
+    morning_routine: List[str] = Field(..., min_length=2, description="아침 루틴")
+    evening_routine: List[str] = Field(..., min_length=2, description="저녁 루틴")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class DigitalCommunication(BaseModel):
+    """스마트폰/SNS/온라인"""
+    phone_usage_tips: List[str] = Field(..., min_length=2, description="폰 사용 팁")
+    social_media_guidance: List[str] = Field(..., min_length=2, description="소셜미디어 가이드")
+    app_recommendations: List[str] = Field(..., min_length=2, description="앱 추천")
+    optimal_timing: str = Field(..., description="최적 타이밍")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class HobbiesCreativity(BaseModel):
+    """취미/창작/학습"""
+    creative_hobbies: List[str] = Field(..., min_length=2, description="창작 취미")
+    learning_activities: List[str] = Field(..., min_length=2, description="학습 활동")
+    recommended_time: str = Field(..., description="추천 시간")
+    social_hobbies: List[str] = Field(default_factory=list, description="사교 취미")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class RelationshipsSocial(BaseModel):
+    """인간관계/소통"""
+    relationship_focus: List[str] = Field(..., min_length=2, description="관계 집중")
+    communication_style: List[str] = Field(..., min_length=2, description="소통 스타일")
+    social_activities: List[str] = Field(..., min_length=2, description="사교 활동")
+    avoid_situations: List[str] = Field(default_factory=list, description="피해야 할 상황")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class SeasonalEnvironment(BaseModel):
+    """날씨/계절/환경"""
+    weather_adaptation: List[str] = Field(..., min_length=2, description="날씨 적응")
+    seasonal_activities: List[str] = Field(..., min_length=2, description="계절 활동")
+    environment_setup: List[str] = Field(..., min_length=2, description="환경 설정")
+    outdoor_recommendations: List[str] = Field(..., min_length=2, description="야외 추천")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
 class DailyContent(BaseModel):
     """
     일간 콘텐츠 (사용자 노출)
@@ -76,7 +165,7 @@ class DailyContent(BaseModel):
     # 3. 리듬 해설
     rhythm_description: str = Field(
         ...,
-        min_length=100,
+        min_length=200,
         max_length=500,
         description="오늘의 리듬 상세 해설 (설명형 문단)"
     )
@@ -96,7 +185,7 @@ class DailyContent(BaseModel):
     # 8. 의미 전환
     meaning_shift: str = Field(
         ...,
-        min_length=50,
+        min_length=80,
         max_length=300,
         description="불안/충동을 재해석하는 문장"
     )
@@ -111,6 +200,18 @@ class DailyContent(BaseModel):
 
     # 10. 길이 요구사항 (메타데이터)
     length_requirements: LengthRequirements = Field(default_factory=LengthRequirements)
+
+    # 새로운 10개 라이프스타일 카테고리
+    daily_health_sports: DailyHealthSports = Field(..., description="운동/건강")
+    daily_meal_nutrition: DailyMealNutrition = Field(..., description="음식/영양")
+    daily_fashion_beauty: DailyFashionBeauty = Field(..., description="의류/뷰티")
+    daily_shopping_finance: DailyShoppingFinance = Field(..., description="쇼핑/재테크")
+    daily_living_space: DailyLivingSpace = Field(..., description="주거공간")
+    daily_routines: DailyRoutines = Field(..., description="일상루틴")
+    digital_communication: DigitalCommunication = Field(..., description="디지털소통")
+    hobbies_creativity: HobbiesCreativity = Field(..., description="취미/창작")
+    relationships_social: RelationshipsSocial = Field(..., description="인간관계")
+    seasonal_environment: SeasonalEnvironment = Field(..., description="계절환경")
 
     @field_validator('keywords')
     @classmethod
@@ -140,6 +241,65 @@ class DailyContent(BaseModel):
         total += len(self.state_trigger.how_to)
         total += len(self.meaning_shift)
         total += len(self.rhythm_question)
+        
+        # 새로운 10개 라이프스타일 카테고리 길이 추가
+        total += sum(len(r) for r in self.daily_health_sports.recommended_activities)
+        total += sum(len(h) for h in self.daily_health_sports.health_tips)
+        total += sum(len(w) for w in self.daily_health_sports.wellness_focused)
+        total += len(self.daily_health_sports.explanation)
+        
+        total += sum(len(f) for f in self.daily_meal_nutrition.flavor_profile)
+        total += sum(len(f) for f in self.daily_meal_nutrition.food_recommendations)
+        total += sum(len(n) for n in self.daily_meal_nutrition.nutritional_tips)
+        total += sum(len(a) for a in self.daily_meal_nutrition.avoid_foods)
+        total += len(self.daily_meal_nutrition.explanation)
+        
+        total += sum(len(c) for c in self.daily_fashion_beauty.clothing_style)
+        total += sum(len(c) for c in self.daily_fashion_beauty.color_recommendations)
+        total += sum(len(g) for g in self.daily_fashion_beauty.grooming_tips)
+        total += sum(len(a) for a in self.daily_fashion_beauty.avoid_styles)
+        total += len(self.daily_fashion_beauty.explanation)
+        
+        total += sum(len(g) for g in self.daily_shopping_finance.good_purchases)
+        total += sum(len(s) for s in self.daily_shopping_finance.spending_tips)
+        total += sum(len(v) for v in self.daily_shopping_finance.value_recommendations)
+        total += sum(len(a) for a in self.daily_shopping_finance.avoid_purchases)
+        total += len(self.daily_shopping_finance.explanation)
+        
+        total += sum(len(i) for i in self.daily_living_space.interior_style)
+        total += sum(len(p) for p in self.daily_living_space.plant_recommendations)
+        total += sum(len(o) for o in self.daily_living_space.organization_tips)
+        total += len(self.daily_living_space.explanation)
+        
+        total += sum(len(s) for s in self.daily_routines.sleep_pattern)
+        total += sum(len(m) for m in self.daily_routines.morning_routine)
+        total += sum(len(e) for e in self.daily_routines.evening_routine)
+        total += len(self.daily_routines.explanation)
+        
+        total += sum(len(p) for p in self.digital_communication.phone_usage_tips)
+        total += sum(len(s) for s in self.digital_communication.social_media_guidance)
+        total += sum(len(a) for a in self.digital_communication.app_recommendations)
+        total += len(self.digital_communication.optimal_timing)
+        total += len(self.digital_communication.explanation)
+        
+        total += sum(len(c) for c in self.hobbies_creativity.creative_hobbies)
+        total += sum(len(l) for l in self.hobbies_creativity.learning_activities)
+        total += len(self.hobbies_creativity.recommended_time)
+        total += sum(len(s) for s in self.hobbies_creativity.social_hobbies)
+        total += len(self.hobbies_creativity.explanation)
+        
+        total += sum(len(r) for r in self.relationships_social.relationship_focus)
+        total += sum(len(c) for c in self.relationships_social.communication_style)
+        total += sum(len(s) for s in self.relationships_social.social_activities)
+        total += sum(len(a) for a in self.relationships_social.avoid_situations)
+        total += len(self.relationships_social.explanation)
+        
+        total += sum(len(w) for w in self.seasonal_environment.weather_adaptation)
+        total += sum(len(s) for s in self.seasonal_environment.seasonal_activities)
+        total += sum(len(e) for e in self.seasonal_environment.environment_setup)
+        total += sum(len(o) for o in self.seasonal_environment.outdoor_recommendations)
+        total += len(self.seasonal_environment.explanation)
+        
         return total
 
     def validate_length_requirements(self) -> tuple[bool, int, str]:
@@ -234,6 +394,95 @@ class MonthlyContent(BaseModel):
                 }
             }
         }
+
+
+# 새로운 10개 라이프스타일 카테고리 모델들
+
+class DailyHealthSports(BaseModel):
+    """운동/건강"""
+    recommended_activities: List[str] = Field(..., min_length=2, description="추천 활동")
+    health_tips: List[str] = Field(..., min_length=2, description="건강 팁")
+    wellness_focused: List[str] = Field(..., min_length=1, description="웰니스 집중")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class DailyMealNutrition(BaseModel):
+    """음식/영양/건강식단"""
+    flavor_profile: List[str] = Field(..., min_length=2, description="맛 프로필")
+    food_recommendations: List[str] = Field(..., min_length=2, description="음식 추천")
+    nutritional_tips: List[str] = Field(..., min_length=2, description="영양 팁")
+    avoid_foods: List[str] = Field(default_factory=list, description="피해야 할 음식")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class DailyFashionBeauty(BaseModel):
+    """의류/뷰티/화장"""
+    clothing_style: List[str] = Field(..., min_length=2, description="의류 스타일")
+    color_recommendations: List[str] = Field(..., min_length=2, description="색상 추천")
+    grooming_tips: List[str] = Field(..., min_length=2, description="그루밍 팁")
+    avoid_styles: List[str] = Field(default_factory=list, description="피해야 할 스타일")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class DailyShoppingFinance(BaseModel):
+    """쇼핑/재테크/소비"""
+    good_purchases: List[str] = Field(..., min_length=2, description="좋은 구매")
+    spending_tips: List[str] = Field(..., min_length=2, description="소비 팁")
+    value_recommendations: List[str] = Field(..., min_length=1, description="가치 추천")
+    avoid_purchases: List[str] = Field(default_factory=list, description="피해야 할 구매")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class DailyLivingSpace(BaseModel):
+    """주거/인테리어/식물"""
+    interior_style: List[str] = Field(..., min_length=2, description="인테리어 스타일")
+    plant_recommendations: List[str] = Field(..., min_length=2, description="식물 추천")
+    organization_tips: List[str] = Field(..., min_length=2, description="정리 팁")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class DailyRoutines(BaseModel):
+    """수면/기상/일상루틴"""
+    sleep_pattern: List[str] = Field(..., min_length=2, description="수면 패턴")
+    morning_routine: List[str] = Field(..., min_length=2, description="아침 루틴")
+    evening_routine: List[str] = Field(..., min_length=2, description="저녁 루틴")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class DigitalCommunication(BaseModel):
+    """스마트폰/SNS/온라인"""
+    phone_usage_tips: List[str] = Field(..., min_length=2, description="폰 사용 팁")
+    social_media_guidance: List[str] = Field(..., min_length=2, description="소셜미디어 가이드")
+    app_recommendations: List[str] = Field(..., min_length=2, description="앱 추천")
+    optimal_timing: str = Field(..., description="최적 타이밍")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class HobbiesCreativity(BaseModel):
+    """취미/창작/학습"""
+    creative_hobbies: List[str] = Field(..., min_length=2, description="창작 취미")
+    learning_activities: List[str] = Field(..., min_length=2, description="학습 활동")
+    recommended_time: str = Field(..., description="추천 시간")
+    social_hobbies: List[str] = Field(default_factory=list, description="사교 취미")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class RelationshipsSocial(BaseModel):
+    """인간관계/소통"""
+    relationship_focus: List[str] = Field(..., min_length=2, description="관계 집중")
+    communication_style: List[str] = Field(..., min_length=2, description="소통 스타일")
+    social_activities: List[str] = Field(..., min_length=2, description="사교 활동")
+    avoid_situations: List[str] = Field(default_factory=list, description="피해야 할 상황")
+    explanation: str = Field(..., min_length=50, description="설명")
+
+
+class SeasonalEnvironment(BaseModel):
+    """날씨/계절/환경"""
+    weather_adaptation: List[str] = Field(..., min_length=2, description="날씨 적응")
+    seasonal_activities: List[str] = Field(..., min_length=2, description="계절 활동")
+    environment_setup: List[str] = Field(..., min_length=2, description="환경 설정")
+    outdoor_recommendations: List[str] = Field(..., min_length=2, description="야외 추천")
+    explanation: str = Field(..., min_length=50, description="설명")
 
 
 class YearlyContent(BaseModel):
