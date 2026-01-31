@@ -9,15 +9,25 @@ from datetime import date
 import tempfile
 import os
 
+# Skip entire module if weasyprint is not available (e.g., Windows without libgobject)
+try:
+    import weasyprint  # noqa: F401
+    WEASYPRINT_AVAILABLE = True
+except (ImportError, OSError):
+    WEASYPRINT_AVAILABLE = False
+    pytest.skip(
+        "WeasyPrint not available (missing libgobject-2.0-0 or similar system dependency)",
+        allow_module_level=True,
+    )
+
 # PDF Generator import
 sys.path.append(str(Path(__file__).parent.parent.parent / "pdf-generator"))
 
 try:
     from generator import PDFGenerator
-    WEASYPRINT_AVAILABLE = True
 except ImportError:
     WEASYPRINT_AVAILABLE = False
-    pytest.skip("WeasyPrint가 설치되지 않았습니다", allow_module_level=True)
+    pytest.skip("PDFGenerator를 import할 수 없습니다", allow_module_level=True)
 
 
 @pytest.mark.pdf

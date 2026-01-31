@@ -7,6 +7,8 @@ from jinja2 import Environment, FileSystemLoader
 from typing import Dict, Any, Optional
 from pathlib import Path
 from datetime import datetime
+import markdown
+import re
 
 
 class PDFGenerator:
@@ -30,19 +32,185 @@ class PDFGenerator:
             "freelancer": "프리랜서"
         }
 
+        # Markdown parser 설정
+        self.md = markdown.Markdown(extensions=['extra', 'nl2br'])
+
+    def _parse_markdown_to_dict(self, md_content: str) -> Dict[str, Any]:
+        """
+        Parse Markdown content to dictionary format matching DAILY_CONTENT_SCHEMA
+
+        Args:
+            md_content: Markdown formatted daily content
+
+        Returns:
+            Dictionary with parsed content
+        """
+        lines = md_content.split('\n')
+        content = {
+            'date': '',
+            'summary': '',
+            'keywords': [],
+            'rhythm_description': '',
+            'focus_caution': {'focus': [], 'caution': []},
+            'action_guide': {'do': [], 'avoid': []},
+            'time_direction': {
+                'good_time': '',
+                'avoid_time': '',
+                'good_direction': '',
+                'avoid_direction': ''
+            },
+            'state_trigger': {'gesture': '', 'phrase': '', 'how_to': ''},
+            'meaning_shift': '',
+            'rhythm_question': ''
+        }
+
+        current_section = None
+        current_subsection = None
+        buffer = []
+
+        for line in lines:
+            line = line.strip()
+
+            # Skip separators
+            if line == '---':
+                continue
+
+            # H2 headers (main sections)
+            if line.startswith('## '):
+                # Save previous buffer
+                if current_section and buffer:
+                    self._save_buffer(content, current_section, current_subsection, buffer)
+                    buffer = []
+
+                section_title = line[3:].strip()
+                current_section = section_title
+                current_subsection = None
+                continue
+
+            # H3 headers (subsections)
+            if line.startswith('### '):
+                # Save previous buffer
+                if buffer:
+                    self._save_buffer(content, current_section, current_subsection, buffer)
+                    buffer = []
+
+                subsection_title = line[4:].strip()
+                current_subsection = subsection_title
+                continue
+
+            # Add content to buffer
+            if line:
+                buffer.append(line)
+
+        # Save final buffer
+        if current_section and buffer:
+            self._save_buffer(content, current_section, current_subsection, buffer)
+
+        return content
+
+    def _clean_markdown(self, text: str) -> str:
+        """Remove markdown formatting from text"""
+        # Remove bold **text**
+        text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
+        # Remove italic *text* or _text_
+        text = re.sub(r'\*(.+?)\*', r'\1', text)
+        text = re.sub(r'_(.+?)_', r'\1', text)
+        # Remove H1 #
+        text = re.sub(r'^#\s+', '', text, flags=re.MULTILINE)
+        return text.strip()
+
+    def _save_buffer(self, content: Dict, section: str, subsection: Optional[str], buffer: list):
+        """Save buffered lines to appropriate content section"""
+        text = '\n'.join(buffer).strip()
+
+        if section == '요약':
+            content['summary'] = self._clean_markdown(text)
+
+        elif section == '키워드':
+            # Parse keywords: - 휴식 • 집중 • 학습
+            keywords_line = text.replace('- ', '').replace('•', ' ')
+            content['keywords'] = [kw.strip() for kw in keywords_line.split() if kw.strip()]
+
+        elif section == '리듬 해설':
+            content['rhythm_description'] = self._clean_markdown(text)
+
+        elif section == '집중/주의 포인트':
+            if subsection == '집중':
+                content['focus_caution']['focus'] = self._parse_bullet_list(buffer)
+            elif subsection == '주의':
+                content['focus_caution']['caution'] = self._parse_bullet_list(buffer)
+
+        elif section == '행동 가이드':
+            if subsection == '권장':
+                content['action_guide']['do'] = self._parse_bullet_list(buffer)
+            elif subsection == '지양':
+                content['action_guide']['avoid'] = self._parse_bullet_list(buffer)
+
+        elif section == '시간/방향':
+            # Handle subsections with colons (좋은 시간:, 피할 시간:, etc.)
+            if subsection:
+                subsection_clean = subsection.rstrip(':')
+                bullet_items = self._parse_bullet_list(buffer)
+                combined_text = ', '.join(bullet_items) if bullet_items else ''
+
+                if '좋은 시간' in subsection_clean:
+                    content['time_direction']['good_time'] = combined_text
+                elif '피할 시간' in subsection_clean:
+                    content['time_direction']['avoid_time'] = combined_text
+                elif '좋은 방향' in subsection_clean:
+                    content['time_direction']['good_direction'] = combined_text
+                elif '피할 방향' in subsection_clean:
+                    content['time_direction']['avoid_direction'] = combined_text
+
+        elif section == '상태 전환 트리거':
+            # Handle subsections with colons (제스처:, 문구:, 방법:)
+            if subsection:
+                subsection_clean = subsection.rstrip(':')
+                bullet_items = self._parse_bullet_list(buffer)
+                combined_text = ', '.join(bullet_items) if bullet_items else ''
+
+                if '제스처' in subsection_clean:
+                    content['state_trigger']['gesture'] = combined_text
+                elif '문구' in subsection_clean:
+                    content['state_trigger']['phrase'] = combined_text
+                elif '방법' in subsection_clean:
+                    content['state_trigger']['how_to'] = combined_text
+
+        elif section == '의미 전환':
+            content['meaning_shift'] = self._clean_markdown(text)
+
+        elif section == '리듬 질문':
+            # Remove leading "- " if present
+            content['rhythm_question'] = self._clean_markdown(text.lstrip('- '))
+
+    def _parse_bullet_list(self, lines: list) -> list:
+        """Parse markdown bullet list into array"""
+        items = []
+        for line in lines:
+            line = line.strip()
+            if line.startswith('- ') or line.startswith('* '):
+                # Remove bullet and clean markdown
+                item = line[2:].strip()
+                # Remove markdown bold (**text**)
+                item = re.sub(r'\*\*(.+?)\*\*', r'\1', item)
+                items.append(item)
+        return items
+
     def generate_daily_pdf(
         self,
         content: Dict[str, Any],
         output_path: str,
-        role: Optional[str] = None
+        role: Optional[str] = None,
+        is_markdown: bool = False
     ) -> str:
         """
         Generate daily page PDF from DailyContent
 
         Args:
-            content: DailyContent 딕셔너리 (DAILY_CONTENT_SCHEMA 준수)
+            content: DailyContent 딕셔너리 (DAILY_CONTENT_SCHEMA 준수) 또는 Markdown 문자열
             output_path: PDF 저장 경로
             role: 역할 (student, office_worker, freelancer)
+            is_markdown: True if content is Markdown string, False if dict
 
         Returns:
             생성된 PDF 파일 경로
@@ -55,6 +223,13 @@ class PDFGenerator:
                 role="student"
             )
         """
+        # If content is Markdown string, parse it first
+        if is_markdown:
+            if isinstance(content, str):
+                content = self._parse_markdown_to_dict(content)
+            else:
+                raise ValueError("When is_markdown=True, content must be a string")
+
         # 템플릿 로드
         template = self.jinja_env.get_template("daily.html")
 

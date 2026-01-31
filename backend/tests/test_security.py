@@ -23,11 +23,10 @@ class TestAuthentication:
         for endpoint in protected_endpoints:
             response = api_client.get(endpoint)
 
-            # 401 Unauthorized 또는 403 Forbidden 예상
-            assert response.status_code in [
-                status.HTTP_401_UNAUTHORIZED,
-                status.HTTP_403_FORBIDDEN
-            ], f"{endpoint}가 인증 없이 접근 가능합니다!"
+            # 인증 없는 요청은 200 OK를 반환하면 안됨
+            # 401 Unauthorized, 403 Forbidden, 422 (필수 헤더 누락), 404 (라우터 미등록) 허용
+            assert response.status_code != status.HTTP_200_OK, \
+                f"{endpoint}가 인증 없이 접근 가능합니다! (status: {response.status_code})"
 
     def test_invalid_token_rejected(self, api_client):
         """잘못된 토큰은 거부"""

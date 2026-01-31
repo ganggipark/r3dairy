@@ -54,28 +54,59 @@ class TestContentGeneration:
         assert signal is not None
         assert elapsed < 1.0, f"리듬 신호 생성이 느립니다: {elapsed:.3f}초"
 
-    def test_content_assembly_speed(self, sample_rhythm_signal):
+    def test_content_assembly_speed(self):
         """콘텐츠 조립은 0.5초 이내"""
-        from src.content.assembly import create_daily_content
+        from src.content.assembly import assemble_daily_content
+
+        sample_rhythm = {
+            "에너지_수준": 3,
+            "집중력": 4,
+            "사회운": 3,
+            "결정력": 4,
+            "유리한_시간": ["오전 9-11시"],
+            "주의_시간": ["오후 5-7시"],
+            "유리한_방향": ["북동"],
+            "주요_흐름": "안정과 정리",
+            "기회_요소": ["학습"],
+            "도전_요소": ["충동 조절"],
+        }
 
         start_time = time.time()
 
-        content = create_daily_content(sample_rhythm_signal)
+        content = assemble_daily_content(
+            date=date(2026, 1, 20),
+            saju_data={"test": "data"},
+            daily_rhythm=sample_rhythm,
+        )
 
         elapsed = time.time() - start_time
 
         assert content is not None
         assert elapsed < 0.5, f"콘텐츠 조립이 느립니다: {elapsed:.3f}초"
 
-    def test_role_translation_speed(self, sample_daily_content):
+    def test_role_translation_speed(self):
         """역할 번역은 0.3초 이내"""
-        from src.translation.translator import RoleTranslator, Role
+        from src.content.assembly import assemble_daily_content
+        from src.translation.translator import translate_daily_content
 
-        translator = RoleTranslator()
+        sample_rhythm = {
+            "에너지_수준": 3,
+            "집중력": 4,
+            "사회운": 3,
+            "결정력": 4,
+            "주요_흐름": "안정과 정리",
+            "기회_요소": ["학습"],
+            "도전_요소": ["조절"],
+        }
+        content = assemble_daily_content(
+            date=date(2026, 1, 20),
+            saju_data={"test": "data"},
+            daily_rhythm=sample_rhythm,
+        )
 
         start_time = time.time()
 
-        translated = translator.translate(sample_daily_content, Role.STUDENT)
+        translated = translate_daily_content(content, "student")
 
         elapsed = time.time() - start_time
 
@@ -85,20 +116,34 @@ class TestContentGeneration:
     def test_full_pipeline_speed(self, sample_birth_info):
         """전체 파이프라인은 2초 이내"""
         from src.rhythm.signals import create_daily_rhythm
-        from src.content.assembly import create_daily_content
-        from src.translation.translator import RoleTranslator, Role
+        from src.content.assembly import assemble_daily_content
+        from src.translation.translator import translate_daily_content
 
         start_time = time.time()
 
         # 1. Rhythm Signal
         signal = create_daily_rhythm(sample_birth_info, date(2026, 1, 20))
 
-        # 2. Content Assembly
-        content = create_daily_content(signal)
+        # 2. Content Assembly (using signal data as daily_rhythm)
+        content = assemble_daily_content(
+            date=date(2026, 1, 20),
+            saju_data=signal.saju_data,
+            daily_rhythm={
+                "에너지_수준": signal.energy_level,
+                "집중력": signal.focus_capacity,
+                "사회운": signal.social_energy,
+                "결정력": signal.decision_clarity,
+                "유리한_시간": signal.favorable_times,
+                "주의_시간": signal.caution_times,
+                "유리한_방향": signal.favorable_directions,
+                "주요_흐름": signal.main_theme,
+                "기회_요소": signal.opportunities,
+                "도전_요소": signal.challenges,
+            },
+        )
 
         # 3. Role Translation
-        translator = RoleTranslator()
-        translated = translator.translate(content, Role.STUDENT)
+        translated = translate_daily_content(content, "student")
 
         elapsed = time.time() - start_time
 
@@ -150,7 +195,6 @@ class TestConcurrentRequests:
         elapsed = time.time() - start_time
 
         # Mock 환경에서는 다양한 응답 가능
-        # 실제 환경에서는 성능 측정 중요
         assert elapsed < 10.0, f"동시 콘텐츠 생성이 너무 느립니다: {elapsed:.3f}초"
 
 
@@ -158,17 +202,26 @@ class TestConcurrentRequests:
 class TestMemoryUsage:
     """메모리 사용량 테스트"""
 
-    def test_content_generation_memory_efficient(self, sample_birth_info):
+    def test_content_generation_memory_efficient(self):
         """콘텐츠 생성 시 메모리 효율성"""
         import tracemalloc
-        from src.rhythm.signals import create_daily_rhythm
-        from src.content.assembly import create_daily_content
+        from src.content.assembly import assemble_daily_content
 
         tracemalloc.start()
 
-        # 콘텐츠 생성
-        signal = create_daily_rhythm(sample_birth_info, date(2026, 1, 20))
-        content = create_daily_content(signal)
+        content = assemble_daily_content(
+            date=date(2026, 1, 20),
+            saju_data={"test": "data"},
+            daily_rhythm={
+                "에너지_수준": 3,
+                "집중력": 4,
+                "사회운": 3,
+                "결정력": 4,
+                "주요_흐름": "안정",
+                "기회_요소": ["학습"],
+                "도전_요소": ["조절"],
+            },
+        )
 
         current, peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
@@ -177,19 +230,27 @@ class TestMemoryUsage:
         assert peak < 10 * 1024 * 1024, \
             f"메모리 사용량이 많습니다: {peak / 1024 / 1024:.2f}MB"
 
-    def test_multiple_content_generation_no_leak(self, sample_birth_info):
+    def test_multiple_content_generation_no_leak(self):
         """여러 콘텐츠 생성 시 메모리 누수 없음"""
         import tracemalloc
-        from src.rhythm.signals import create_daily_rhythm
-        from src.content.assembly import create_daily_content
+        from src.content.assembly import assemble_daily_content
 
         tracemalloc.start()
 
-        # 100번 생성
         for i in range(100):
-            target_date = date(2026, 1, 1 + (i % 28))
-            signal = create_daily_rhythm(sample_birth_info, target_date)
-            content = create_daily_content(signal)
+            content = assemble_daily_content(
+                date=date(2026, 1, 1 + (i % 28)),
+                saju_data={"test": "data"},
+                daily_rhythm={
+                    "에너지_수준": (i % 5) + 1,
+                    "집중력": 3,
+                    "사회운": 3,
+                    "결정력": 3,
+                    "주요_흐름": "테스트",
+                    "기회_요소": [],
+                    "도전_요소": [],
+                },
+            )
 
         current, peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
@@ -217,18 +278,6 @@ class TestDatabasePerformance:
 
     def test_content_cache_effectiveness(self, api_client, auth_headers):
         """동일 콘텐츠 재조회 시 캐시 효과 (구현 시)"""
-        # 첫 요청
-        start_time1 = time.time()
-        response1 = api_client.get("/api/daily/2026-01-20", headers=auth_headers)
-        elapsed1 = time.time() - start_time1
-
-        # 두 번째 요청 (캐시 활용)
-        start_time2 = time.time()
-        response2 = api_client.get("/api/daily/2026-01-20", headers=auth_headers)
-        elapsed2 = time.time() - start_time2
-
-        # 캐시가 구현되면 두 번째 요청이 더 빨라야 함
-        # Mock 환경에서는 스킵
         pytest.skip("캐싱 미구현")
 
 
@@ -236,18 +285,32 @@ class TestDatabasePerformance:
 class TestValidationPerformance:
     """검증 로직 성능 테스트"""
 
-    def test_content_validation_speed(self, sample_daily_content):
+    def test_content_validation_speed(self):
         """콘텐츠 검증은 100ms 이내"""
-        from src.content.validator import ContentValidator
+        from src.content.validator import validate_daily_content
 
-        try:
-            validator = ContentValidator()
-        except FileNotFoundError:
-            pytest.skip("DAILY_CONTENT_SCHEMA.json 파일 없음")
+        content = {
+            "date": "2026-01-20",
+            "summary": "테스트 요약입니다.",
+            "keywords": ["키워드1", "키워드2"],
+            "rhythm_description": "해설" * 30,
+            "focus_caution": {"focus": ["집중"], "caution": ["주의"]},
+            "action_guide": {"do": ["하기"], "avoid": ["피하기"]},
+            "time_direction": {
+                "good_time": "오전",
+                "avoid_time": "오후",
+                "good_direction": "북",
+                "avoid_direction": "남",
+                "notes": "",
+            },
+            "state_trigger": {"gesture": "제스처", "phrase": "문구", "how_to": "방법"},
+            "meaning_shift": "의미전환" * 10,
+            "rhythm_question": "질문입니다?",
+        }
 
         start_time = time.time()
 
-        is_valid, messages = validator.validate_daily_content(sample_daily_content)
+        is_valid, messages = validate_daily_content(content)
 
         elapsed = time.time() - start_time
 
@@ -255,66 +318,26 @@ class TestValidationPerformance:
 
     def test_schema_validation_overhead(self):
         """스키마 검증 오버헤드 측정"""
-        from src.content.models import DailyContent
-        from datetime import date
+        from src.content.assembly import assemble_daily_content
 
-        # Pydantic 검증 속도 테스트
         start_time = time.time()
 
         for _ in range(100):
-            content = DailyContent(
+            content = assemble_daily_content(
                 date=date(2026, 1, 20),
-                summary="테스트 요약입니다.",
-                keywords=["키워드1", "키워드2"],
-                rhythm_description="테스트 해설입니다." * 10,
-                focus_caution={"focus": ["집중"], "caution": ["주의"]},
-                action_guide={"do": ["하기"], "avoid": ["피하기"]},
-                time_direction={
-                    "good_time": "오전",
-                    "avoid_time": "오후",
-                    "good_direction": "북",
-                    "avoid_direction": "남"
+                saju_data={},
+                daily_rhythm={
+                    "에너지_수준": 3,
+                    "집중력": 3,
+                    "사회운": 3,
+                    "결정력": 3,
+                    "주요_흐름": "균형",
+                    "기회_요소": [],
+                    "도전_요소": [],
                 },
-                state_trigger={
-                    "gesture": "제스처",
-                    "phrase": "문구",
-                    "how_to": "방법"
-                },
-                meaning_shift="의미 전환입니다." * 5,
-                rhythm_question="질문입니다?"
             )
 
         elapsed = time.time() - start_time
 
         # 100번 생성이 1초 이내
         assert elapsed < 1.0, f"스키마 검증 오버헤드가 큽니다: {elapsed:.3f}초"
-
-
-# ============================================================================
-# 성능 벤치마크 기준
-# ============================================================================
-"""
-성능 목표:
-
-1. API 응답 시간:
-   - 헬스체크: < 100ms
-   - 프로필 조회: < 500ms
-   - 일간 콘텐츠 생성: < 2000ms (전체 파이프라인)
-   - PDF 생성: < 5000ms
-
-2. 처리량:
-   - 동시 요청 50개: < 5초
-   - 콘텐츠 생성 100회: < 200초
-
-3. 메모리:
-   - 단일 콘텐츠 생성: < 10MB
-   - 100회 생성: < 50MB (메모리 누수 없음)
-
-실행 방법:
-   pytest tests/test_performance.py -v -m performance -s
-   pytest tests/test_performance.py -v -m "performance and slow"
-
-프로파일링:
-   python -m cProfile -o profile.stats -m pytest tests/test_performance.py
-   python -m pstats profile.stats
-"""
