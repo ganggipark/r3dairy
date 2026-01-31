@@ -6,7 +6,7 @@ from supabase import Client
 import datetime
 from datetime import date, time
 from typing import Optional
-from src.db.supabase import get_supabase, get_supabase_service
+from src.db.supabase import get_supabase, SupabaseClient
 from src.api.auth import get_current_user
 from src.rhythm.models import BirthInfo, Gender
 from src.rhythm.saju import calculate_saju, analyze_monthly_rhythm, analyze_yearly_rhythm
@@ -21,7 +21,7 @@ def _get_profile_data(user_id: str, supabase_db: Client) -> dict:
 
     Args:
         user_id: 사용자 ID
-        supabase_db: Service role Supabase client (RLS 우회용)
+        supabase_db: Supabase DB client (RLS 적용)
     """
     result = supabase_db.table("profiles").select("*").eq("id", user_id).execute()
 
@@ -39,9 +39,8 @@ async def get_monthly_content(
     year: int,
     month: int,
     role: Optional[Role] = Query(None),
-    authorization: str = Header(...),
+    authorization: Optional[str] = Header(None),
     supabase_auth: Client = Depends(get_supabase),
-    supabase_db: Client = Depends(get_supabase_service)
 ):
     """
     월간 콘텐츠 조회
@@ -58,8 +57,18 @@ async def get_monthly_content(
     Example:
         GET /api/content/monthly/2026/1?role=student
     """
+    # 인증 확인
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="인증이 필요합니다."
+        )
+
     user = get_current_user(authorization, supabase_auth)
     user_id = user.id
+
+    token = authorization.split(" ")[1]
+    supabase_db = SupabaseClient.create_user_db_client(token)
 
     try:
         # 날짜 검증
@@ -74,7 +83,7 @@ async def get_monthly_content(
                 detail="월은 1-12 범위여야 합니다."
             )
 
-        # 프로필 조회 (Service client 사용 - RLS 우회)
+        # 프로필 조회 (RLS 적용)
         profile = _get_profile_data(user_id, supabase_db)
 
         # BirthInfo 생성
@@ -118,9 +127,8 @@ async def get_monthly_content(
 async def get_yearly_content(
     year: int,
     role: Optional[Role] = Query(None),
-    authorization: str = Header(...),
+    authorization: Optional[str] = Header(None),
     supabase_auth: Client = Depends(get_supabase),
-    supabase_db: Client = Depends(get_supabase_service)
 ):
     """
     연간 콘텐츠 조회
@@ -136,8 +144,18 @@ async def get_yearly_content(
     Example:
         GET /api/content/yearly/2026?role=office_worker
     """
+    # 인증 확인
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="인증이 필요합니다."
+        )
+
     user = get_current_user(authorization, supabase_auth)
     user_id = user.id
+
+    token = authorization.split(" ")[1]
+    supabase_db = SupabaseClient.create_user_db_client(token)
 
     try:
         # 연도 검증
@@ -147,7 +165,7 @@ async def get_yearly_content(
                 detail="연도는 2000-2100 범위여야 합니다."
             )
 
-        # 프로필 조회 (Service client 사용 - RLS 우회)
+        # 프로필 조회 (RLS 적용)
         profile = _get_profile_data(user_id, supabase_db)
 
         # BirthInfo 생성

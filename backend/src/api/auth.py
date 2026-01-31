@@ -1,10 +1,10 @@
 """
 Authentication API Endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from supabase import Client
 from src.db.supabase import get_supabase
-from src.api.models import SignUpRequest, LoginRequest, AuthResponse, ErrorResponse
+from src.api.models import SignUpRequest, LoginRequest, ChangePasswordRequest, AuthResponse, ErrorResponse
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -180,6 +180,90 @@ async def refresh_token(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"토큰 갱신 중 오류가 발생했습니다: {str(e)}"
+        )
+
+
+@router.put("/change-password")
+async def change_password(
+    request: ChangePasswordRequest,
+    authorization: str = Header(None),
+    supabase: Client = Depends(get_supabase)
+):
+    """
+    비밀번호 변경
+
+    Args:
+        request: 비밀번호 변경 정보 (current_password, new_password)
+        authorization: Authorization 헤더
+        supabase: Supabase 클라이언트
+
+    Returns:
+        성공 메시지
+
+    Raises:
+        HTTPException 401: 인증 실패 또는 현재 비밀번호 불일치
+        HTTPException 500: 서버 오류
+    """
+    try:
+        # Authorization 헤더 확인
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="인증 토큰이 필요합니다."
+            )
+
+        token = authorization.split(" ")[1]
+
+        # 토큰으로 사용자 가져오기
+        user_response = supabase.auth.get_user(token)
+
+        if not user_response or not user_response.user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="인증이 필요합니다."
+            )
+
+        user = user_response.user
+
+        # 현재 비밀번호 확인 (재로그인 시도)
+        try:
+            login_response = supabase.auth.sign_in_with_password({
+                "email": user.email,
+                "password": request.current_password
+            })
+            if not login_response.user:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="현재 비밀번호가 올바르지 않습니다."
+                )
+        except:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="현재 비밀번호가 올바르지 않습니다."
+            )
+
+        # 비밀번호 업데이트
+        update_response = supabase.auth.update_user({
+            "password": request.new_password
+        })
+
+        if not update_response.user:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="비밀번호 변경에 실패했습니다."
+            )
+
+        return {
+            "success": True,
+            "message": "비밀번호가 성공적으로 변경되었습니다."
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"비밀번호 변경 중 오류가 발생했습니다: {str(e)}"
         )
 
 

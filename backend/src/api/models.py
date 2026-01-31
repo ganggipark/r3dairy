@@ -26,6 +26,12 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ChangePasswordRequest(BaseModel):
+    """비밀번호 변경 요청"""
+    current_password: str
+    new_password: str = Field(..., min_length=8)
+
+
 class AuthResponse(BaseModel):
     """인증 응답"""
     access_token: Optional[str] = None

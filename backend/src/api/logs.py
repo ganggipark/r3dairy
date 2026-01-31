@@ -2,9 +2,10 @@
 Daily Log API Endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Header
+from typing import Optional
 from supabase import Client
 import datetime
-from src.db.supabase import get_supabase
+from src.db.supabase import get_supabase, SupabaseClient
 from src.api.auth import get_current_user
 from src.api.models import DailyLogCreate, DailyLogUpdate, DailyLogResponse, SuccessResponse
 
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/api/logs", tags=["Daily Logs"])
 async def create_daily_log(
     target_date: datetime.date,
     request: DailyLogCreate,
-    authorization: str = Header(...),
+    authorization: Optional[str] = Header(None),
     supabase: Client = Depends(get_supabase)
 ):
     """
@@ -32,12 +33,25 @@ async def create_daily_log(
     Raises:
         HTTPException 400: 해당 날짜에 이미 기록 존재
     """
+    # 인증 확인
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="인증이 필요합니다."
+        )
+
     user = get_current_user(authorization, supabase)
     user_id = user.id
 
+    token = authorization.split(" ")[1]
+    supabase_db = SupabaseClient.create_user_db_client(token)
+
+    token = authorization.split(" ")[1]
+    supabase_db = SupabaseClient.create_user_db_client(token)
+
     try:
         # 기존 기록 확인
-        existing = supabase.table("daily_logs").select("*").eq(
+        existing = supabase_db.table("daily_logs").select("*").eq(
             "profile_id", user_id
         ).eq("date", target_date.isoformat()).execute()
 
@@ -59,7 +73,7 @@ async def create_daily_log(
             "gratitude": request.gratitude
         }
 
-        result = supabase.table("daily_logs").insert(log_data).execute()
+        result = supabase_db.table("daily_logs").insert(log_data).execute()
 
         if not result.data:
             raise HTTPException(
@@ -81,7 +95,7 @@ async def create_daily_log(
 @router.get("/{target_date}", response_model=DailyLogResponse)
 async def get_daily_log(
     target_date: datetime.date,
-    authorization: str = Header(...),
+    authorization: Optional[str] = Header(None),
     supabase: Client = Depends(get_supabase)
 ):
     """
@@ -97,11 +111,21 @@ async def get_daily_log(
     Raises:
         HTTPException 404: 기록이 존재하지 않음
     """
+    # 인증 확인
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="인증이 필요합니다."
+        )
+
     user = get_current_user(authorization, supabase)
     user_id = user.id
 
+    token = authorization.split(" ")[1]
+    supabase_db = SupabaseClient.create_user_db_client(token)
+
     try:
-        result = supabase.table("daily_logs").select("*").eq(
+        result = supabase_db.table("daily_logs").select("*").eq(
             "profile_id", user_id
         ).eq("date", target_date.isoformat()).execute()
 
@@ -126,7 +150,7 @@ async def get_daily_log(
 async def update_daily_log(
     target_date: datetime.date,
     request: DailyLogUpdate,
-    authorization: str = Header(...),
+    authorization: Optional[str] = Header(None),
     supabase: Client = Depends(get_supabase)
 ):
     """
@@ -143,12 +167,22 @@ async def update_daily_log(
     Raises:
         HTTPException 404: 기록이 존재하지 않음
     """
+    # 인증 확인
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="인증이 필요합니다."
+        )
+
     user = get_current_user(authorization, supabase)
     user_id = user.id
 
+    token = authorization.split(" ")[1]
+    supabase_db = SupabaseClient.create_user_db_client(token)
+
     try:
         # 기존 기록 확인
-        existing = supabase.table("daily_logs").select("*").eq(
+        existing = supabase_db.table("daily_logs").select("*").eq(
             "profile_id", user_id
         ).eq("date", target_date.isoformat()).execute()
 
@@ -174,7 +208,7 @@ async def update_daily_log(
             update_data["gratitude"] = request.gratitude
 
         # 기록 수정
-        result = supabase.table("daily_logs").update(update_data).eq(
+        result = supabase_db.table("daily_logs").update(update_data).eq(
             "profile_id", user_id
         ).eq("date", target_date.isoformat()).execute()
 
@@ -198,7 +232,7 @@ async def update_daily_log(
 @router.delete("/{target_date}", response_model=SuccessResponse)
 async def delete_daily_log(
     target_date: datetime.date,
-    authorization: str = Header(...),
+    authorization: Optional[str] = Header(None),
     supabase: Client = Depends(get_supabase)
 ):
     """
@@ -214,11 +248,21 @@ async def delete_daily_log(
     Raises:
         HTTPException 404: 기록이 존재하지 않음
     """
+    # 인증 확인
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="인증이 필요합니다."
+        )
+
     user = get_current_user(authorization, supabase)
     user_id = user.id
 
+    token = authorization.split(" ")[1]
+    supabase_db = SupabaseClient.create_user_db_client(token)
+
     try:
-        result = supabase.table("daily_logs").delete().eq(
+        result = supabase_db.table("daily_logs").delete().eq(
             "profile_id", user_id
         ).eq("date", target_date.isoformat()).execute()
 

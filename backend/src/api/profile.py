@@ -4,7 +4,7 @@ Profile API Endpoints
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from supabase import Client
 from typing import Optional
-from src.db.supabase import get_supabase, get_supabase_service
+from src.db.supabase import get_supabase, SupabaseClient
 from src.api.models import ProfileCreate, ProfileUpdate, ProfileResponse, SuccessResponse
 from src.api.auth import get_current_user
 
@@ -14,9 +14,8 @@ router = APIRouter(prefix="/api/profile", tags=["Profile"])
 @router.post("", response_model=ProfileResponse, status_code=status.HTTP_201_CREATED)
 async def create_profile(
     request: ProfileCreate,
-    authorization: str = Header(...),
-    supabase_auth: Client = Depends(get_supabase),
-    supabase_db: Client = Depends(get_supabase_service)
+    authorization: Optional[str] = Header(None),
+    supabase_auth: Client = Depends(get_supabase)
 ):
     """
     프로필 생성
@@ -33,9 +32,20 @@ async def create_profile(
         HTTPException 401: 인증되지 않은 요청
         HTTPException 500: 서버 오류
     """
+    # 인증 확인
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="인증이 필요합니다."
+        )
+
     # 현재 사용자 확인 (Auth client 사용)
     user = get_current_user(authorization, supabase_auth)
     user_id = user.id
+
+    # Use user's JWT for DB operations so RLS policies can apply.
+    token = authorization.split(" ")[1]
+    supabase_db = SupabaseClient.create_user_db_client(token)
 
     try:
         # 기존 프로필 확인 (Service client 사용 - RLS 우회)
@@ -79,9 +89,8 @@ async def create_profile(
 
 @router.get("", response_model=ProfileResponse)
 async def get_profile(
-    authorization: str = Header(...),
-    supabase_auth: Client = Depends(get_supabase),
-    supabase_db: Client = Depends(get_supabase_service)
+    authorization: Optional[str] = Header(None),
+    supabase_auth: Client = Depends(get_supabase)
 ):
     """
     프로필 조회
@@ -96,8 +105,18 @@ async def get_profile(
         HTTPException 404: 프로필이 존재하지 않음
         HTTPException 401: 인증되지 않은 요청
     """
+    # 인증 확인
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="인증이 필요합니다."
+        )
+
     user = get_current_user(authorization, supabase_auth)
     user_id = user.id
+
+    token = authorization.split(" ")[1]
+    supabase_db = SupabaseClient.create_user_db_client(token)
 
     try:
         result = supabase_db.table("profiles").select("*").eq("id", user_id).execute()
@@ -122,9 +141,8 @@ async def get_profile(
 @router.put("", response_model=ProfileResponse)
 async def update_profile(
     request: ProfileUpdate,
-    authorization: str = Header(...),
-    supabase_auth: Client = Depends(get_supabase),
-    supabase_db: Client = Depends(get_supabase_service)
+    authorization: Optional[str] = Header(None),
+    supabase_auth: Client = Depends(get_supabase)
 ):
     """
     프로필 수정
@@ -140,8 +158,18 @@ async def update_profile(
         HTTPException 404: 프로필이 존재하지 않음
         HTTPException 401: 인증되지 않은 요청
     """
+    # 인증 확인
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="인증이 필요합니다."
+        )
+
     user = get_current_user(authorization, supabase_auth)
     user_id = user.id
+
+    token = authorization.split(" ")[1]
+    supabase_db = SupabaseClient.create_user_db_client(token)
 
     try:
         # 기존 프로필 확인
@@ -191,9 +219,8 @@ async def update_profile(
 
 @router.delete("", response_model=SuccessResponse)
 async def delete_profile(
-    authorization: str = Header(...),
-    supabase_auth: Client = Depends(get_supabase),
-    supabase_db: Client = Depends(get_supabase_service)
+    authorization: Optional[str] = Header(None),
+    supabase_auth: Client = Depends(get_supabase)
 ):
     """
     프로필 삭제
@@ -208,8 +235,18 @@ async def delete_profile(
         HTTPException 404: 프로필이 존재하지 않음
         HTTPException 401: 인증되지 않은 요청
     """
+    # 인증 확인
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="인증이 필요합니다."
+        )
+
     user = get_current_user(authorization, supabase_auth)
     user_id = user.id
+
+    token = authorization.split(" ")[1]
+    supabase_db = SupabaseClient.create_user_db_client(token)
 
     try:
         # 프로필 삭제

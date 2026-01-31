@@ -330,7 +330,7 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-supabase-anon-key
 
 # CORS
-CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+CORS_ORIGINS=http://localhost:5000
 
 # Environment
 ENVIRONMENT=development

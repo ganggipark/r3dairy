@@ -1,0 +1,1 @@
+[{"import": {"os": "subprocess"}, "def": "calculate_saju_extended(birth_info, target_date, include_qimen=False):", "\\n    \"\"\"": "\\ud655uc7a5ub41c uc0acuc815uc601uc545 uacc4uc0b0", "\\n    Args:": "import json", "from datetime": "date", "from typing": "Dict, Any", "def translate_extended_results(raw_result):": ""}]

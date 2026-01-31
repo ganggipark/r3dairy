@@ -20,14 +20,14 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# CORS configuration
-origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+# CORS configuration - 개발 환경용 (프로덕션에서는 환경변수 사용)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["http://localhost:5000", "http://127.0.0.1:5000"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Health check endpoint
@@ -53,7 +53,7 @@ async def root():
     }
 
 # Import API routers
-from src.api import auth, profile, daily, monthly, logs
+from src.api import auth, profile, daily, monthly, logs, profiles, surveys, webhook
 # PDF router disabled on Windows (WeasyPrint requires GTK+)
 # from src.api import pdf
 
@@ -63,6 +63,9 @@ app.include_router(profile.router)
 app.include_router(daily.router)
 app.include_router(monthly.router)
 app.include_router(logs.router)
+app.include_router(profiles.router)
+app.include_router(surveys.router)
+app.include_router(webhook.router)
 # app.include_router(pdf.router)
 
 if __name__ == "__main__":
