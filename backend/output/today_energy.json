@@ -1,0 +1,28 @@
+{
+  "date": "2026-01-31",
+  "day_master": "계",
+  "day_branch": "미",
+  "strength": "신강",
+  "strength_score": 65,
+  "deuk_ryeong": 25,
+  "deuk_ji": 3,
+  "deuk_se": 2,
+  "yong_sin": "화",
+  "gi_sin": "수",
+  "season": "겨울",
+  "month_branch": "축",
+  "sib_seong": {
+    "bi_gyeob": 1,
+    "sig_sang": 0,
+    "jae_seong": 2,
+    "gwan_sal": 1,
+    "in_seong": 2
+  },
+  "oh_haeng_balance": {
+    "목": 1,
+    "화": 0,
+    "토": 3,
+    "금": 1,
+    "수": 3
+  }
+}

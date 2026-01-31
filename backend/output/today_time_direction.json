@@ -1,0 +1,12 @@
+{
+  "good_times": [
+    {"start": "08:00", "end": "10:00", "quality": "길"},
+    {"start": "13:00", "end": "15:00", "quality": "길"},
+    {"start": "16:00", "end": "17:00", "quality": "길"}
+  ],
+  "avoid_times": [
+    {"start": "23:00", "end": "01:00", "reason": "공망 시간"}
+  ],
+  "good_directions": ["북동", "남서"],
+  "avoid_directions": ["정북"]
+}

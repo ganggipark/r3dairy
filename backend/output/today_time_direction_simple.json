@@ -1,0 +1,25 @@
+{
+  "qimen": {
+    "good_windows": [
+      {
+        "start": "09:00",
+        "end": "11:00",
+        "reason_plain": "집중이 잘 붙는 구간"
+      },
+      {
+        "start": "13:00",
+        "end": "15:00",
+        "reason_plain": "효율이 높은 시간"
+      }
+    ],
+    "avoid_windows": [
+      {
+        "start": "23:30",
+        "end": "00:30",
+        "reason_plain": "판단이 흐려지기 쉬운 구간"
+      }
+    ],
+    "good_directions": ["북동", "남서"],
+    "avoid_directions": []
+  }
+}
