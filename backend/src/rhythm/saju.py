@@ -34,9 +34,9 @@ def calculate_saju(birth_info: BirthInfo, target_date: datetime.date) -> Dict[st
     Raises:
         RuntimeError: Node.js 실행 실패 또는 계산 오류
     """
-    # Node.js CLI 경로 (정확한 saju-engine 사용)
+    # Node.js CLI 경로 (saju-calculator 사용)
     current_dir = Path(__file__).parent.parent.parent  # backend/
-    cli_path = current_dir / "saju-engine" / "cli.js"
+    cli_path = current_dir / "saju-calculator" / "cli.js"
 
     if not cli_path.exists():
         raise RuntimeError(f"사주 계산기 CLI를 찾을 수 없습니다: {cli_path}")

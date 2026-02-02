@@ -1,0 +1,27 @@
+{
+  "name": "saju-engine",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "사주팔자 계산 엔진 - 전통 명리학 기반 정밀 계산",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "saju",
+    "korean-astrology",
+    "myeongli",
+    "fortune-telling",
+    "traditional-calendar"
+  ],
+  "author": "신기한신점",
+  "license": "MIT",
+  "dependencies": {
+    "korean-lunar-calendar": "^0.3.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
