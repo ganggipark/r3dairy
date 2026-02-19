@@ -92,7 +92,7 @@ def assemble_daily_content(
         "seasonal_environment": seasonal,
     }
 
-    # 좌측 페이지 최소 400자 보장
+    # 좌측 페이지 최소 700자 보장
     content = _ensure_minimum_content_length(content, daily_rhythm)
 
     return content
@@ -111,7 +111,24 @@ def _generate_summary(daily_rhythm: Dict[str, Any]) -> str:
         1: "고요한"
     }.get(energy, "평온한")
 
-    return f"오늘은 {energy_text} 에너지가 흐르는 날입니다. {flow}을 경험하게 됩니다."
+    if energy >= 4:
+        return (
+            f"오늘은 {energy_text} 에너지가 흐르는 날입니다. "
+            f"{flow}의 시간을 맞이하여, 준비해온 일들을 적극적으로 펼치기에 좋은 하루입니다. "
+            "활기차게 시작하고 과감히 움직여 보세요."
+        )
+    elif energy <= 2:
+        return (
+            f"오늘은 {energy_text} 에너지의 날입니다. "
+            f"{flow}의 흐름 속에서 자신을 조용히 돌보는 시간이 필요합니다. "
+            "무리하기보다 내면의 목소리에 귀를 기울이며 차분히 하루를 보내세요."
+        )
+    else:
+        return (
+            f"오늘은 {energy_text} 에너지가 흐르는 날입니다. "
+            f"{flow}을 경험하며, 지나치게 힘을 쏟지도, 너무 물러서지도 않는 균형 잡힌 하루를 설계해보세요. "
+            "안정 속에서 꾸준한 성과를 만들 수 있습니다."
+        )
 
 
 def _generate_keywords(daily_rhythm: Dict[str, Any], saju_data: Dict[str, Any]) -> list:
@@ -165,7 +182,7 @@ def _generate_keywords(daily_rhythm: Dict[str, Any], saju_data: Dict[str, Any]) 
 
 
 def _generate_rhythm_description(daily_rhythm: Dict[str, Any], saju_data: Dict[str, Any]) -> str:
-    """리듬 해설 생성 (설명형 문단, 최소 50자)"""
+    """리듬 해설 생성 (설명형 문단, 최소 200자)"""
     energy = daily_rhythm.get("에너지_수준", 3)
     concentration = daily_rhythm.get("집중력", 3)
     social = daily_rhythm.get("사회운", 3)
@@ -173,26 +190,44 @@ def _generate_rhythm_description(daily_rhythm: Dict[str, Any], saju_data: Dict[s
     flow = daily_rhythm.get("주요_흐름", "균형의 시기")
 
     description = f"오늘의 흐름은 '{flow}'으로 요약됩니다. "
+    description += "이 흐름이 어떤 의미를 가지는지, 하루 동안 어떻게 활용할 수 있는지 살펴보겠습니다. "
 
     if energy >= 4:
-        description += "에너지 수준이 높아 활동적인 하루가 될 것입니다. "
+        description += "현재 에너지 수준이 매우 높아, 활동적이고 적극적인 하루가 될 가능성이 큽니다. "
+        description += "이 시기에는 오랫동안 미뤄두었던 과제나 새로운 시도를 실행에 옮기는 것이 효과적입니다. "
     elif energy <= 2:
-        description += "에너지가 차분하게 흐르므로 충분한 휴식과 재충전이 필요합니다. "
+        description += "에너지가 낮은 상태로, 몸과 마음 모두 충분한 쉼을 요청하고 있는 신호입니다. "
+        description += "이런 날은 생산성보다 회복을 우선순위로 삼고, 가벼운 일만 처리하는 것이 지혜롭습니다. "
     else:
-        description += "에너지가 안정적으로 유지되어 일상을 편안하게 이어갈 수 있습니다. "
+        description += "에너지가 안정적으로 유지되는 날입니다. "
+        description += "급격한 변화보다는 꾸준한 흐름을 유지하면서 하루의 과업을 착실히 처리해나가기에 좋습니다. "
 
     if concentration >= 4:
-        description += "집중력이 뛰어나 깊은 사고와 학습에 유리한 시간입니다. "
+        description += "오늘은 특히 집중력이 뛰어난 상태입니다. "
+        description += "깊은 사고가 필요한 작업이나 학습, 창작 활동에 이 에너지를 적극 활용해보세요. "
+    elif concentration <= 2:
+        description += "집중력이 다소 분산되는 경향이 있으니, 너무 오래 한 가지 일에 매달리지 않는 것이 좋습니다. "
+        description += "짧은 휴식과 함께 여러 가지 가벼운 작업을 번갈아 처리하는 방식을 추천합니다. "
 
     if social >= 4:
-        description += "사람들과의 교류가 활발해질 수 있으니 소통의 기회를 적극 활용하세요. "
+        description += "대인관계 에너지가 활발하여 사람들과의 교류가 원활하게 이뤄질 수 있습니다. "
+        description += "중요한 미팅이나 협력이 필요한 일을 오늘 진행하면 좋은 결과를 기대할 수 있습니다. "
+    elif social <= 2:
+        description += "오늘은 혼자만의 시간을 갖거나 소수의 가까운 사람들과 조용히 교류하는 것이 편안합니다. "
 
     if decision >= 4:
-        description += "결단력이 강화되어 중요한 선택이나 실행에 적합한 날입니다. "
+        description += "결단력이 강화된 날로, 오랫동안 고민해온 선택을 내리기에 적합한 시기입니다. "
 
-    # 최소 50자 보장
-    while len(description) < 50:
-        description += "오늘 하루를 의미 있게 보내시길 바랍니다. "
+    opportunities = daily_rhythm.get("기회_요소", [])
+    if opportunities:
+        opp_text = ", ".join(opportunities[:2])
+        description += f"특히 {opp_text} 방면에서 긍정적인 기회가 열릴 수 있으니 주의 깊게 살펴보세요. "
+
+    description += "오늘 하루를 이 흐름에 맞게 설계한다면, 더 자연스럽고 의미 있는 하루가 될 것입니다."
+
+    # 최소 200자 보장
+    while len(description) < 200:
+        description += " 오늘의 흐름을 온전히 받아들이고, 자신만의 속도로 나아가세요."
 
     return description.strip()
 
@@ -357,22 +392,28 @@ def _generate_state_trigger(daily_rhythm: Dict[str, Any]) -> Dict[str, str]:
 
 
 def _generate_meaning_shift(daily_rhythm: Dict[str, Any], saju_data: Dict[str, Any]) -> str:
-    """의미 전환 생성 (설명형 문단, 최소 30자)"""
+    """의미 전환 생성 (설명형 문단, 최소 150자)"""
     energy = daily_rhythm.get("에너지_수준", 3)
     challenges = daily_rhythm.get("도전_요소", [])
 
     if energy <= 2:
         shift = "에너지가 낮다는 것은 무능력이 아니라, 충전이 필요한 자연스러운 신호입니다. "
         shift += "휴식을 선택하는 것도 자기 돌봄의 적극적 행동입니다. "
-        shift += "지금 이 순간 쉬어가는 것이 내일의 나를 위한 가장 현명한 투자라는 점을 기억하세요."
+        shift += "지금 이 순간 쉬어가는 것이 내일의 나를 위한 가장 현명한 투자라는 점을 기억하세요. "
+        shift += "오늘의 쉼이 내일의 나를 위한 준비임을 잊지 마세요. "
+        shift += "억지로 활동하려 하지 말고, 필요한 것이 무엇인지 자신에게 솔직하게 물어보세요."
     elif energy >= 4:
         shift = "넘치는 에너지는 무조건 소모해야 할 대상이 아닙니다. "
         shift += "방향성 있는 활용이 중요하며, 때로는 내일을 위해 보존하는 것도 현명한 선택입니다. "
-        shift += "에너지의 흐름을 자각하고, 가장 의미 있는 곳에 집중하여 활용해보세요."
+        shift += "에너지의 흐름을 자각하고, 가장 의미 있는 곳에 집중하여 활용해보세요. "
+        shift += "지금의 이 에너지가 언제나 지속되지는 않습니다. "
+        shift += "오늘의 힘을 현명하게 배분하여, 시작한 일을 마무리하는 데 집중해보세요."
     else:
         shift = "평범한 하루라는 느낌은 오히려 안정의 증거입니다. "
         shift += "특별함을 강요하지 않고 지금 이 순간을 있는 그대로 받아들이는 것도 중요한 성장입니다. "
-        shift += "일상 속 작은 순간들에 감사하며, 오늘의 평온함이 주는 힘을 느껴보세요."
+        shift += "일상 속 작은 순간들에 감사하며, 오늘의 평온함이 주는 힘을 느껴보세요. "
+        shift += "조용하지만 단단한 이 흐름 속에서, 오늘 당신이 내리는 선택들이 앞으로의 방향을 만들어갑니다. "
+        shift += "작더라도 의식적인 선택을 해보세요."
 
     return shift
 
@@ -658,8 +699,8 @@ def _generate_seasonal_environment(daily_rhythm: Dict[str, Any], saju_data: Dict
 
 
 def _ensure_minimum_content_length(content: Dict[str, Any], daily_rhythm: Dict[str, Any]) -> Dict[str, Any]:
-    """좌측 페이지 텍스트가 최소 400자 이상이 되도록 보장"""
-    MIN_CHARS = 400
+    """좌측 페이지 텍스트가 최소 700자 이상이 되도록 보장"""
+    MIN_CHARS = 700
 
     def _left_page_length(c):
         return len(
