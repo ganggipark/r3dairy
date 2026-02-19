@@ -33,7 +33,7 @@ export {
 export {
   calculateCompleteSajuData,
   type SajuCalculationInput,
-} from './completeSajuCalculator';
+} from './calculators/completeSajuCalculator';
 
 // ============================================================
 // 음양력 변환

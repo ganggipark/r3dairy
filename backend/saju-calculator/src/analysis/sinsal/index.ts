@@ -7,6 +7,7 @@
 
 import type { CheonGan, JiJi, SimpleSajuData } from '../../types/saju';
 import type { SinsalAnalysis, SinsalResult } from './types';
+import { getGapjaIndex } from '../../core/constants';
 
 // 12신살 모듈
 import {
@@ -137,7 +138,7 @@ export function analyzeAllSinsal(
   // 원진살 분석
   const wonJinSal = analyzeWonJinSal(dayJi, yearJi, monthJi, hourJi);
 
-  // 공망 분석 (기존 로직 활용)
+  // 공망 분석 (일주 60갑자 旬 기반)
   const gongMang = analyzeGongMang(dayGan, dayJi, allJijis);
 
   // 결과 분류
@@ -201,28 +202,58 @@ export function analyzeAllSinsal(
 }
 
 /**
- * 공망 분석 (기존 로직 기반)
+ * 공망(空亡) 지지 계산 - 旬(순) 기반 정확한 알고리즘
+ *
+ * 60갑자는 6개의 旬(10일 주기)으로 나뉘며, 각 旬에서
+ * 천간 10개와 짝을 이루지 못하는 지지 2개가 공망이 됩니다.
+ *
+ * 甲子旬 (index  0-9):  공망 = 술(戌), 해(亥)
+ * 甲戌旬 (index 10-19): 공망 = 신(申), 유(酉)
+ * 甲申旬 (index 20-29): 공망 = 오(午), 미(未)
+ * 甲午旬 (index 30-39): 공망 = 진(辰), 사(巳)
+ * 甲辰旬 (index 40-49): 공망 = 인(寅), 묘(卯)
+ * 甲寅旬 (index 50-59): 공망 = 자(子), 축(丑)
+ *
+ * @param dayPillarIndex 일주의 60갑자 인덱스 (0-59)
+ * @returns 공망에 해당하는 2개의 지지
+ */
+function getGongMangBranches(dayPillarIndex: number): JiJi[] {
+  // 각 旬의 공망 지지 (旬 인덱스 0~5 순서)
+  const GONG_MANG_BY_SUN: readonly (readonly [JiJi, JiJi])[] = [
+    ['술', '해'], // 甲子旬 (index 0-9)
+    ['신', '유'], // 甲戌旬 (index 10-19)
+    ['오', '미'], // 甲申旬 (index 20-29)
+    ['진', '사'], // 甲午旬 (index 30-39)
+    ['인', '묘'], // 甲辰旬 (index 40-49)
+    ['자', '축'], // 甲寅旬 (index 50-59)
+  ];
+
+  const sunIndex = Math.floor(dayPillarIndex / 10);
+  return [...GONG_MANG_BY_SUN[sunIndex]];
+}
+
+/**
+ * 공망 분석 - 일주(日柱)의 旬(순) 기반 정확한 계산
+ *
+ * 기존의 일간(dayGan) 단독 조회 방식은 부정확합니다.
+ * 동일한 천간이라도 어떤 旬에 속하느냐에 따라 공망이 달라지므로,
+ * 반드시 일주(천간+지지)의 60갑자 인덱스를 기준으로 계산해야 합니다.
  */
 function analyzeGongMang(
   dayGan: CheonGan,
   dayJi: JiJi,
   allJijis: JiJi[],
 ): SinsalResult | null {
-  // 공망 테이블 (일간 기준)
-  const GONG_MANG_TABLE: Record<CheonGan, JiJi[]> = {
-    '갑': ['술', '해'],
-    '을': ['술', '해'],
-    '병': ['신', '유'],
-    '정': ['신', '유'],
-    '무': ['오', '미'],
-    '기': ['오', '미'],
-    '경': ['진', '사'],
-    '신': ['진', '사'],
-    '임': ['인', '묘'],
-    '계': ['인', '묘'],
-  };
+  // 일주의 60갑자 인덱스 계산 (간+지 조합으로 조회)
+  const dayPillarGapja = `${dayGan}${dayJi}`;
+  const dayPillarIndex = getGapjaIndex(dayPillarGapja);
 
-  const gongMangJijis = GONG_MANG_TABLE[dayGan];
+  if (dayPillarIndex === -1) {
+    // 유효하지 않은 간지 조합 (음양 불일치 등)
+    return null;
+  }
+
+  const gongMangJijis = getGongMangBranches(dayPillarIndex);
   const foundGongMang = allJijis.filter(ji => gongMangJijis.includes(ji));
   const present = foundGongMang.length > 0;
 

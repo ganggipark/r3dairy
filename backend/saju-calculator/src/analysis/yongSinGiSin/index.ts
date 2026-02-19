@@ -13,8 +13,7 @@
  * - 겨울생은 따뜻한 오행(화, 목), 여름생은 시원한 오행(수, 금) 필요
  */
 
-import type { CheonGan, JiJi, OhHaeng } from '../sinsal/types';
-import type { FourPillars } from '../core/types';
+import type { CheonGan, JiJi, OhHaeng, FourPillars } from '../../core/types';
 
 // 신강/신약 등급 타입
 export type BodyStrengthGrade = '극신강' | '신강' | '중화' | '신약' | '극신약';

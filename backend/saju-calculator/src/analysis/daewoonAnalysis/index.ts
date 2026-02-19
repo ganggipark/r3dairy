@@ -10,7 +10,7 @@
  * 4. 기신 대운: 주의가 필요한 시기
  */
 
-import type { CheonGan, JiJi, OhHaeng } from '../sinsal/types';
+import type { CheonGan, JiJi, OhHaeng } from '../../core/types';
 import { SANG_SAENG, SANG_GEUK } from '../../core/index';
 
 // ==================== 타입 정의 ====================

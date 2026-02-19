@@ -34,11 +34,11 @@ import type {
 import { getExactSolarMonth } from './solarTermsCalculator';
 import { lunarToSolar } from './lunarCalendar';
 import { applyTrueSolarTimeByCity } from './trueSolarTimeCalculator';
-import { calculateBodyStrength } from './saju/bodyStrength';
-import { calculateDaeunStartAge } from './saju/daewoonAnalysis/daeunStartAge';
-import { analyzeYongSinGiSin } from './saju/yongSinGiSin';
-import { analyzeAllSinsal } from './saju/sinsal';
-import { determineGeukGuk } from './saju/geukGuk';
+import { calculateBodyStrength } from '../analysis/bodyStrength';
+import { calculateDaeunStartAge } from '../analysis/daewoonAnalysis/daeunStartAge';
+import { analyzeYongSinGiSin } from '../analysis/yongSinGiSin';
+import { analyzeAllSinsal } from '../analysis/sinsal';
+import { determineGeukGuk } from '../analysis/geukGuk';
 
 // ============================================================
 // 상수 정의
@@ -285,19 +285,26 @@ function calculateFourPillars(
     _adjustedMinute = trueSolarResult.adjustedMinute;
   }
 
+  // 절기월 계산 (정확한 시분 고려) ⭐ 핵심 개선!
+  // 년주와 월주 모두에서 사용하므로 먼저 계산
+  const solarMonthIndex = getExactSolarMonth(solarYear, solarMonth, solarDay, hour, minute);
+
   // 년주 계산 - 입춘(立春) 기준 적용
-  // 입춘 전(1월~2월 3일)은 전년도 간지 사용
+  // 입춘은 매년 2/3~2/5 사이에 변동하므로, getExactSolarMonth 결과를 사용하여 정확히 판단
+  // solarMonthIndex가 12(축월)이면 아직 입춘 전이므로 전년도 간지 사용
+  // 1월은 항상 입춘 전(축월 또는 자월)이므로 전년도
   let adjustedYear = solarYear;
-  if (solarMonth === 1 || (solarMonth === 2 && solarDay < 4)) {
-    adjustedYear -= 1; // 입춘 전이면 전년도 간지 사용
+  if (solarMonth <= 2 && solarMonthIndex === 12) {
+    // 1월 전체 또는 2월 입춘 이전 → 축월(12)이므로 전년도 간지 사용
+    adjustedYear -= 1;
+  } else if (solarMonth === 1 && solarMonthIndex === 11) {
+    // 1월 초(소한 이전) → 자월(11)이므로 역시 전년도 간지 사용
+    adjustedYear -= 1;
   }
   const yearGanIndex = ((adjustedYear - 4) % 10 + 10) % 10;
   const yearJiIndex = ((adjustedYear - 4) % 12 + 12) % 12;
   const yearGan = CHEON_GAN[yearGanIndex];
   const yearJi = JI_JI[yearJiIndex];
-
-  // 절기월 계산 (정확한 시분 고려) ⭐ 핵심 개선!
-  const solarMonthIndex = getExactSolarMonth(solarYear, solarMonth, solarDay, hour, minute);
 
   // 월주 계산 (절기월 기준)
   // solarMonthIndex: 1=인월, 2=묘월, ..., 12=축월
@@ -844,8 +851,8 @@ function analyzeRelations(fourPillars: FourPillars): PillarRelations {
   const jijiYukHap: string[] = [];
   const jijiChung: string[] = [];
   const jijiSamHap: string[] = [];
+  const jijiBanHap: string[] = [];
   const jijiHyung: string[] = [];
-  const jijiBan: string[] = [];
   const jijiPa: string[] = [];
   const jijiHae: string[] = [];
 
@@ -855,6 +862,8 @@ function analyzeRelations(fourPillars: FourPillars): PillarRelations {
     { name: '일', pillar: fourPillars.day },
     { name: '시', pillar: fourPillars.time },
   ];
+
+  const jijis: JiJi[] = pillars.map(p => p.pillar.ji);
 
   // 천간합/충 체크
   for (let i = 0; i < pillars.length; i++) {
@@ -884,11 +893,163 @@ function analyzeRelations(fourPillars: FourPillars): PillarRelations {
     }
   }
 
+  // ============================================================
+  // 삼합(三合) 체크
+  // ============================================================
+  // 삼합 그룹: [첫째, 둘째, 셋째, 국명]
+  const SAMHAP_GROUPS: [JiJi, JiJi, JiJi, string][] = [
+    ['해', '묘', '미', '목국'],  // 해묘미 삼합 목국
+    ['인', '오', '술', '화국'],  // 인오술 삼합 화국
+    ['사', '유', '축', '금국'],  // 사유축 삼합 금국
+    ['신', '자', '진', '수국'],  // 신자진 삼합 수국
+  ];
+
+  for (const [a, b, c, guk] of SAMHAP_GROUPS) {
+    const hasA = jijis.includes(a);
+    const hasB = jijis.includes(b);
+    const hasC = jijis.includes(c);
+
+    if (hasA && hasB && hasC) {
+      // 완전삼합 (3개 모두 존재)
+      jijiSamHap.push(`${a}${b}${c} 삼합 (${guk})`);
+    } else {
+      // 반합 (2개만 존재) - 모든 2개 조합 체크
+      if (hasA && hasB) {
+        jijiBanHap.push(`${a}${b} 반합 (${guk})`);
+      }
+      if (hasA && hasC) {
+        jijiBanHap.push(`${a}${c} 반합 (${guk})`);
+      }
+      if (hasB && hasC) {
+        jijiBanHap.push(`${b}${c} 반합 (${guk})`);
+      }
+    }
+  }
+
+  // ============================================================
+  // 형(刑) 체크
+  // ============================================================
+
+  // 무례지형: 자↔묘
+  const MURYE_HYUNG: [JiJi, JiJi][] = [['자', '묘']];
+
+  // 무은지형 (삼형살): 인↔사, 사↔신, 인↔신
+  const MUEUN_HYUNG: [JiJi, JiJi][] = [['인', '사'], ['사', '신'], ['인', '신']];
+
+  // 지세지형 (삼형살): 축↔술, 술↔미, 축↔미
+  const JISE_HYUNG: [JiJi, JiJi][] = [['축', '술'], ['술', '미'], ['축', '미']];
+
+  // 자형(自刑): 같은 지지 2개
+  const JAHYUNG: JiJi[] = ['진', '오', '유', '해'];
+
+  // 무례지형 체크
+  for (const [a, b] of MURYE_HYUNG) {
+    for (let i = 0; i < pillars.length; i++) {
+      for (let j = i + 1; j < pillars.length; j++) {
+        const ji1 = pillars[i].pillar.ji;
+        const ji2 = pillars[j].pillar.ji;
+        if ((ji1 === a && ji2 === b) || (ji1 === b && ji2 === a)) {
+          jijiHyung.push(`${pillars[i].name}${pillars[j].name} ${ji1}${ji2}형 (무례지형)`);
+        }
+      }
+    }
+  }
+
+  // 무은지형 체크
+  for (const [a, b] of MUEUN_HYUNG) {
+    for (let i = 0; i < pillars.length; i++) {
+      for (let j = i + 1; j < pillars.length; j++) {
+        const ji1 = pillars[i].pillar.ji;
+        const ji2 = pillars[j].pillar.ji;
+        if ((ji1 === a && ji2 === b) || (ji1 === b && ji2 === a)) {
+          jijiHyung.push(`${pillars[i].name}${pillars[j].name} ${ji1}${ji2}형 (무은지형)`);
+        }
+      }
+    }
+  }
+
+  // 지세지형 체크
+  for (const [a, b] of JISE_HYUNG) {
+    for (let i = 0; i < pillars.length; i++) {
+      for (let j = i + 1; j < pillars.length; j++) {
+        const ji1 = pillars[i].pillar.ji;
+        const ji2 = pillars[j].pillar.ji;
+        if ((ji1 === a && ji2 === b) || (ji1 === b && ji2 === a)) {
+          jijiHyung.push(`${pillars[i].name}${pillars[j].name} ${ji1}${ji2}형 (지세지형)`);
+        }
+      }
+    }
+  }
+
+  // 자형 체크 (같은 지지가 2개 이상)
+  for (const jaJi of JAHYUNG) {
+    for (let i = 0; i < pillars.length; i++) {
+      for (let j = i + 1; j < pillars.length; j++) {
+        if (pillars[i].pillar.ji === jaJi && pillars[j].pillar.ji === jaJi) {
+          jijiHyung.push(`${pillars[i].name}${pillars[j].name} ${jaJi}${jaJi}형 (자형)`);
+        }
+      }
+    }
+  }
+
+  // ============================================================
+  // 파(破) 체크
+  // ============================================================
+  const PA_PAIRS: [JiJi, JiJi][] = [
+    ['자', '유'],  // 자유파
+    ['오', '묘'],  // 오묘파
+    ['축', '진'],  // 축진파
+    ['인', '해'],  // 인해파
+    ['사', '신'],  // 사신파
+    ['술', '미'],  // 술미파
+  ];
+
+  for (const [a, b] of PA_PAIRS) {
+    for (let i = 0; i < pillars.length; i++) {
+      for (let j = i + 1; j < pillars.length; j++) {
+        const ji1 = pillars[i].pillar.ji;
+        const ji2 = pillars[j].pillar.ji;
+        if ((ji1 === a && ji2 === b) || (ji1 === b && ji2 === a)) {
+          jijiPa.push(`${pillars[i].name}${pillars[j].name} ${ji1}${ji2}파`);
+        }
+      }
+    }
+  }
+
+  // ============================================================
+  // 해(害) 체크
+  // ============================================================
+  const HAE_PAIRS: [JiJi, JiJi][] = [
+    ['자', '미'],  // 자미해
+    ['축', '오'],  // 축오해
+    ['인', '사'],  // 인사해
+    ['묘', '진'],  // 묘진해
+    ['신', '해'],  // 신해해
+    ['유', '술'],  // 유술해
+  ];
+
+  for (const [a, b] of HAE_PAIRS) {
+    for (let i = 0; i < pillars.length; i++) {
+      for (let j = i + 1; j < pillars.length; j++) {
+        const ji1 = pillars[i].pillar.ji;
+        const ji2 = pillars[j].pillar.ji;
+        if ((ji1 === a && ji2 === b) || (ji1 === b && ji2 === a)) {
+          jijiHae.push(`${pillars[i].name}${pillars[j].name} ${ji1}${ji2}해`);
+        }
+      }
+    }
+  }
+
   // 요약 생성
   const summaryParts: string[] = [];
   if (cheonganHap.length > 0) summaryParts.push(`천간합: ${cheonganHap.length}개`);
-  if (jijiYukHap.length > 0) summaryParts.push(`지지합: ${jijiYukHap.length}개`);
+  if (jijiYukHap.length > 0) summaryParts.push(`지지육합: ${jijiYukHap.length}개`);
+  if (jijiSamHap.length > 0) summaryParts.push(`지지삼합: ${jijiSamHap.length}개`);
+  if (jijiBanHap.length > 0) summaryParts.push(`지지반합: ${jijiBanHap.length}개`);
   if (jijiChung.length > 0) summaryParts.push(`지지충: ${jijiChung.length}개`);
+  if (jijiHyung.length > 0) summaryParts.push(`지지형: ${jijiHyung.length}개`);
+  if (jijiPa.length > 0) summaryParts.push(`지지파: ${jijiPa.length}개`);
+  if (jijiHae.length > 0) summaryParts.push(`지지해: ${jijiHae.length}개`);
 
   return {
     cheonganHap,
@@ -897,7 +1058,7 @@ function analyzeRelations(fourPillars: FourPillars): PillarRelations {
     jijiSamHap,
     jijiChung,
     jijiHyung,
-    jijiBan,
+    jijiBan: jijiBanHap,
     jijiPa,
     jijiHae,
     summary: summaryParts.length > 0 ? summaryParts.join(', ') : '특별한 합충 관계 없음',

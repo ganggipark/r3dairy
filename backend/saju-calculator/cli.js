@@ -29,7 +29,7 @@ process.stdin.on('end', async () => {
     }
 
     // ES 모듈 동적 import (Windows 경로를 file:// URL로 변환)
-    const modulePath = join(__dirname, 'dist', 'completeSajuCalculator.js');
+    const modulePath = join(__dirname, 'dist', 'index.js');
     const moduleURL = pathToFileURL(modulePath).href;
     const { calculateCompleteSajuData } = await import(moduleURL);
 

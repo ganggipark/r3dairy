@@ -1,40 +1,66 @@
 "use strict";
 /**
- * saju-engine - 사주팔자 계산 엔진
+ * 사주 계산 패키지 - 메인 Export
  *
- * 전통 명리학 기반의 정밀한 사주팔자 계산을 제공합니다.
+ * 한국 전통 사주명리학 계산 라이브러리
+ *
+ * @author SajuApp
+ * @version 1.0.0
  */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SANG_GEUK = exports.SANG_SAENG = exports.JIJANGGAN_SIMPLE = exports.JIJI = exports.CHEONGAN = exports.generateComprehensiveSinsalSummary = exports.analyzeGuiMunGwanSal = exports.analyzeYangInSal = exports.analyzeTwelveSinsal = exports.analyzeDateSinsal = exports.analyzeAllSinsal = exports.getMonthlyMainGan = exports.checkTouchul = exports.checkJongGyeok = exports.checkHwaGiGyeok = exports.analyzeGeukGukDetails = exports.determineGeukGuk = exports.identifyMediatingYongsin = exports.determineGiSin = exports.determineYongSin = exports.getYongSinByJohu = exports.getYongSinByEokBu = exports.analyzeYongSinGiSin = exports.KST_STANDARD_LONGITUDE = exports.MAJOR_CITIES = exports.getTrueSolarTimeDescription = exports.getCityInfo = exports.getAvailableCities = exports.getTrueSolarTimeCorrectionByCity = exports.applyTrueSolarTimeByCity = exports.applyTrueSolarTime = exports.getLunarMonthName = exports.getSpecialLunarDay = exports.getSolarTerm = exports.formatLunarDate = exports.lunarToSolar = exports.solarToLunar = exports.MONTH_START_TERMS = exports.isBefore24Jeolip = exports.getSolarTermDate = exports.getSolarTermsForYear = exports.getSimpleDaeunStartAge = exports.calculateDaeunStartAge = exports.analyzeBodyStrengthDetails = exports.checkDeukSe = exports.checkDeukJi = exports.checkDeukRyeong = exports.calculateBodyStrength = exports.isCompleteSajuData = exports.calculateCompleteSajuData = void 0;
-exports.SIPSUNG_INFO = void 0;
-// ============ Main Calculator ============
+exports.SOLAR_TERMS_DATA = exports.TERM_TO_SOLAR_MONTH = exports.MONTH_START_TERMS = exports.SOLAR_TERM_NAMES = exports.calculateDaewoonStartFromSolarTerms = exports.getDaysToPrevSolarTerm = exports.getDaysToNextSolarTerm = exports.getSolarTermByDate = exports.getSolarTermsForYear = exports.getExactSolarMonth = exports.KST_STANDARD_LONGITUDE = exports.MAJOR_CITIES = exports.getTrueSolarTimeDescription = exports.getCityInfo = exports.getAvailableCities = exports.getTrueSolarTimeCorrectionByCity = exports.applyTrueSolarTimeByCity = exports.applyTrueSolarTime = exports.calculateTrueSolarTimeCorrection = exports.SOLAR_TERMS = exports.getLunarMonthName = exports.getSpecialLunarDay = exports.getSolarTerm = exports.formatLunarDate = exports.lunarToSolar = exports.solarToLunar = exports.calculateCompleteSajuData = exports.SIXTY_CYCLE = exports.EARTHLY_BRANCHES = exports.HEAVENLY_STEMS = exports.getZodiac = exports.getDayMaster = exports.calculateFiveElements = exports.formatFourPillars = exports.calculateDayPillar = exports.calculateFourPillars = void 0;
+// ============================================================
+// 타입 Export
+// ============================================================
+__exportStar(require("./types"), exports);
+// ============================================================
+// 기본 사주 계산기 (간단 버전)
+// ============================================================
+var sajuCalculator_1 = require("./sajuCalculator");
+Object.defineProperty(exports, "calculateFourPillars", { enumerable: true, get: function () { return sajuCalculator_1.calculateFourPillars; } });
+Object.defineProperty(exports, "calculateDayPillar", { enumerable: true, get: function () { return sajuCalculator_1.calculateDayPillar; } });
+Object.defineProperty(exports, "formatFourPillars", { enumerable: true, get: function () { return sajuCalculator_1.formatFourPillars; } });
+Object.defineProperty(exports, "calculateFiveElements", { enumerable: true, get: function () { return sajuCalculator_1.calculateFiveElements; } });
+Object.defineProperty(exports, "getDayMaster", { enumerable: true, get: function () { return sajuCalculator_1.getDayMaster; } });
+Object.defineProperty(exports, "getZodiac", { enumerable: true, get: function () { return sajuCalculator_1.getZodiac; } });
+Object.defineProperty(exports, "HEAVENLY_STEMS", { enumerable: true, get: function () { return sajuCalculator_1.HEAVENLY_STEMS; } });
+Object.defineProperty(exports, "EARTHLY_BRANCHES", { enumerable: true, get: function () { return sajuCalculator_1.EARTHLY_BRANCHES; } });
+Object.defineProperty(exports, "SIXTY_CYCLE", { enumerable: true, get: function () { return sajuCalculator_1.SIXTY_CYCLE; } });
+// ============================================================
+// 완전한 사주 계산기 (전체 분석)
+// ============================================================
 var completeSajuCalculator_1 = require("./calculators/completeSajuCalculator");
 Object.defineProperty(exports, "calculateCompleteSajuData", { enumerable: true, get: function () { return completeSajuCalculator_1.calculateCompleteSajuData; } });
-var completeSajuData_1 = require("./types/completeSajuData");
-Object.defineProperty(exports, "isCompleteSajuData", { enumerable: true, get: function () { return completeSajuData_1.isCompleteSajuData; } });
-// ============ Sub-calculators ============
-var bodyStrength_1 = require("./analysis/bodyStrength");
-Object.defineProperty(exports, "calculateBodyStrength", { enumerable: true, get: function () { return bodyStrength_1.calculateBodyStrength; } });
-Object.defineProperty(exports, "checkDeukRyeong", { enumerable: true, get: function () { return bodyStrength_1.checkDeukRyeong; } });
-Object.defineProperty(exports, "checkDeukJi", { enumerable: true, get: function () { return bodyStrength_1.checkDeukJi; } });
-Object.defineProperty(exports, "checkDeukSe", { enumerable: true, get: function () { return bodyStrength_1.checkDeukSe; } });
-Object.defineProperty(exports, "analyzeBodyStrengthDetails", { enumerable: true, get: function () { return bodyStrength_1.analyzeBodyStrengthDetails; } });
-var daeunStartAge_1 = require("./analysis/daewoonAnalysis/daeunStartAge");
-Object.defineProperty(exports, "calculateDaeunStartAge", { enumerable: true, get: function () { return daeunStartAge_1.calculateDaeunStartAge; } });
-Object.defineProperty(exports, "getSimpleDaeunStartAge", { enumerable: true, get: function () { return daeunStartAge_1.getSimpleDaeunStartAge; } });
-var solarTermsCalculator_1 = require("./calculators/solarTermsCalculator");
-Object.defineProperty(exports, "getSolarTermsForYear", { enumerable: true, get: function () { return solarTermsCalculator_1.getSolarTermsForYear; } });
-Object.defineProperty(exports, "getSolarTermDate", { enumerable: true, get: function () { return solarTermsCalculator_1.getSolarTermDate; } });
-Object.defineProperty(exports, "isBefore24Jeolip", { enumerable: true, get: function () { return solarTermsCalculator_1.isBefore24Jeolip; } });
-Object.defineProperty(exports, "MONTH_START_TERMS", { enumerable: true, get: function () { return solarTermsCalculator_1.MONTH_START_TERMS; } });
-var lunarCalendar_1 = require("./calculators/lunarCalendar");
+// ============================================================
+// 음양력 변환
+// ============================================================
+var lunarCalendar_1 = require("./lunarCalendar");
 Object.defineProperty(exports, "solarToLunar", { enumerable: true, get: function () { return lunarCalendar_1.solarToLunar; } });
 Object.defineProperty(exports, "lunarToSolar", { enumerable: true, get: function () { return lunarCalendar_1.lunarToSolar; } });
 Object.defineProperty(exports, "formatLunarDate", { enumerable: true, get: function () { return lunarCalendar_1.formatLunarDate; } });
 Object.defineProperty(exports, "getSolarTerm", { enumerable: true, get: function () { return lunarCalendar_1.getSolarTerm; } });
 Object.defineProperty(exports, "getSpecialLunarDay", { enumerable: true, get: function () { return lunarCalendar_1.getSpecialLunarDay; } });
 Object.defineProperty(exports, "getLunarMonthName", { enumerable: true, get: function () { return lunarCalendar_1.getLunarMonthName; } });
-var trueSolarTimeCalculator_1 = require("./calculators/trueSolarTimeCalculator");
+Object.defineProperty(exports, "SOLAR_TERMS", { enumerable: true, get: function () { return lunarCalendar_1.SOLAR_TERMS; } });
+// ============================================================
+// 진태양시 계산
+// ============================================================
+var trueSolarTimeCalculator_1 = require("./trueSolarTimeCalculator");
+Object.defineProperty(exports, "calculateTrueSolarTimeCorrection", { enumerable: true, get: function () { return trueSolarTimeCalculator_1.calculateTrueSolarTimeCorrection; } });
 Object.defineProperty(exports, "applyTrueSolarTime", { enumerable: true, get: function () { return trueSolarTimeCalculator_1.applyTrueSolarTime; } });
 Object.defineProperty(exports, "applyTrueSolarTimeByCity", { enumerable: true, get: function () { return trueSolarTimeCalculator_1.applyTrueSolarTimeByCity; } });
 Object.defineProperty(exports, "getTrueSolarTimeCorrectionByCity", { enumerable: true, get: function () { return trueSolarTimeCalculator_1.getTrueSolarTimeCorrectionByCity; } });
@@ -43,34 +69,18 @@ Object.defineProperty(exports, "getCityInfo", { enumerable: true, get: function 
 Object.defineProperty(exports, "getTrueSolarTimeDescription", { enumerable: true, get: function () { return trueSolarTimeCalculator_1.getTrueSolarTimeDescription; } });
 Object.defineProperty(exports, "MAJOR_CITIES", { enumerable: true, get: function () { return trueSolarTimeCalculator_1.MAJOR_CITIES; } });
 Object.defineProperty(exports, "KST_STANDARD_LONGITUDE", { enumerable: true, get: function () { return trueSolarTimeCalculator_1.KST_STANDARD_LONGITUDE; } });
-// ============ Analysis Modules ============
-var yongSinGiSin_1 = require("./analysis/yongSinGiSin");
-Object.defineProperty(exports, "analyzeYongSinGiSin", { enumerable: true, get: function () { return yongSinGiSin_1.analyzeYongSinGiSin; } });
-Object.defineProperty(exports, "getYongSinByEokBu", { enumerable: true, get: function () { return yongSinGiSin_1.getYongSinByEokBu; } });
-Object.defineProperty(exports, "getYongSinByJohu", { enumerable: true, get: function () { return yongSinGiSin_1.getYongSinByJohu; } });
-Object.defineProperty(exports, "determineYongSin", { enumerable: true, get: function () { return yongSinGiSin_1.determineYongSin; } });
-Object.defineProperty(exports, "determineGiSin", { enumerable: true, get: function () { return yongSinGiSin_1.determineGiSin; } });
-Object.defineProperty(exports, "identifyMediatingYongsin", { enumerable: true, get: function () { return yongSinGiSin_1.identifyMediatingYongsin; } });
-var geukGuk_1 = require("./analysis/geukGuk");
-Object.defineProperty(exports, "determineGeukGuk", { enumerable: true, get: function () { return geukGuk_1.determineGeukGuk; } });
-Object.defineProperty(exports, "analyzeGeukGukDetails", { enumerable: true, get: function () { return geukGuk_1.analyzeGeukGukDetails; } });
-Object.defineProperty(exports, "checkHwaGiGyeok", { enumerable: true, get: function () { return geukGuk_1.checkHwaGiGyeok; } });
-Object.defineProperty(exports, "checkJongGyeok", { enumerable: true, get: function () { return geukGuk_1.checkJongGyeok; } });
-Object.defineProperty(exports, "checkTouchul", { enumerable: true, get: function () { return geukGuk_1.checkTouchul; } });
-Object.defineProperty(exports, "getMonthlyMainGan", { enumerable: true, get: function () { return geukGuk_1.getMonthlyMainGan; } });
-var sinsal_1 = require("./analysis/sinsal");
-Object.defineProperty(exports, "analyzeAllSinsal", { enumerable: true, get: function () { return sinsal_1.analyzeAllSinsal; } });
-Object.defineProperty(exports, "analyzeDateSinsal", { enumerable: true, get: function () { return sinsal_1.analyzeDateSinsal; } });
-Object.defineProperty(exports, "analyzeTwelveSinsal", { enumerable: true, get: function () { return sinsal_1.analyzeTwelveSinsal; } });
-Object.defineProperty(exports, "analyzeYangInSal", { enumerable: true, get: function () { return sinsal_1.analyzeYangInSal; } });
-Object.defineProperty(exports, "analyzeGuiMunGwanSal", { enumerable: true, get: function () { return sinsal_1.analyzeGuiMunGwanSal; } });
-Object.defineProperty(exports, "generateComprehensiveSinsalSummary", { enumerable: true, get: function () { return sinsal_1.generateComprehensiveSinsalSummary; } });
-// ============ Core Constants ============
-var core_1 = require("./core");
-Object.defineProperty(exports, "CHEONGAN", { enumerable: true, get: function () { return core_1.CHEONGAN; } });
-Object.defineProperty(exports, "JIJI", { enumerable: true, get: function () { return core_1.JIJI; } });
-Object.defineProperty(exports, "JIJANGGAN_SIMPLE", { enumerable: true, get: function () { return core_1.JIJANGGAN_SIMPLE; } });
-Object.defineProperty(exports, "SANG_SAENG", { enumerable: true, get: function () { return core_1.SANG_SAENG; } });
-Object.defineProperty(exports, "SANG_GEUK", { enumerable: true, get: function () { return core_1.SANG_GEUK; } });
-Object.defineProperty(exports, "SIPSUNG_INFO", { enumerable: true, get: function () { return core_1.SIPSUNG_INFO; } });
+// ============================================================
+// 절기 계산
+// ============================================================
+var solarTermsCalculator_1 = require("./solarTermsCalculator");
+Object.defineProperty(exports, "getExactSolarMonth", { enumerable: true, get: function () { return solarTermsCalculator_1.getExactSolarMonth; } });
+Object.defineProperty(exports, "getSolarTermsForYear", { enumerable: true, get: function () { return solarTermsCalculator_1.getSolarTermsForYear; } });
+Object.defineProperty(exports, "getSolarTermByDate", { enumerable: true, get: function () { return solarTermsCalculator_1.getSolarTermByDate; } });
+Object.defineProperty(exports, "getDaysToNextSolarTerm", { enumerable: true, get: function () { return solarTermsCalculator_1.getDaysToNextSolarTerm; } });
+Object.defineProperty(exports, "getDaysToPrevSolarTerm", { enumerable: true, get: function () { return solarTermsCalculator_1.getDaysToPrevSolarTerm; } });
+Object.defineProperty(exports, "calculateDaewoonStartFromSolarTerms", { enumerable: true, get: function () { return solarTermsCalculator_1.calculateDaewoonStartFromSolarTerms; } });
+Object.defineProperty(exports, "SOLAR_TERM_NAMES", { enumerable: true, get: function () { return solarTermsCalculator_1.SOLAR_TERM_NAMES; } });
+Object.defineProperty(exports, "MONTH_START_TERMS", { enumerable: true, get: function () { return solarTermsCalculator_1.MONTH_START_TERMS; } });
+Object.defineProperty(exports, "TERM_TO_SOLAR_MONTH", { enumerable: true, get: function () { return solarTermsCalculator_1.TERM_TO_SOLAR_MONTH; } });
+Object.defineProperty(exports, "SOLAR_TERMS_DATA", { enumerable: true, get: function () { return solarTermsCalculator_1.SOLAR_TERMS_DATA; } });
 //# sourceMappingURL=index.js.map

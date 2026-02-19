@@ -9,7 +9,7 @@
  * @module daeunStartAge
  */
 
-import type { CheonGan } from '../sinsal/types';
+import type { CheonGan } from '../../core/types';
 import { getSolarTermsForYear, MONTH_START_TERMS } from '../../calculators/solarTermsCalculator';
 
 // ==================== 타입 정의 ====================

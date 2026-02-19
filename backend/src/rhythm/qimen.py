@@ -148,20 +148,89 @@ def _wuxing_relation(stem_a: str, stem_b: str) -> str:
     return "bi"
 
 
-def _gate_for_hour_slot(day_offset: int, slot_index: int) -> int:
+def _determine_ju(target_date: date, day_offset: int) -> tuple:
     """
-    날짜 오프셋과 시간 슬롯 인덱스로 8문 인덱스 결정.
-    간단화된 포국: (day_offset + slot_index) % 8
+    旬(sun)과 局(ju) 번호를 결정하고, 양둔/음둔 여부를 반환한다.
+
+    양둔(陽遁): 동지(冬至)~하지(夏至) 사이, 대략 11월~5월
+    음둔(陰遁): 하지(夏至)~동지(冬至) 사이, 대략 6월~10월
+
+    Args:
+        target_date: 분석 대상 날짜
+        day_offset:  60갑자 순환 내 날짜 인덱스 (0-59)
+
+    Returns:
+        (ju_number: int 1-9, is_yang_dun: bool)
     """
-    return (day_offset + slot_index) % 8
+    # 양둔/음둔 판별 (절기 기반 간략화: 월별 판별)
+    # 양둔: 11, 12, 1, 2, 3, 4, 5월 (동지 전후 ~ 하지 전)
+    # 음둔: 6, 7, 8, 9, 10월
+    is_yang_dun = target_date.month in (11, 12, 1, 2, 3, 4, 5)
+
+    # 旬 인덱스: 60갑자 내 10일 단위 (0-5)
+    sun_index = day_offset // 10
+
+    # 局 번호 결정
+    # 양둔: 1→2→3→4→5→6→7→8→9 순환 (旬별로 다른 시작점)
+    # 음둔: 9→8→7→6→5→4→3→2→1 역순환
+    YANG_DUN_JU = [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    YIN_DUN_JU  = [9, 8, 7, 6, 5, 4, 3, 2, 1, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+
+    sun_in_cycle = sun_index % 18
+    ju_number = YANG_DUN_JU[sun_in_cycle] if is_yang_dun else YIN_DUN_JU[sun_in_cycle]
+
+    return ju_number, is_yang_dun
 
 
-def _palace_for_hour_slot(day_offset: int, slot_index: int) -> int:
+def _gate_for_hour_slot(
+    slot_index: int,
+    ju_number: int,
+    is_yang_dun: bool,
+) -> int:
     """
-    날짜 오프셋과 시간 슬롯 인덱스로 9궁 인덱스 결정 (1~9).
-    (day_offset + slot_index) % 9 + 1
+    旬/局 기반 8문(八門) 인덱스 결정.
+
+    局 번호를 시작 오프셋으로 사용하여 양둔은 순방향, 음둔은 역방향으로
+    8문을 배치한다.
+
+    Args:
+        slot_index:  시간 슬롯 인덱스 (0-11, 자시~해시)
+        ju_number:   局 번호 (1-9)
+        is_yang_dun: 양둔 여부 (True=양둔, False=음둔)
+
+    Returns:
+        8문 인덱스 (0-7)
     """
-    return (day_offset + slot_index) % 9 + 1
+    gate_base = (ju_number - 1) * 2  # 局에 따른 시작 위치
+    if is_yang_dun:
+        return (gate_base + slot_index) % 8
+    else:
+        return (gate_base + (11 - slot_index)) % 8
+
+
+def _palace_for_hour_slot(
+    slot_index: int,
+    ju_number: int,
+    is_yang_dun: bool,
+) -> int:
+    """
+    旬/局 기반 9궁(九宮) 번호 결정 (1~9).
+
+    양둔: ju_number를 시작으로 순방향 회전 (1→2→3→...→9→1)
+    음둔: ju_number를 시작으로 역방향 회전 (9→8→7→...→1→9)
+
+    Args:
+        slot_index:  시간 슬롯 인덱스 (0-11, 자시~해시)
+        ju_number:   局 번호 (1-9)
+        is_yang_dun: 양둔 여부 (True=양둔, False=음둔)
+
+    Returns:
+        궁 번호 (1-9)
+    """
+    if is_yang_dun:
+        return ((ju_number - 1 + slot_index) % 9) + 1
+    else:
+        return ((9 - ju_number + (8 - slot_index)) % 9) + 1
 
 
 # ---------------------------------------------------------------------------
@@ -182,7 +251,10 @@ def calculate_daily_qimen(birth_date: date, target_date: date) -> List[HourlyQim
     # 1) 날짜 오프셋 (60간지 순환의 날짜 인덱스)
     target_offset = (target_date - _JIAZI_DATE).days % 60
 
-    # 2) 출생일 & 당일 천간 → 오행 관계 → 에너지 보정값
+    # 2) 旬/局 기반 양둔/음둔 판별 및 局 번호 결정
+    ju_number, is_yang_dun = _determine_ju(target_date, target_offset)
+
+    # 3) 출생일 & 당일 천간 → 오행 관계 → 에너지 보정값
     birth_stem, _ = _get_day_ganzhi(birth_date)
     today_stem, _ = _get_day_ganzhi(target_date)
     relation = _wuxing_relation(birth_stem, today_stem)
@@ -191,15 +263,15 @@ def calculate_daily_qimen(birth_date: date, target_date: date) -> List[HourlyQim
     results: List[HourlyQimenResult] = []
 
     for slot_idx, (branch_name, h_start, h_end) in enumerate(TWELVE_BRANCHES):
-        # 3) 해당 슬롯의 8문 결정
-        gate_idx = _gate_for_hour_slot(target_offset, slot_idx)
+        # 4) 해당 슬롯의 8문 결정 (旬/局 기반)
+        gate_idx = _gate_for_hour_slot(slot_idx, ju_number, is_yang_dun)
         gate_name, quality, label = EIGHT_GATES[gate_idx]
 
-        # 4) 9궁 방위 결정
-        palace_no = _palace_for_hour_slot(target_offset, slot_idx)
+        # 5) 9궁 방위 결정 (旬/局 기반)
+        palace_no = _palace_for_hour_slot(slot_idx, ju_number, is_yang_dun)
         direction_ko, direction_en = PALACE_DIRECTIONS[palace_no]
 
-        # 5) 에너지 레벨 계산 (1~10 범위 클램프)
+        # 6) 에너지 레벨 계산 (1~10 범위 클램프)
         base_energy = GATE_BASE_ENERGY[gate_name]
         energy = max(1, min(10, base_energy + energy_bonus))
 
