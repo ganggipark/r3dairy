@@ -14,6 +14,7 @@ from src.api.auth import get_current_user
 from src.api.models import DailyContentResponse
 from src.rhythm.models import BirthInfo, Gender
 from src.rhythm.saju import calculate_saju, analyze_daily_fortune
+from src.rhythm.qimen import calculate_daily_qimen, get_daily_summary, HourlyQimenResult
 from src.content.assembly import assemble_daily_content
 from src.translation import translate_daily_content, Role
 
@@ -29,6 +30,17 @@ router = APIRouter(prefix="/api/daily", tags=["Daily Content"])
 # Cache for markdown content (simple in-memory cache)
 _markdown_cache = {}
 _cache_timeout = 3600  # 1 hour in seconds
+
+
+def _cleanup_expired_cache():
+    """만료된 캐시 항목 정리"""
+    now = datetime.datetime.now().timestamp()
+    expired_keys = [
+        k for k, v in _markdown_cache.items()
+        if now - v["timestamp"] >= _cache_timeout
+    ]
+    for k in expired_keys:
+        del _markdown_cache[k]
 
 
 def _get_profile_data(user_id: str, supabase_db: Client) -> dict:
@@ -85,7 +97,7 @@ async def get_daily_markdown(
 
     try:
         # 캐시 확인
-        cache_key = f"md_{target_date.isoformat()}"
+        cache_key = f"md_{user.id}_{target_date.isoformat()}"
         if cache_key in _markdown_cache:
             cached_data = _markdown_cache[cache_key]
             if datetime.datetime.now().timestamp() - cached_data["timestamp"] < _cache_timeout:
@@ -112,7 +124,9 @@ async def get_daily_markdown(
                 detail=f"{target_date.isoformat()} 날짜에 해당하는 콘텐츠를 찾을 수 없습니다."
             )
 
-        # 캐시 저장
+        # 캐시 저장 (주기적 만료 정리)
+        if len(_markdown_cache) > 500:  # 500개 초과 시 정리
+            _cleanup_expired_cache()
         _markdown_cache[cache_key] = {
             "content": markdown_content,
             "timestamp": datetime.datetime.now().timestamp()
@@ -174,7 +188,7 @@ async def get_daily_markdown_html(
 
     try:
         # 캐시 확인
-        cache_key = f"html_{target_date.isoformat()}"
+        cache_key = f"html_{user.id}_{target_date.isoformat()}"
         if cache_key in _markdown_cache:
             cached_data = _markdown_cache[cache_key]
             if datetime.datetime.now().timestamp() - cached_data["timestamp"] < _cache_timeout:
@@ -302,27 +316,66 @@ async def get_daily_content(
         # 4. 일간 리듬 분석 (내부 해석)
         daily_rhythm = analyze_daily_fortune(birth_info, target_date, saju_result)
 
-        # 5. 사용자 노출 콘텐츠 생성 (중립 콘텐츠)
-        daily_content = assemble_daily_content(target_date, saju_result, daily_rhythm)
+        # 5. 기문둔갑 시간/방위 계산 (콘텐츠 생성 전에 실행)
+        qimen_slots = None
+        best_direction = None
+        avoid_direction = None
+        peak_hours = None
+        qimen_summary = {}
+        try:
+            qimen_results = calculate_daily_qimen(birth_info.birth_date, target_date)
+            qimen_slots = [
+                {
+                    "hour_start": r.hour_start,
+                    "hour_end": r.hour_end,
+                    "quality": r.quality,
+                    "direction": r.direction,
+                    "direction_en": r.direction_en,
+                    "energy_level": r.energy_level,
+                    "label": r.label
+                }
+                for r in qimen_results
+            ]
+            summary = get_daily_summary(birth_info.birth_date, target_date)
+            best_direction = summary.get("best_direction")
+            avoid_direction = summary.get("avoid_direction")
+            peak_hours = summary.get("peak_hours")
+            qimen_summary = {
+                "best_direction": best_direction,
+                "avoid_direction": avoid_direction,
+                "peak_hours": peak_hours,
+            }
+        except Exception as qimen_err:
+            # 기문 계산 실패 시 기존 데이터 사용 (non-blocking)
+            import logging
+            logging.getLogger(__name__).warning(f"기문둔갑 계산 실패: {qimen_err}")
 
-        # 6. 역할별 변환 (role 파라미터가 있으면)
+        # 6. 사용자 노출 콘텐츠 생성 (기문 데이터 포함)
+        daily_content = assemble_daily_content(target_date, saju_result, daily_rhythm, qimen_summary)
+
+        # 7. 역할별 변환 (role 파라미터가 있으면)
         if role:
             daily_content = translate_daily_content(daily_content, role.value)
 
-        # 7. 응답 생성
-        # Note: Pydantic V2는 datetime.date를 자동으로 직렬화하지만 명시적으로 변환
+        # 8. 응답 생성 (기문 데이터 포함)
         return {
             "date": target_date.isoformat(),
             "role": role.value if role else None,
-            "content": daily_content
+            "content": daily_content,
+            "qimen_slots": qimen_slots,
+            "best_direction": best_direction,
+            "avoid_direction": avoid_direction,
+            "peak_hours": peak_hours
         }
 
     except HTTPException:
         raise
     except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"일간 콘텐츠 생성 오류: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"일간 콘텐츠 생성 중 오류가 발생했습니다: {str(e)}"
+            detail="일간 콘텐츠를 생성하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 
@@ -392,10 +445,24 @@ async def get_daily_content_range(
         results = []
         current_date = start_date
         while current_date <= end_date:
-            # 사주 계산 → 리듬 분석 → 콘텐츠 생성
+            # 사주 계산 → 리듬 분석 → 기문둔갑 → 콘텐츠 생성
             saju_result = calculate_saju(birth_info, current_date)
             daily_rhythm = analyze_daily_fortune(birth_info, current_date, saju_result)
-            daily_content = assemble_daily_content(current_date, saju_result, daily_rhythm)
+
+            # 기문둔갑 계산 (non-blocking)
+            loop_qimen_summary = {}
+            try:
+                loop_qimen_results = calculate_daily_qimen(birth_info.birth_date, current_date)
+                loop_summary = get_daily_summary(birth_info.birth_date, current_date)
+                loop_qimen_summary = {
+                    "best_direction": loop_summary.get("best_direction"),
+                    "avoid_direction": loop_summary.get("avoid_direction"),
+                    "peak_hours": loop_summary.get("peak_hours"),
+                }
+            except Exception:
+                pass
+
+            daily_content = assemble_daily_content(current_date, saju_result, daily_rhythm, loop_qimen_summary)
 
             # 역할별 변환
             if role:
@@ -415,7 +482,9 @@ async def get_daily_content_range(
     except HTTPException:
         raise
     except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"기간별 콘텐츠 생성 오류: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"기간별 콘텐츠 생성 중 오류가 발생했습니다: {str(e)}"
+            detail="기간별 콘텐츠를 생성하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )

@@ -12,9 +12,10 @@ from typing import Dict, Any
 
 
 def assemble_daily_content(
-    date: datetime.date,
+    target_date: datetime.date,
     saju_data: Dict[str, Any],
-    daily_rhythm: Dict[str, Any]
+    daily_rhythm: Dict[str, Any],
+    qimen_summary: Dict[str, Any] = None
 ) -> Dict[str, Any]:
     """
     일간 콘텐츠 조합
@@ -23,6 +24,7 @@ def assemble_daily_content(
         date: 대상 날짜
         saju_data: 사주 계산 결과 (내부 데이터)
         daily_rhythm: 일간 리듬 분석 결과 (내부 데이터)
+        qimen_summary: 기문둔갑 요약 데이터 (best_direction, avoid_direction, peak_hours)
 
     Returns:
         DAILY_CONTENT_SCHEMA.json 준수하는 사용자 노출 콘텐츠
@@ -42,8 +44,8 @@ def assemble_daily_content(
     # 5. 행동 가이드 (action_guide)
     action_guide = _generate_action_guide(daily_rhythm, saju_data)
 
-    # 6. 시간/방향 (time_direction)
-    time_direction = _generate_time_direction(daily_rhythm)
+    # 6. 시간/방향 (time_direction) - 기문둔갑 데이터 통합
+    time_direction = _generate_time_direction(daily_rhythm, qimen_summary or {})
 
     # 7. 상태 트리거 (state_trigger)
     state_trigger = _generate_state_trigger(daily_rhythm)
@@ -64,10 +66,10 @@ def assemble_daily_content(
     digital_comm = _generate_digital_communication(daily_rhythm, saju_data)
     hobbies = _generate_hobbies_creativity(daily_rhythm, saju_data)
     relationships = _generate_relationships_social(daily_rhythm, saju_data)
-    seasonal = _generate_seasonal_environment(daily_rhythm, saju_data)
+    seasonal = _generate_seasonal_environment(daily_rhythm, saju_data, target_date)
 
     content = {
-        "date": date.strftime("%Y-%m-%d"),
+        "date": target_date.strftime("%Y-%m-%d"),
         "summary": summary,
         "keywords": keywords,
         "rhythm_description": rhythm_description,
@@ -286,16 +288,33 @@ def _generate_action_guide(daily_rhythm: Dict[str, Any], saju_data: Dict[str, An
     }
 
 
-def _generate_time_direction(daily_rhythm: Dict[str, Any]) -> Dict[str, str]:
-    """시간/방향 정보 생성"""
+def _generate_time_direction(daily_rhythm: Dict[str, Any], qimen_summary: Dict[str, Any] = None) -> Dict[str, str]:
+    """시간/방향 정보 생성 (기문둔갑 데이터 통합)"""
     good_times = daily_rhythm.get("유리한_시간", [])
     caution_times = daily_rhythm.get("주의_시간", [])
     good_directions = daily_rhythm.get("유리한_방향", [])
 
-    good_time_str = ", ".join(good_times) if good_times else "오전 시간대"
-    avoid_time_str = ", ".join(caution_times) if caution_times else "늦은 밤"
-    good_direction_str = ", ".join(good_directions) if good_directions else "동쪽"
-    avoid_direction_str = "특별히 피할 방향 없음"
+    # 기문둔갑 데이터로 보강
+    if qimen_summary:
+        qimen_peak = qimen_summary.get("peak_hours")
+        qimen_best_dir = qimen_summary.get("best_direction")
+        qimen_avoid_dir = qimen_summary.get("avoid_direction")
+
+        # 기문 집중 시간을 첫 번째로 추가
+        if qimen_peak and qimen_peak not in good_times:
+            good_times = [qimen_peak] + list(good_times)
+
+        # 기문 최적 방향을 첫 번째로 추가
+        if qimen_best_dir and qimen_best_dir not in good_directions:
+            good_directions = [qimen_best_dir] + list(good_directions)
+
+        avoid_direction_str = qimen_avoid_dir if qimen_avoid_dir else "특별히 피할 방향 없음"
+    else:
+        avoid_direction_str = "특별히 피할 방향 없음"
+
+    good_time_str = ", ".join(good_times[:2]) if good_times else "오전 시간대"
+    avoid_time_str = ", ".join(caution_times[:1]) if caution_times else "늦은 밤"
+    good_direction_str = ", ".join(good_directions[:2]) if good_directions else "동쪽"
 
     notes = f"오늘은 {good_time_str}에 집중력과 효율이 높아집니다. "
     notes += f"가능하다면 {good_direction_str} 방향으로의 활동이나 이동을 고려해보세요. "
@@ -600,11 +619,14 @@ def _generate_relationships_social(daily_rhythm: Dict[str, Any], saju_data: Dict
     }
 
 
-def _generate_seasonal_environment(daily_rhythm: Dict[str, Any], saju_data: Dict[str, Any]) -> Dict[str, Any]:
+def _generate_seasonal_environment(daily_rhythm: Dict[str, Any], saju_data: Dict[str, Any], target_date=None) -> Dict[str, Any]:
     """계절/환경 추천"""
-    # 현재 달로 계절 판단
+    # target_date 기준으로 계절 판단 (없으면 오늘 날짜)
     import datetime
-    month = datetime.date.today().month
+    if target_date is not None:
+        month = target_date.month
+    else:
+        month = datetime.date.today().month
 
     if month in [3, 4, 5]:  # 봄
         weather = ["가벼운 외출복 준비", "일교차 대비"]
