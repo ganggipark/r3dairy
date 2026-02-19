@@ -317,6 +317,10 @@ def _translate_text(text: str, expression_map: Dict[str, str]) -> str:
     """
     텍스트 번역 (표현 매핑 적용)
 
+    한국어 단어 경계를 고려하여 치환합니다.
+    앞뒤가 공백/문장부호/문자열 시작·끝인 경우에만 치환하여
+    "스타일", "일어나기" 같은 단어 내부 오염을 방지합니다.
+
     Args:
         text: 원본 텍스트
         expression_map: 표현 매핑 사전
@@ -324,6 +328,7 @@ def _translate_text(text: str, expression_map: Dict[str, str]) -> str:
     Returns:
         번역된 텍스트
     """
+    import re
     translated = text
 
     # 긴 표현부터 먼저 치환 (부분 매치 방지)
@@ -333,8 +338,19 @@ def _translate_text(text: str, expression_map: Dict[str, str]) -> str:
         reverse=True
     )
 
+    # 단어 경계로 인정하는 문자들 (앞·뒤)
+    _BOUNDARY = r'[\s\(\[\{「『【\.,!?;:·\-]'
+
     for original_expr, role_expr in sorted_expressions:
-        translated = translated.replace(original_expr, role_expr)
+        # 앞: 문자열 시작 또는 경계 문자 (경계 문자는 캡처 그룹으로 유지)
+        # 뒤: 문자열 끝 또는 경계 문자 (lookahead이므로 소비하지 않음)
+        pattern = (
+            r'(^|' + _BOUNDARY + r')'
+            + re.escape(original_expr)
+            + r'(?=' + _BOUNDARY + r'|$)'
+        )
+        replacement = r'\g<1>' + role_expr
+        translated = re.sub(pattern, replacement, translated, flags=re.MULTILINE)
 
     return translated
 
@@ -368,6 +384,96 @@ def _translate_question(
     context = role_contexts.get(target_role, "")
     if context:
         translated = f"{translated} {context}"
+
+    return translated
+
+
+def translate_monthly_content(
+    content: Dict[str, Any],
+    target_role: str
+) -> Dict[str, Any]:
+    """
+    월간 콘텐츠를 역할에 맞게 번역
+
+    Args:
+        content: 원본 월간 콘텐츠
+        target_role: 대상 역할 ("student", "office_worker", "freelancer")
+
+    Returns:
+        역할에 맞게 변환된 콘텐츠
+    """
+    if target_role not in ROLE_EXPRESSIONS:
+        return content
+
+    translated = deepcopy(content)
+    expression_map = ROLE_EXPRESSIONS[target_role]
+
+    # theme 번역
+    if "theme" in translated and isinstance(translated["theme"], str):
+        translated["theme"] = _translate_text(translated["theme"], expression_map)
+
+    # priorities 번역
+    if "priorities" in translated and isinstance(translated["priorities"], list):
+        translated["priorities"] = [
+            _translate_text(item, expression_map) if isinstance(item, str) else item
+            for item in translated["priorities"]
+        ]
+
+    # opportunities 번역
+    if "opportunities" in translated and isinstance(translated["opportunities"], list):
+        translated["opportunities"] = [
+            _translate_text(item, expression_map) if isinstance(item, str) else item
+            for item in translated["opportunities"]
+        ]
+
+    # challenges 번역
+    if "challenges" in translated and isinstance(translated["challenges"], list):
+        translated["challenges"] = [
+            _translate_text(item, expression_map) if isinstance(item, str) else item
+            for item in translated["challenges"]
+        ]
+
+    # calendar_data, year_month는 번역하지 않음 (수치/날짜)
+
+    return translated
+
+
+def translate_yearly_content(
+    content: Dict[str, Any],
+    target_role: str
+) -> Dict[str, Any]:
+    """
+    연간 콘텐츠를 역할에 맞게 번역
+
+    Args:
+        content: 원본 연간 콘텐츠
+        target_role: 대상 역할 ("student", "office_worker", "freelancer")
+
+    Returns:
+        역할에 맞게 변환된 콘텐츠
+    """
+    if target_role not in ROLE_EXPRESSIONS:
+        return content
+
+    translated = deepcopy(content)
+    expression_map = ROLE_EXPRESSIONS[target_role]
+
+    # theme 번역
+    if "theme" in translated and isinstance(translated["theme"], str):
+        translated["theme"] = _translate_text(translated["theme"], expression_map)
+
+    # flow_summary 번역
+    if "flow_summary" in translated and isinstance(translated["flow_summary"], str):
+        translated["flow_summary"] = _translate_text(translated["flow_summary"], expression_map)
+
+    # core_tasks 번역
+    if "core_tasks" in translated and isinstance(translated["core_tasks"], list):
+        translated["core_tasks"] = [
+            _translate_text(item, expression_map) if isinstance(item, str) else item
+            for item in translated["core_tasks"]
+        ]
+
+    # monthly_signals, year는 번역하지 않음
 
     return translated
 

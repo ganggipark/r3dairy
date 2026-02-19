@@ -105,7 +105,10 @@ async def get_monthly_content(
         # 월간 콘텐츠 조립
         monthly_content = assemble_monthly_content(year, month, monthly_rhythm)
 
-        # TODO: 역할별 변환 (Phase 4에서 월간 번역 추가 필요)
+        # 역할별 번역 적용
+        if role:
+            from src.translation.translator import translate_monthly_content
+            monthly_content = translate_monthly_content(monthly_content, role.value)
 
         return {
             "year": year,
@@ -187,7 +190,10 @@ async def get_yearly_content(
         # 연간 콘텐츠 조립
         yearly_content = assemble_yearly_content(year, yearly_rhythm)
 
-        # TODO: 역할별 변환 (Phase 4에서 연간 번역 추가 필요)
+        # 역할별 번역 적용
+        if role:
+            from src.translation.translator import translate_yearly_content
+            yearly_content = translate_yearly_content(yearly_content, role.value)
 
         return {
             "year": year,
