@@ -27,7 +27,7 @@ def _make_sample_content():
         "도전_요소": ["충동 조절"],
     }
     return assemble_daily_content(
-        date=date(2026, 1, 20),
+        target_date=date(2026, 1, 20),
         saju_data=saju_data,
         daily_rhythm=daily_rhythm,
     )

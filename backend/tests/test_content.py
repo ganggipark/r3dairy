@@ -38,7 +38,7 @@ class TestContentAssembly:
     def test_assemble_daily_content(self, sample_saju_data, sample_daily_rhythm):
         """RhythmSignal dict -> DailyContent dict 변환 테스트"""
         content = assemble_daily_content(
-            date=date(2026, 1, 20),
+            target_date=date(2026, 1, 20),
             saju_data=sample_saju_data,
             daily_rhythm=sample_daily_rhythm,
         )
@@ -66,7 +66,7 @@ class TestContentAssembly:
     def test_internal_terms_not_exposed(self, sample_saju_data, sample_daily_rhythm):
         """내부 전문 용어가 사용자 콘텐츠에 노출되지 않는지 확인"""
         content = assemble_daily_content(
-            date=date(2026, 1, 20),
+            target_date=date(2026, 1, 20),
             saju_data=sample_saju_data,
             daily_rhythm=sample_daily_rhythm,
         )
@@ -99,7 +99,7 @@ class TestContentAssembly:
                 "도전_요소": ["조절"],
             }
             content = assemble_daily_content(
-                date=date(2026, 1, 20),
+                target_date=date(2026, 1, 20),
                 saju_data=sample_saju_data,
                 daily_rhythm=rhythm,
             )
@@ -190,7 +190,7 @@ class TestIntegration:
         }
 
         content = assemble_daily_content(
-            date=date(2026, 1, 20),
+            target_date=date(2026, 1, 20),
             saju_data=saju_data,
             daily_rhythm=daily_rhythm,
         )
@@ -232,3 +232,90 @@ class TestConvenienceFunctions:
         is_valid, messages = validate_daily_content(content)
         assert isinstance(is_valid, bool)
         assert isinstance(messages, list)
+
+
+# ─── Monthly/Yearly Content Assembly Tests ───────────────────────────────────
+from src.content.assembly import assemble_monthly_content, assemble_yearly_content
+
+
+class TestMonthlyContentAssembly:
+    """assemble_monthly_content 테스트"""
+
+    @pytest.fixture
+    def sample_monthly_rhythm(self):
+        return {
+            "주제": "성장과 확장",
+            "우선순위": ["새로운 시작", "학습 강화", "관계 정리"],
+            "일별_에너지": {d: (d % 5) + 1 for d in range(1, 29)},
+            "기회_요소": ["활동 에너지 상승", "새로운 만남"],
+            "도전_요소": ["충동 조절 필요"],
+        }
+
+    def test_monthly_content_has_new_fields(self, sample_monthly_rhythm):
+        content = assemble_monthly_content(year=2026, month=2, monthly_rhythm=sample_monthly_rhythm)
+        assert isinstance(content, dict)
+        assert "summary" in content
+        assert "keywords" in content
+        assert "weekly_focus" in content
+        assert "weekly_caution" in content
+        assert "flow_description" in content
+        assert "theme" in content
+        assert "priorities" in content
+        assert "calendar_data" in content
+
+    def test_monthly_summary_length(self, sample_monthly_rhythm):
+        content = assemble_monthly_content(year=2026, month=2, monthly_rhythm=sample_monthly_rhythm)
+        assert len(content.get("summary", "")) >= 300
+
+    def test_monthly_keywords_count(self, sample_monthly_rhythm):
+        content = assemble_monthly_content(year=2026, month=2, monthly_rhythm=sample_monthly_rhythm)
+        assert len(content.get("keywords", [])) >= 5
+
+    def test_monthly_graceful_degradation(self):
+        incomplete_rhythm = {"주제": "테스트"}
+        content = assemble_monthly_content(year=2026, month=2, monthly_rhythm=incomplete_rhythm)
+        assert isinstance(content.get("summary", ""), str)
+        assert isinstance(content.get("keywords", []), list)
+        assert isinstance(content.get("weekly_focus", []), list)
+        assert isinstance(content.get("weekly_caution", []), list)
+        assert isinstance(content.get("flow_description", ""), str)
+
+
+class TestYearlyContentAssembly:
+    """assemble_yearly_content 테스트"""
+
+    @pytest.fixture
+    def sample_yearly_rhythm(self):
+        return {
+            "주제": "변화와 성장의 시기",
+            "전체_흐름": "2026년은 변화가 많은 해입니다.",
+            "월별_신호": {m: {"월": m, "테마": f"{m}월 테마", "에너지": (m % 5) + 1} for m in range(1, 13)},
+            "핵심_과제": ["성장 추진", "관계 강화", "건강 관리"],
+        }
+
+    def test_yearly_content_has_new_fields(self, sample_yearly_rhythm):
+        content = assemble_yearly_content(year=2026, yearly_rhythm=sample_yearly_rhythm)
+        assert isinstance(content, dict)
+        assert "summary" in content
+        assert "keywords" in content
+        assert "first_half_focus" in content
+        assert "second_half_focus" in content
+        assert "theme" in content
+        assert "flow_summary" in content
+        assert "monthly_signals" in content
+
+    def test_yearly_summary_length(self, sample_yearly_rhythm):
+        content = assemble_yearly_content(year=2026, yearly_rhythm=sample_yearly_rhythm)
+        assert len(content.get("summary", "")) >= 500
+
+    def test_yearly_keywords_count(self, sample_yearly_rhythm):
+        content = assemble_yearly_content(year=2026, yearly_rhythm=sample_yearly_rhythm)
+        assert len(content.get("keywords", [])) >= 5
+
+    def test_yearly_graceful_degradation(self):
+        incomplete_rhythm = {"주제": "테스트"}
+        content = assemble_yearly_content(year=2026, yearly_rhythm=incomplete_rhythm)
+        assert isinstance(content.get("summary", ""), str)
+        assert isinstance(content.get("keywords", []), list)
+        assert isinstance(content.get("first_half_focus", ""), str)
+        assert isinstance(content.get("second_half_focus", ""), str)

@@ -16,9 +16,45 @@ import json
 import subprocess
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import date as date_type
 from .models import BirthInfo, RhythmSignal
+
+
+def _convert_ohaeng_to_user_friendly(ohaeng_list: List[str], context: str) -> List[str]:
+    """오행 용어를 사용자 친화적 표현으로 변환
+
+    Args:
+        ohaeng_list: 오행 리스트 (예: ["木", "火", "土", "金", "水"])
+        context: "기회" 또는 "도전"
+
+    Returns:
+        사용자 친화적 표현 리스트
+    """
+    # 오행 -> 사용자 친화적 매핑
+    ohaeng_to_friendly = {
+        "木": {"기회": "성장과 창의성", "도전": "충동 조절"},
+        "火": {"기회": "열정과 표현", "도전": "과도한 소비"},
+        "土": {"기회": "안정과 신뢰", "도전": "우유부단"},
+        "金": {"기회": "결단과 집중", "도전": "완벽주의"},
+        "水": {"기회": "통찰과 지혜", "도전": "불안과 걱정"},
+        # 한글 오행도 지원
+        "목": {"기회": "성장과 창의성", "도전": "충동 조절"},
+        "화": {"기회": "열정과 표현", "도전": "과도한 소비"},
+        "토": {"기회": "안정과 신뢰", "도전": "우유부단"},
+        "금": {"기회": "결단과 집중", "도전": "완벽주의"},
+        "수": {"기회": "통찰과 지혜", "도전": "불안과 걱정"},
+    }
+
+    result = []
+    for element in ohaeng_list:
+        if element in ohaeng_to_friendly:
+            result.append(ohaeng_to_friendly[element][context])
+        # 오행이 아닌 경우 그대로 반환 (이미 사용자 친화적 표현)
+        else:
+            result.append(element)
+
+    return result if result else ["균형과 조화"]
 
 # 사주 원국 계산 캐시 (같은 출생 정보는 동일한 원국 반환)
 _saju_cache: Dict[str, Any] = {}
@@ -41,7 +77,7 @@ def calculate_saju(birth_info: BirthInfo, target_date: datetime.date) -> Dict[st
     """
     # Node.js CLI 경로 (saju-calculator 사용)
     current_dir = Path(__file__).parent.parent.parent  # backend/
-    cli_path = current_dir / "saju-calculator" / "cli.js"
+    cli_path = current_dir / "saju-calculator" / "cli.mjs"
 
     if not cli_path.exists():
         raise RuntimeError(f"사주 계산기 CLI를 찾을 수 없습니다: {cli_path}")
@@ -305,8 +341,8 @@ def analyze_daily_fortune(
         "주의_시간": get_caution_times(saju_data, target_date),
         "유리한_방향": get_favorable_directions(saju_data, target_date),
         "주요_흐름": f"{season}의 에너지, {strength} 상태",
-        "기회_요소": [f"{element} 오행 활용" for element in yongsin_list],
-        "도전_요소": [f"{element} 오행 주의" for element in gisin_list],
+        "기회_요소": _convert_ohaeng_to_user_friendly(yongsin_list, "기회"),
+        "도전_요소": _convert_ohaeng_to_user_friendly(gisin_list, "도전"),
         "격국": gyeokguk,
         "세운점수": sewoon.get("score", 50) if sewoon else 50,
         "일진": {
