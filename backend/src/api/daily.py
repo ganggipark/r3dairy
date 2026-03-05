@@ -301,6 +301,10 @@ async def get_daily_content(
         # 1. 프로필 데이터 조회 (RLS 적용)
         profile = _get_profile_data(user_id, supabase_db)
 
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Profile loaded for user {user_id}: {profile.get('name')}")
+
         # 2. BirthInfo 생성
         birth_info = BirthInfo(
             name=profile["name"],
@@ -309,12 +313,27 @@ async def get_daily_content(
             gender=Gender(profile["gender"]),
             birth_place=profile["birth_place"]
         )
+        logger.info(f"BirthInfo created: {birth_info.name}, {birth_info.birth_date}, {birth_info.birth_time}")
 
         # 3. 사주 계산 (내부 계산)
         saju_result = calculate_saju(birth_info, target_date)
 
+        if not saju_result:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="사주 계산에 실패했습니다."
+            )
+        logger.info(f"Saju calculation completed for {target_date}")
+
         # 4. 일간 리듬 분석 (내부 해석)
         daily_rhythm = analyze_daily_fortune(birth_info, target_date, saju_result)
+
+        if not daily_rhythm:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="일간 리듬 분석에 실패했습니다."
+            )
+        logger.info(f"Daily rhythm analysis completed")
 
         # 5. 기문둔갑 시간/방위 계산 (콘텐츠 생성 전에 실행)
         qimen_slots = None
@@ -353,12 +372,25 @@ async def get_daily_content(
         # 6. 사용자 노출 콘텐츠 생성 (기문 데이터 포함)
         daily_content = assemble_daily_content(target_date, saju_result, daily_rhythm, qimen_summary)
 
+        if not daily_content:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="일간 콘텐츠 조합에 실패했습니다."
+            )
+        logger.info(f"Daily content assembled successfully")
+
+        # 콘텐츠 필수 필드 확인
+        required_fields = ['summary', 'keywords', 'rhythm_description']
+        missing_fields = [field for field in required_fields if not daily_content.get(field)]
+        if missing_fields:
+            logger.warning(f"Missing fields in daily content: {missing_fields}")
+
         # 7. 역할별 변환 (role 파라미터가 있으면)
         if role:
             daily_content = translate_daily_content(daily_content, role.value)
 
         # 8. 응답 생성 (기문 데이터 포함)
-        return {
+        response_data = {
             "date": target_date.isoformat(),
             "role": role.value if role else None,
             "content": daily_content,
@@ -367,6 +399,8 @@ async def get_daily_content(
             "avoid_direction": avoid_direction,
             "peak_hours": peak_hours
         }
+        logger.info(f"Response prepared - has content: {bool(daily_content)}, has fourPillars: {bool(daily_content.get('fourPillars'))}")
+        return response_data
 
     except HTTPException:
         raise
@@ -451,16 +485,30 @@ async def get_daily_content_range(
 
             # 기문둔갑 계산 (non-blocking)
             loop_qimen_summary = {}
+            loop_qimen_slots = None
             try:
                 loop_qimen_results = calculate_daily_qimen(birth_info.birth_date, current_date)
+                loop_qimen_slots = [
+                    {
+                        "hour_start": r.hour_start,
+                        "hour_end": r.hour_end,
+                        "quality": r.quality,
+                        "direction": r.direction,
+                        "direction_en": r.direction_en,
+                        "energy_level": r.energy_level,
+                        "label": r.label
+                    }
+                    for r in loop_qimen_results
+                ]
                 loop_summary = get_daily_summary(birth_info.birth_date, current_date)
                 loop_qimen_summary = {
                     "best_direction": loop_summary.get("best_direction"),
                     "avoid_direction": loop_summary.get("avoid_direction"),
                     "peak_hours": loop_summary.get("peak_hours"),
                 }
-            except Exception:
-                pass
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Qimen calculation failed for {current_date}: {e}")
 
             daily_content = assemble_daily_content(current_date, saju_result, daily_rhythm, loop_qimen_summary)
 
@@ -471,7 +519,11 @@ async def get_daily_content_range(
             results.append({
                 "date": current_date.isoformat(),
                 "role": role.value if role else None,
-                "content": daily_content
+                "content": daily_content,
+                "qimen_slots": loop_qimen_slots,
+                "best_direction": loop_qimen_summary.get("best_direction"),
+                "avoid_direction": loop_qimen_summary.get("avoid_direction"),
+                "peak_hours": loop_qimen_summary.get("peak_hours"),
             })
 
             # 다음 날로 이동

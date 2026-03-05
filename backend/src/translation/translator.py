@@ -20,7 +20,6 @@ ROLE_EXPRESSIONS = {
         "활동": "공부",
         "프로젝트": "과제",
         "업무": "학습",
-        "일": "공부",
         "작업": "학습",
         "교류": "토론",
         "네트워킹": "스터디",
@@ -42,7 +41,6 @@ ROLE_EXPRESSIONS = {
     "office_worker": {
         # 활동 관련
         "학습": "업무",
-        "공부": "일",
         "과제": "프로젝트",
         "토론": "회의",
         "스터디": "협업",
@@ -64,7 +62,6 @@ ROLE_EXPRESSIONS = {
     "freelancer": {
         # 활동 관련
         "업무": "작업",
-        "일": "프로젝트",
         "과제": "의뢰",
         "회의": "미팅",
         "협업": "파트너십",
@@ -84,7 +81,6 @@ ROLE_EXPRESSIONS = {
 
         # 결정 관련
         "결정": "계약",
-        "선택": "의사결정",
     }
 }
 
@@ -435,6 +431,35 @@ def translate_monthly_content(
 
     # calendar_data, year_month는 번역하지 않음 (수치/날짜)
 
+    # summary 번역 (NEW)
+    if "summary" in translated and isinstance(translated["summary"], str):
+        translated["summary"] = _translate_text(translated["summary"], expression_map)
+
+    # keywords 번역 (NEW)
+    if "keywords" in translated and isinstance(translated["keywords"], list):
+        translated["keywords"] = [
+            _translate_text(item, expression_map) if isinstance(item, str) else item
+            for item in translated["keywords"]
+        ]
+
+    # weekly_focus 번역 (NEW)
+    if "weekly_focus" in translated and isinstance(translated["weekly_focus"], list):
+        translated["weekly_focus"] = [
+            _translate_text(item, expression_map) if isinstance(item, str) else item
+            for item in translated["weekly_focus"]
+        ]
+
+    # weekly_caution 번역 (NEW)
+    if "weekly_caution" in translated and isinstance(translated["weekly_caution"], list):
+        translated["weekly_caution"] = [
+            _translate_text(item, expression_map) if isinstance(item, str) else item
+            for item in translated["weekly_caution"]
+        ]
+
+    # flow_description 번역 (NEW)
+    if "flow_description" in translated and isinstance(translated["flow_description"], str):
+        translated["flow_description"] = _translate_text(translated["flow_description"], expression_map)
+
     return translated
 
 
@@ -474,6 +499,25 @@ def translate_yearly_content(
         ]
 
     # monthly_signals, year는 번역하지 않음
+
+    # summary 번역 (NEW)
+    if "summary" in translated and isinstance(translated["summary"], str):
+        translated["summary"] = _translate_text(translated["summary"], expression_map)
+
+    # keywords 번역 (NEW)
+    if "keywords" in translated and isinstance(translated["keywords"], list):
+        translated["keywords"] = [
+            _translate_text(item, expression_map) if isinstance(item, str) else item
+            for item in translated["keywords"]
+        ]
+
+    # first_half_focus 번역 (NEW)
+    if "first_half_focus" in translated and isinstance(translated["first_half_focus"], str):
+        translated["first_half_focus"] = _translate_text(translated["first_half_focus"], expression_map)
+
+    # second_half_focus 번역 (NEW)
+    if "second_half_focus" in translated and isinstance(translated["second_half_focus"], str):
+        translated["second_half_focus"] = _translate_text(translated["second_half_focus"], expression_map)
 
     return translated
 

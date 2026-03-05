@@ -131,7 +131,8 @@ class BaseTranslator(ABC):
         return (success, translated, all_issues)
 
     def _apply_vocabulary_mapping(self, text: str) -> str:
-        """어휘 매핑 적용 (긴 표현 우선)"""
+        """어휘 매핑 적용 (긴 표현 우선, 한국어 단어 경계 준수)"""
+        import re
         # Sort by length descending to avoid partial matches
         sorted_vocab = sorted(
             self.vocabulary.items(),
@@ -139,8 +140,14 @@ class BaseTranslator(ABC):
             reverse=True,
         )
         result = text
+        _BOUNDARY = r'[\s\(\[\{「『【\.,!?;:·\-]'
         for original, replacement in sorted_vocab:
-            result = result.replace(original, replacement)
+            pattern = (
+                r'(^|' + _BOUNDARY + r')'
+                + re.escape(original)
+                + r'(?=' + _BOUNDARY + r'|$)'
+            )
+            result = re.sub(pattern, r'\g<1>' + replacement, result, flags=re.MULTILINE)
         return result
 
     def _adjust_tone(self, text: str) -> str:

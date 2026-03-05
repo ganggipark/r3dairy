@@ -2,12 +2,14 @@
 Supabase Client Configuration
 """
 import os
+from pathlib import Path
 from typing import Optional
 from supabase import create_client, Client
 from supabase.lib.client_options import SyncClientOptions
 from dotenv import load_dotenv
 
-load_dotenv()
+_env_path = Path(__file__).parent.parent.parent / '.env'
+load_dotenv(dotenv_path=_env_path)
 
 
 class SupabaseClient:

@@ -2,14 +2,16 @@
 R³ Diary System - FastAPI Backend
 Main application entry point
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables - 명시적 경로 지정
+_env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=_env_path)
 
 # Create FastAPI app
 app = FastAPI(
@@ -21,14 +23,34 @@ app = FastAPI(
 )
 
 # CORS configuration - 개발 환경용 (프로덕션에서는 환경변수 사용)
+_cors_origins_raw = os.getenv("CORS_ORIGINS", "http://localhost:5000")
+_cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["*"],
-    expose_headers=["*"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
+    max_age=3600,
 )
+
+# OPTIONS 요청 전역 핸들러 (CORS preflight 명시적 처리)
+@app.options("/{full_path:path}")
+async def options_handler(request: Request, full_path: str):
+    """Handle all OPTIONS requests for CORS preflight"""
+    origin = request.headers.get("origin", "")
+    allowed = origin if origin in _cors_origins else (_cors_origins[0] if _cors_origins else "")
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": allowed,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
+            "Access-Control-Max-Age": "3600",
+        }
+    )
 
 # Health check endpoint
 @app.get("/health")
@@ -53,7 +75,7 @@ async def root():
     }
 
 # Import API routers
-from src.api import auth, profile, daily, monthly, logs, profiles, surveys, webhook
+from src.api import auth, profile, daily, monthly, logs, profiles, surveys, webhook, forms
 # PDF router disabled on Windows (WeasyPrint requires GTK+)
 # from src.api import pdf
 
@@ -66,6 +88,7 @@ app.include_router(logs.router)
 app.include_router(profiles.router)
 app.include_router(surveys.router)
 app.include_router(webhook.router)
+app.include_router(forms.router)
 # app.include_router(pdf.router)
 
 if __name__ == "__main__":

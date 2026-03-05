@@ -4,6 +4,8 @@ Profile API Endpoints
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from supabase import Client
 from typing import Optional
+from datetime import date
+from dateutil.relativedelta import relativedelta
 from src.db.supabase import get_supabase, SupabaseClient
 from src.api.models import ProfileCreate, ProfileUpdate, ProfileResponse, SuccessResponse
 from src.api.auth import get_current_user
@@ -267,3 +269,15 @@ async def delete_profile(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"프로필 삭제 중 오류가 발생했습니다: {str(e)}"
         )
+
+
+def calculate_diary_end_date(start_date: date, period: str) -> date:
+    """다이어리 기간 유형으로 종료일 계산"""
+    if period == "3months":
+        return start_date + relativedelta(months=3)
+    elif period == "6months":
+        return start_date + relativedelta(months=6)
+    elif period == "1year":
+        return start_date + relativedelta(years=1)
+    else:
+        raise ValueError(f"지원하지 않는 기간 유형: {period}. '3months', '6months', '1year' 중 하나를 사용하세요.")

@@ -68,6 +68,45 @@ def assemble_daily_content(
     relationships = _generate_relationships_social(daily_rhythm, saju_data)
     seasonal = _generate_seasonal_environment(daily_rhythm, saju_data, target_date)
 
+    # 사주 데이터를 프론트엔드 형식으로 변환
+    four_pillars = None
+    if saju_data and "사주" in saju_data:
+        saju = saju_data["사주"]
+        four_pillars = {}
+
+        # 한글 키 → 영문 키 매핑
+        pillar_mapping = {
+            "년주": "year",
+            "월주": "month",
+            "일주": "day",
+            "시주": "hour"
+        }
+
+        for kor_key, eng_key in pillar_mapping.items():
+            if kor_key in saju:
+                pillar_data = saju[kor_key]
+                four_pillars[eng_key] = {
+                    "heavenlyStem": pillar_data.get("천간", ""),
+                    "earthlyBranch": pillar_data.get("지지", ""),
+                    "gan": pillar_data.get("천간", ""),  # 별칭
+                    "ji": pillar_data.get("지지", "")    # 별칭
+                }
+
+    gyeok_guk = None
+    if saju_data and "격국" in saju_data:
+        gyeok_guk = {
+            "dayMaster": saju_data["격국"].get("일간", ""),
+            "strength": saju_data["격국"].get("강약", ""),
+            "monthBranch": saju_data["격국"].get("월지", ""),
+            "season": saju_data["격국"].get("계절", ""),
+        }
+
+    yong_sin = None
+    if saju_data and "용신" in saju_data:
+        yong_sin = {
+            "yongSin": saju_data["용신"].get("용신", [])
+        }
+
     content = {
         "date": target_date.strftime("%Y-%m-%d"),
         "summary": summary,
@@ -90,10 +129,22 @@ def assemble_daily_content(
         "hobbies_creativity": hobbies,
         "relationships_social": relationships,
         "seasonal_environment": seasonal,
+        # 사주 원본 데이터 (프론트엔드 표시용, 영문 키로 변환)
+        "fourPillars": four_pillars,
+        "gyeokGuk": gyeok_guk,
+        "yongSin": yong_sin,
     }
 
     # 좌측 페이지 최소 700자 보장
     content = _ensure_minimum_content_length(content, daily_rhythm)
+
+    # DEBUG: 원본 텍스트 로깅
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.warning(f"[ASSEMBLY DEBUG] fashion_beauty.style: {content['daily_fashion_beauty'].get('style', 'N/A')}")
+    logger.warning(f"[ASSEMBLY DEBUG] daily_routines.morning: {content['daily_routines'].get('morning', 'N/A')}")
+    logger.warning(f"[ASSEMBLY DEBUG] meaning_shift: {content['meaning_shift'][:100]}")
+    logger.warning(f"[ASSEMBLY DEBUG] rhythm_question: {content['rhythm_question']}")
 
     return content
 
@@ -171,6 +222,16 @@ def _generate_keywords(daily_rhythm: Dict[str, Any], saju_data: Dict[str, Any]) 
     if opportunities:
         keywords.append("기회")
 
+    # 사주 격국 강약 기반 키워드 추가
+    if saju_data:
+        strength = saju_data.get("격국", {}).get("강약", "")
+        if strength == "신강":
+            keywords.append("도전")
+        elif strength == "신약":
+            keywords.append("안정")
+        elif strength == "중화":
+            keywords.append("조화")
+
     # 중복 제거 및 최대 8개로 제한
     keywords = list(dict.fromkeys(keywords))[:8]
 
@@ -182,24 +243,66 @@ def _generate_keywords(daily_rhythm: Dict[str, Any], saju_data: Dict[str, Any]) 
 
 
 def _generate_rhythm_description(daily_rhythm: Dict[str, Any], saju_data: Dict[str, Any]) -> str:
-    """리듬 해설 생성 (설명형 문단, 최소 200자)"""
+    """리듬 해설 생성 (설명형 문단, 최소 200자)
+
+    사주 데이터의 일간(일주 천간) 기반 개인화 포함.
+    """
     energy = daily_rhythm.get("에너지_수준", 3)
     concentration = daily_rhythm.get("집중력", 3)
     social = daily_rhythm.get("사회운", 3)
     decision = daily_rhythm.get("결정력", 3)
     flow = daily_rhythm.get("주요_흐름", "균형의 시기")
 
+    # --- 사주 일간(일주 천간) 기반 개인화 ---
+    day_stem = ""
+    if saju_data:
+        day_stem = saju_data.get("사주", {}).get("일주", {}).get("천간", "")
+    # 한자 천간 → 한글 천간 매핑 (TypeScript 모듈은 한글로 반환)
+    stem_tendency = {
+        "갑": "추진력과 리더십",
+        "을": "유연한 적응력",
+        "병": "열정과 표현력",
+        "정": "섬세한 집중력",
+        "무": "안정적인 포용력",
+        "기": "실용적 섬세함",
+        "경": "결단력과 실행력",
+        "신": "정밀한 완벽주의",
+        "임": "깊은 통찰력",
+        "계": "직관적 감수성",
+        # 한자 키도 지원 (원본 데이터에 한자가 올 경우)
+        "甲": "추진력과 리더십",
+        "乙": "유연한 적응력",
+        "丙": "열정과 표현력",
+        "丁": "섬세한 집중력",
+        "戊": "안정적인 포용력",
+        "己": "실용적 섬세함",
+        "庚": "결단력과 실행력",
+        "辛": "정밀한 완벽주의",
+        "壬": "깊은 통찰력",
+        "癸": "직관적 감수성",
+    }
+    personal_tendency = stem_tendency.get(day_stem, "")
+
     description = f"오늘의 흐름은 '{flow}'으로 요약됩니다. "
-    description += "이 흐름이 어떤 의미를 가지는지, 하루 동안 어떻게 활용할 수 있는지 살펴보겠습니다. "
+    if personal_tendency:
+        description += f"당신의 본래 기질인 {personal_tendency}이(가) 오늘의 리듬과 어떻게 어우러지는지 살펴보겠습니다. "
+    else:
+        description += "이 흐름이 어떤 의미를 가지는지, 하루 동안 어떻게 활용할 수 있는지 살펴보겠습니다. "
 
     if energy >= 4:
         description += "현재 에너지 수준이 매우 높아, 활동적이고 적극적인 하루가 될 가능성이 큽니다. "
+        if personal_tendency:
+            description += f"특히 {personal_tendency}을(를) 살려 주도적으로 움직이면 더 큰 성과를 얻을 수 있습니다. "
         description += "이 시기에는 오랫동안 미뤄두었던 과제나 새로운 시도를 실행에 옮기는 것이 효과적입니다. "
     elif energy <= 2:
         description += "에너지가 낮은 상태로, 몸과 마음 모두 충분한 쉼을 요청하고 있는 신호입니다. "
+        if personal_tendency:
+            description += f"이런 날은 {personal_tendency}을(를) 내면으로 돌려 자기 성찰에 활용하면 좋습니다. "
         description += "이런 날은 생산성보다 회복을 우선순위로 삼고, 가벼운 일만 처리하는 것이 지혜롭습니다. "
     else:
         description += "에너지가 안정적으로 유지되는 날입니다. "
+        if personal_tendency:
+            description += f"타고난 {personal_tendency}의 강점을 꾸준하게 발휘하기에 좋은 조건입니다. "
         description += "급격한 변화보다는 꾸준한 흐름을 유지하면서 하루의 과업을 착실히 처리해나가기에 좋습니다. "
 
     if concentration >= 4:
@@ -275,7 +378,10 @@ def _generate_focus_caution(daily_rhythm: Dict[str, Any]) -> Dict[str, list]:
 
 
 def _generate_action_guide(daily_rhythm: Dict[str, Any], saju_data: Dict[str, Any]) -> Dict[str, list]:
-    """행동 가이드 생성 (Do/Avoid)"""
+    """행동 가이드 생성 (Do/Avoid)
+
+    사주 성격 데이터의 약점을 Avoid에 반영하여 개인화.
+    """
     energy = daily_rhythm.get("에너지_수준", 3)
     opportunities = daily_rhythm.get("기회_요소", [])
     challenges = daily_rhythm.get("도전_요소", [])
@@ -303,6 +409,14 @@ def _generate_action_guide(daily_rhythm: Dict[str, Any], saju_data: Dict[str, An
             "가벼운 정리 활동"
         ])
 
+    # 사주 성격 기반 강점 Do 추가
+    if saju_data:
+        personality = saju_data.get("성격", {})
+        day_master_traits = personality.get("dayMasterTraits", {})
+        advice = day_master_traits.get("advice", "")
+        if advice:
+            do.append(advice)
+
     # Avoid 항목
     if energy <= 2:
         avoid.extend([
@@ -316,6 +430,16 @@ def _generate_action_guide(daily_rhythm: Dict[str, Any], saju_data: Dict[str, An
             "피로를 무시한 활동",
             "불필요한 갈등"
         ])
+
+    # 사주 성격 기반 약점 Avoid 추가
+    if saju_data:
+        personality = saju_data.get("성격", {})
+        day_master_traits = personality.get("dayMasterTraits", {})
+        weaknesses = day_master_traits.get("weaknesses", [])
+        for w in weaknesses[:2]:
+            avoid_item = f"{w}에 빠지지 않도록 주의"
+            if avoid_item not in avoid:
+                avoid.append(avoid_item)
 
     return {
         "do": do[:5],
@@ -392,9 +516,23 @@ def _generate_state_trigger(daily_rhythm: Dict[str, Any]) -> Dict[str, str]:
 
 
 def _generate_meaning_shift(daily_rhythm: Dict[str, Any], saju_data: Dict[str, Any]) -> str:
-    """의미 전환 생성 (설명형 문단, 최소 150자)"""
+    """의미 전환 생성 (설명형 문단, 최소 150자)
+
+    사주 격국의 강약 정보를 활용하여 리프레이밍 문구 개인화.
+    """
     energy = daily_rhythm.get("에너지_수준", 3)
     challenges = daily_rhythm.get("도전_요소", [])
+
+    # 격국 강약에 따른 보조 문구
+    strength_hint = ""
+    if saju_data:
+        strength = saju_data.get("격국", {}).get("강약", "")
+        if strength == "신강":
+            strength_hint = "당신은 본래 강한 에너지를 가진 사람입니다. 때로는 그 힘을 의식적으로 절제하는 것이 오히려 더 큰 성장을 가져옵니다. "
+        elif strength == "신약":
+            strength_hint = "당신은 섬세하고 깊은 내면을 가진 사람입니다. 외부의 속도에 맞추기보다 자신의 리듬을 존중할 때 가장 빛나게 됩니다. "
+        elif strength == "중화":
+            strength_hint = "당신은 균형 잡힌 기질을 가진 사람입니다. 이 안정감을 활용하여 주변을 조율하는 역할에서 강점을 발휘할 수 있습니다. "
 
     if energy <= 2:
         shift = "에너지가 낮다는 것은 무능력이 아니라, 충전이 필요한 자연스러운 신호입니다. "
@@ -414,6 +552,10 @@ def _generate_meaning_shift(daily_rhythm: Dict[str, Any], saju_data: Dict[str, A
         shift += "일상 속 작은 순간들에 감사하며, 오늘의 평온함이 주는 힘을 느껴보세요. "
         shift += "조용하지만 단단한 이 흐름 속에서, 오늘 당신이 내리는 선택들이 앞으로의 방향을 만들어갑니다. "
         shift += "작더라도 의식적인 선택을 해보세요."
+
+    # 격국 강약 기반 개인화 문구 추가
+    if strength_hint:
+        shift += " " + strength_hint
 
     return shift
 
@@ -477,25 +619,54 @@ def _generate_daily_meal_nutrition(daily_rhythm: Dict[str, Any], saju_data: Dict
 
 
 def _generate_daily_fashion_beauty(daily_rhythm: Dict[str, Any], saju_data: Dict[str, Any]) -> Dict[str, Any]:
-    """패션/뷰티 추천 (색상 포함)"""
+    """패션/뷰티 추천 (색상 포함)
+
+    사주 용신 오행에 맞는 색상을 우선 추천하여 개인화.
+    """
     energy = daily_rhythm.get("에너지_수준", 3)
     social = daily_rhythm.get("사회운", 3)
 
+    # 용신 오행 기반 행운 색상 매핑
+    ohhaeng_colors = {
+        "목": ["초록색", "연두색"],
+        "화": ["빨간색", "주황색"],
+        "토": ["노란색", "갈색"],
+        "금": ["흰색", "은색"],
+        "수": ["검정색", "남색"],
+    }
+    yongsin_colors = []
+    if saju_data:
+        yongsin_list = saju_data.get("용신", {}).get("용신", [])
+        for yong in yongsin_list[:2]:
+            yongsin_colors.extend(ohhaeng_colors.get(yong, []))
+
     if energy >= 4 and social >= 4:
         style = ["화사한 스타일", "밝은 컬러"]
-        colors = ["하얀색", "연한 파란색", "연두색"]
+        colors = yongsin_colors[:2] + ["연한 파란색"] if yongsin_colors else ["하얀색", "연한 파란색", "연두색"]
         beauty = ["자연스러운 메이크업", "생기있는 표정"]
-        explanation = "오늘은 밝고 활기찬 스타일이 어울립니다. 깨끗하고 밝은 컬러로 좋은 인상을 주세요."
+        explanation = "오늘은 밝고 활기찬 스타일이 어울립니다. "
+        if yongsin_colors:
+            explanation += f"특히 {yongsin_colors[0]} 계열이 당신의 기운을 강화해줍니다."
+        else:
+            explanation += "깨끗하고 밝은 컬러로 좋은 인상을 주세요."
     elif energy <= 2 or social <= 2:
         style = ["편안한 스타일", "차분한 컬러"]
-        colors = ["베이지", "회색", "네이비"]
+        colors = yongsin_colors[:1] + ["베이지", "회색"] if yongsin_colors else ["베이지", "회색", "네이비"]
         beauty = ["자연스러운 피부 표현", "편안한 헤어"]
-        explanation = "오늘은 편안하고 차분한 스타일이 좋습니다. 무리하지 않는 자연스러움을 유지하세요."
+        explanation = "오늘은 편안하고 차분한 스타일이 좋습니다. "
+        if yongsin_colors:
+            explanation += f"{yongsin_colors[0]} 포인트를 더하면 기운 보충에 도움이 됩니다."
+        else:
+            explanation += "무리하지 않는 자연스러움을 유지하세요."
     else:
         style = ["캐주얼한 스타일", "중간 톤"]
-        colors = ["하늘색", "연한 노란색", "흰색"]
+        colors = yongsin_colors[:2] + ["흰색"] if yongsin_colors else ["하늘색", "연한 노란색", "흰색"]
         beauty = ["깔끔한 스타일", "간단한 정리"]
-        explanation = "오늘은 부담 없는 스타일이 어울립니다. 간편하면서도 정돈된 모습을 유지하세요."
+        explanation = "오늘은 부담 없는 스타일이 어울립니다. "
+        if yongsin_colors:
+            explanation += f"{yongsin_colors[0]} 계열 소품으로 포인트를 주면 좋습니다."
+        else:
+            explanation += "간편하면서도 정돈된 모습을 유지하세요."
 
     return {
         "clothing_style": style,
@@ -794,6 +965,81 @@ def assemble_monthly_content(
         "challenges": monthly_rhythm.get("도전_요소", []),
     }
 
+    # NEW: summary (300+ chars)
+    try:
+        priorities_text = "、".join(content.get("priorities", [])[:3])
+        opportunities_text = "、".join(content.get("opportunities", [])[:2])
+        challenges_text = "、".join(content.get("challenges", [])[:2])
+        energies = list(content.get("calendar_data", {}).values())
+        avg_energy = sum(energies) / len(energies) if energies else 3
+        energy_desc = "활발한 에너지" if avg_energy >= 4 else ("안정적인 흐름" if avg_energy >= 3 else "차분한 시기")
+        summary = (
+            f"이번 달은 '{content.get('theme', '')}'의 시기입니다. "
+            f"{priorities_text} 등이 주요 우선순위이며, {energy_desc}가 지속됩니다. "
+            f"특히 {opportunities_text} 등의 기회 요소를 적극 활용하면 좋습니다. "
+            f"반면 {challenges_text} 등의 도전 요소에 유의하며 균형을 유지하는 것이 중요합니다. "
+            f"이달의 평균 에너지는 {avg_energy:.1f}점(5점 만점)으로, "
+            f"전반적으로 {'긍정적인' if avg_energy >= 3.5 else '신중한'} 접근이 효과적입니다. "
+            f"매일의 에너지 흐름에 맞춰 중요한 결정과 휴식을 조율하시기 바랍니다. "
+            f"에너지가 높은 날에는 중요한 업무와 대화를 배치하고, 낮은 날에는 정리와 재충전에 집중하는 것이 "
+            f"이달을 가장 효율적으로 보내는 방법입니다. 이번 달도 자신의 리듬을 존중하며 나아가세요."
+        )
+    except Exception:
+        summary = ""
+
+    # NEW: keywords (5+ items)
+    try:
+        kw_sources = (
+            content.get("priorities", []) +
+            content.get("opportunities", []) +
+            [content.get("theme", "")]
+        )
+        keywords = []
+        for src in kw_sources:
+            words = [w.strip() for w in src.replace("과", " ").replace("와", " ").replace("의", " ").split() if len(w.strip()) >= 2]
+            keywords.extend(words[:2])
+        keywords = list(dict.fromkeys(keywords))[:8]  # dedupe, max 8
+        if len(keywords) < 5:
+            keywords += ["에너지", "흐름", "균형", "집중", "성장"][:(5 - len(keywords))]
+    except Exception:
+        keywords = []
+
+    # NEW: weekly_focus / weekly_caution
+    try:
+        cal = content.get("calendar_data", {})
+        weeks = [
+            ("첫째 주 (1-7일)", [cal.get(d, 3) for d in range(1, 8)]),
+            ("둘째 주 (8-14일)", [cal.get(d, 3) for d in range(8, 15)]),
+            ("셋째 주 (15-21일)", [cal.get(d, 3) for d in range(15, 22)]),
+            ("넷째 주 (22-28일)", [cal.get(d, 3) for d in range(22, 29)]),
+        ]
+        weekly_focus = [label for label, days in weeks if days and sum(days) / len(days) >= 4]
+        weekly_caution = [label for label, days in weeks if days and sum(days) / len(days) <= 2]
+    except Exception:
+        weekly_focus = []
+        weekly_caution = []
+
+    # NEW: flow_description (200+ chars)
+    try:
+        energies = list(content.get("calendar_data", {}).values())
+        high_days = sum(1 for e in energies if e >= 4)
+        low_days = sum(1 for e in energies if e <= 2)
+        total_days = len(energies) or 1
+        flow_description = (
+            f"이달의 에너지 흐름을 살펴보면, 전체 {total_days}일 중 "
+            f"에너지가 높은 날이 {high_days}일, 낮은 날이 {low_days}일입니다. "
+            f"{'상반부에 에너지가 집중되어 초반에 중요한 일을 처리하는 것이 유리합니다.' if sum(list(content.get('calendar_data', {}).values())[:15]) > sum(list(content.get('calendar_data', {}).values())[15:]) else '하반부로 갈수록 에너지가 상승하므로 중요한 결정은 월 중반 이후로 조율하세요.'} "
+            f"주간 흐름을 미리 파악하고 에너지 높은 날에 집중 작업, 낮은 날에 휴식과 정리를 배분하면 이달을 더욱 효율적으로 보낼 수 있습니다."
+        )
+    except Exception:
+        flow_description = ""
+
+    content["summary"] = summary
+    content["keywords"] = keywords
+    content["weekly_focus"] = weekly_focus
+    content["weekly_caution"] = weekly_caution
+    content["flow_description"] = flow_description
+
     return content
 
 
@@ -822,5 +1068,60 @@ def assemble_yearly_content(
         "monthly_signals": monthly_signals,
         "core_tasks": yearly_rhythm.get("핵심_과제", []),
     }
+
+    # NEW: summary (500+ chars)
+    try:
+        monthly_sigs = content.get("monthly_signals", {})
+        energies = [sig.get("에너지", sig.get("energy", 3)) for sig in monthly_sigs.values()]
+        avg_energy = sum(energies) / len(energies) if energies else 3
+        h1_avg = sum(energies[:6]) / 6 if len(energies) >= 6 else avg_energy
+        h2_avg = sum(energies[6:]) / 6 if len(energies) >= 12 else avg_energy
+        core_tasks_text = "、".join(content.get("core_tasks", [])[:3])
+        summary = (
+            f"{content.get('year', '')}년은 '{content.get('theme', '')}'의 해입니다. "
+            f"{content.get('flow_summary', '')} "
+            f"상반기는 평균 에너지 {h1_avg:.1f}점으로 {'활발한 추진력을 발휘하기 좋은 시기' if h1_avg >= 3.5 else '차분히 기반을 다지는 시기'}이며, "
+            f"하반기는 평균 에너지 {h2_avg:.1f}점으로 {'결실을 맺고 완성도를 높이는 시기' if h2_avg >= 3.5 else '내실을 다지고 정리하는 시기'}입니다. "
+            f"올해의 핵심 과제는 {core_tasks_text} 등이며, 이를 중심으로 한 해를 설계하는 것이 효과적입니다. "
+            f"월별 에너지 흐름을 미리 파악하고 에너지가 높은 달에 중요한 결정과 도전을 배치하며, "
+            f"에너지가 낮은 달에는 휴식과 재정비를 통해 지속 가능한 페이스를 유지하시기 바랍니다. "
+            f"연간 흐름을 큰 그림으로 바라보고 분기별 목표를 설정하면, 방향 없이 흘러가는 시간을 줄이고 "
+            f"의미 있는 성취를 쌓아갈 수 있습니다. 올 한 해도 자신만의 속도와 리듬을 소중히 여기며 "
+            f"앞으로 나아가시기 바랍니다. 매월의 에너지를 점검하며 유연하게 계획을 조정하는 것이 핵심입니다. "
+            f"계획은 유연하게, 실행은 꾸준하게 — 이 두 가지 균형이 한 해를 풍성하게 만드는 비결입니다. "
+            f"자신을 믿고 한 걸음씩 나아가다 보면, 연말에는 의미 있는 결실을 마주하게 될 것입니다."
+        )
+    except Exception:
+        summary = ""
+
+    # NEW: keywords (5+ items)
+    try:
+        kw_sources = content.get("core_tasks", []) + [content.get("theme", ""), content.get("flow_summary", "")[:20]]
+        keywords = []
+        for src in kw_sources:
+            words = [w.strip() for w in str(src).replace("과", " ").replace("와", " ").replace("의", " ").split() if len(w.strip()) >= 2]
+            keywords.extend(words[:2])
+        keywords = list(dict.fromkeys(keywords))[:8]
+        if len(keywords) < 5:
+            keywords += ["성장", "변화", "균형", "완성", "도약"][:(5 - len(keywords))]
+    except Exception:
+        keywords = []
+
+    # NEW: first_half_focus / second_half_focus
+    try:
+        monthly_sigs = content.get("monthly_signals", {})
+        energies = [sig.get("에너지", sig.get("energy", 3)) for sig in monthly_sigs.values()]
+        h1_avg = sum(energies[:6]) / 6 if len(energies) >= 6 else 3
+        h2_avg = sum(energies[6:]) / 6 if len(energies) >= 12 else 3
+        first_half_focus = f"상반기(1-6월)는 평균 에너지 {h1_avg:.1f}점 — {'적극적인 추진과 새로운 시작에 집중하세요.' if h1_avg >= 3.5 else '내실을 다지고 기반을 강화하는 시기입니다.'}"
+        second_half_focus = f"하반기(7-12월)는 평균 에너지 {h2_avg:.1f}점 — {'상반기의 성과를 결실로 이어가는 시기입니다.' if h2_avg >= 3.5 else '마무리와 정리에 집중하며 다음 해를 준비하세요.'}"
+    except Exception:
+        first_half_focus = ""
+        second_half_focus = ""
+
+    content["summary"] = summary
+    content["keywords"] = keywords
+    content["first_half_focus"] = first_half_focus
+    content["second_half_focus"] = second_half_focus
 
     return content

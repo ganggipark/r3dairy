@@ -18,7 +18,6 @@ class FreelancerTranslator(BaseTranslator):
         return {
             # Activity
             "업무": "작업",
-            "일": "프로젝트",
             "과제": "의뢰",
             "회의": "미팅",
             "협업": "파트너십",
@@ -34,7 +33,6 @@ class FreelancerTranslator(BaseTranslator):
             "상사": "발주처",
             # Decision
             "결정": "계약/결정",
-            "선택": "의사결정",
             # Extended
             "작업 완료": "프로젝트 마감",
             "작업 시작": "프로젝트 착수",

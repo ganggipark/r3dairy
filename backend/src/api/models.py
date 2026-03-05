@@ -46,6 +46,13 @@ class AuthResponse(BaseModel):
 # Profile Models
 # ============================================================================
 
+# 다이어리 기간 설정 (preferences JSONB 필드)
+# preferences = {
+#   "diary_period": "3months" | "6months" | "1year" | "custom",
+#   "diary_start_date": "YYYY-MM-DD",  # 선택사항, 기본값: 프로필 생성일
+#   "diary_end_date": "YYYY-MM-DD",    # custom 기간에만 사용
+# }
+
 class ProfileCreate(BaseModel):
     """프로필 생성 요청"""
     name: str = Field(..., min_length=2, max_length=100)
@@ -92,11 +99,26 @@ class DailyContentRequest(BaseModel):
     role: Optional[Role] = None  # None이면 중립 콘텐츠
 
 
+class QimenTimeSlot(BaseModel):
+    """기문둔갑 시간대 슬롯 (사용자 노출용)"""
+    hour_start: int = Field(..., description="시작 시각 (0-23)")
+    hour_end: int = Field(..., description="종료 시각 (2-25)")
+    quality: str = Field(..., description="good | neutral | avoid")
+    direction: str = Field(..., description="한국어 방위 (예: 북동)")
+    direction_en: str = Field(default="", description="영문 방위 코드 (예: NE)")
+    energy_level: int = Field(..., ge=1, le=10, description="에너지 레벨 1-10")
+    label: str = Field(..., description="사용자 노출 라벨")
+
+
 class DailyContentResponse(BaseModel):
     """일간 콘텐츠 응답"""
     date: datetime.date
     role: Optional[Role]
     content: Dict[str, Any]  # DailyContent를 dict로 변환
+    qimen_slots: Optional[List[QimenTimeSlot]] = None
+    best_direction: Optional[str] = None
+    avoid_direction: Optional[str] = None
+    peak_hours: Optional[str] = None
 
 
 class MonthlyContentRequest(BaseModel):

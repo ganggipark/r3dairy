@@ -46,9 +46,6 @@ async def create_daily_log(
     token = authorization.split(" ")[1]
     supabase_db = SupabaseClient.create_user_db_client(token)
 
-    token = authorization.split(" ")[1]
-    supabase_db = SupabaseClient.create_user_db_client(token)
-
     try:
         # 기존 기록 확인
         existing = supabase_db.table("daily_logs").select("*").eq(

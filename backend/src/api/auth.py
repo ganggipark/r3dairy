@@ -2,9 +2,15 @@
 Authentication API Endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Header
+from pydantic import BaseModel
 from supabase import Client
 from src.db.supabase import get_supabase
 from src.api.models import SignUpRequest, LoginRequest, ChangePasswordRequest, AuthResponse, ErrorResponse
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -64,10 +70,10 @@ async def signup(
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"회원가입 중 오류가 발생했습니다: {str(e)}"
+            detail="회원가입 중 오류가 발생했습니다"
         )
 
 
@@ -111,10 +117,10 @@ async def login(
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"로그인 중 오류가 발생했습니다: {str(e)}"
+            detail="로그인 중 오류가 발생했습니다"
         )
 
 
@@ -133,23 +139,23 @@ async def logout(supabase: Client = Depends(get_supabase)):
         supabase.auth.sign_out()
         return {"success": True, "message": "로그아웃되었습니다."}
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"로그아웃 중 오류가 발생했습니다: {str(e)}"
+            detail="로그아웃 중 오류가 발생했습니다"
         )
 
 
 @router.post("/refresh", response_model=AuthResponse)
 async def refresh_token(
-    refresh_token: str,
+    request: RefreshTokenRequest,
     supabase: Client = Depends(get_supabase)
 ):
     """
     토큰 갱신
 
     Args:
-        refresh_token: 리프레시 토큰
+        request: RefreshTokenRequest (refresh_token 필드 포함)
 
     Returns:
         AuthResponse: 새로운 액세스 토큰, 리프레시 토큰
@@ -159,7 +165,7 @@ async def refresh_token(
         HTTPException 500: 서버 오류
     """
     try:
-        response = supabase.auth.refresh_session(refresh_token)
+        response = supabase.auth.refresh_session(request.refresh_token)
 
         if not response.session:
             raise HTTPException(
@@ -176,10 +182,10 @@ async def refresh_token(
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"토큰 갱신 중 오류가 발생했습니다: {str(e)}"
+            detail="토큰 갱신 중 오류가 발생했습니다"
         )
 
 
@@ -236,7 +242,7 @@ async def change_password(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="현재 비밀번호가 올바르지 않습니다."
                 )
-        except:
+        except Exception:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="현재 비밀번호가 올바르지 않습니다."
@@ -260,10 +266,10 @@ async def change_password(
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"비밀번호 변경 중 오류가 발생했습니다: {str(e)}"
+            detail="비밀번호 변경 중 오류가 발생했습니다"
         )
 
 

@@ -6,7 +6,7 @@ import uuid
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Request, Query
+from fastapi import APIRouter, HTTPException, Request, Query, Depends, Header
 from pydantic import BaseModel, Field
 
 from ..config.survey_templates import (
@@ -28,6 +28,7 @@ from ..skills.form_builder.models import FormConfiguration
 from ..skills.form_builder.generators import FormGenerator
 from ..db.supabase import (
     get_supabase_client,
+    get_supabase,
     save_survey_config,
     get_survey_config,
     list_survey_configs,
@@ -41,6 +42,24 @@ from ..db.supabase import (
 from ..data_processor.survey_to_profile import SurveyResponseToProfile
 
 router = APIRouter(prefix="/surveys", tags=["surveys"])
+
+
+def _require_authenticated_user(
+    authorization: Optional[str],
+) -> None:
+    """Authorization 헤더에서 토큰을 검증하고, 없으면 401을 발생시킵니다."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="인증 토큰이 필요합니다.")
+    token = authorization.split(" ")[1]
+    try:
+        supabase = get_supabase()
+        user_response = supabase.auth.get_user(token)
+        if not user_response or not user_response.user:
+            raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다.")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=401, detail="인증에 실패했습니다.")
 
 
 # ============================================================================
@@ -82,7 +101,10 @@ class SubmitSurveyRequest(BaseModel):
 # ============================================================================
 
 @router.post("/create", response_model=Dict[str, Any])
-async def create_survey(request: CreateSurveyRequest):
+async def create_survey(
+    request: CreateSurveyRequest,
+    authorization: Optional[str] = Header(None),
+):
     """
     Create a new survey from a template.
 
@@ -92,6 +114,7 @@ async def create_survey(request: CreateSurveyRequest):
     Returns:
         Survey configuration with ID
     """
+    _require_authenticated_user(authorization)
     try:
         # Get survey from template
         form = get_survey_by_template(request.template)
@@ -169,7 +192,8 @@ async def get_survey(survey_id: str):
 async def list_surveys(
     status: Optional[SurveyStatus] = None,
     limit: int = Query(default=50, le=100),
-    offset: int = Query(default=0, ge=0)
+    offset: int = Query(default=0, ge=0),
+    authorization: Optional[str] = Header(None),
 ):
     """
     List all surveys with optional filtering.
@@ -182,6 +206,7 @@ async def list_surveys(
     Returns:
         List of survey summaries
     """
+    _require_authenticated_user(authorization)
     surveys = await list_survey_configs(
         status=status.value if status else None,
         limit=limit,
@@ -202,7 +227,11 @@ async def list_surveys(
 
 
 @router.put("/{survey_id}/status")
-async def update_survey_status(survey_id: str, status: SurveyStatus):
+async def update_survey_status(
+    survey_id: str,
+    status: SurveyStatus,
+    authorization: Optional[str] = Header(None),
+):
     """
     Update survey status.
 
@@ -213,6 +242,7 @@ async def update_survey_status(survey_id: str, status: SurveyStatus):
     Returns:
         Updated survey configuration
     """
+    _require_authenticated_user(authorization)
     # Check if survey exists
     survey_config = await get_survey_config(survey_id)
     if not survey_config:
@@ -229,7 +259,10 @@ async def update_survey_status(survey_id: str, status: SurveyStatus):
 
 
 @router.delete("/{survey_id}")
-async def delete_survey(survey_id: str):
+async def delete_survey(
+    survey_id: str,
+    authorization: Optional[str] = Header(None),
+):
     """
     Delete (archive) a survey.
 
@@ -239,6 +272,7 @@ async def delete_survey(survey_id: str):
     Returns:
         Success message
     """
+    _require_authenticated_user(authorization)
     # Check if survey exists
     survey_config = await get_survey_config(survey_id)
     if not survey_config:
@@ -255,7 +289,11 @@ async def delete_survey(survey_id: str):
 # ============================================================================
 
 @router.post("/{survey_id}/deploy", response_model=Dict[str, Any])
-async def deploy_survey(survey_id: str, request: DeployRequest):
+async def deploy_survey(
+    survey_id: str,
+    request: DeployRequest,
+    authorization: Optional[str] = Header(None),
+):
     """
     Deploy survey to a specific platform.
 
@@ -266,6 +304,7 @@ async def deploy_survey(survey_id: str, request: DeployRequest):
     Returns:
         Deployment configuration for the target platform
     """
+    _require_authenticated_user(authorization)
     survey_config = await get_survey_config(survey_id)
     if not survey_config:
         raise HTTPException(status_code=404, detail="Survey not found")
@@ -397,7 +436,8 @@ async def get_survey_responses(
     survey_id: str,
     limit: int = Query(default=100, le=500),
     offset: int = Query(default=0, ge=0),
-    source: Optional[SurveySource] = None
+    source: Optional[SurveySource] = None,
+    authorization: Optional[str] = Header(None),
 ):
     """
     Get all responses for a survey with pagination.
@@ -411,6 +451,7 @@ async def get_survey_responses(
     Returns:
         List of survey responses
     """
+    _require_authenticated_user(authorization)
     # Check if survey exists
     survey_config = await get_survey_config(survey_id)
     if not survey_config:
@@ -442,7 +483,10 @@ async def get_survey_responses(
 
 
 @router.get("/{survey_id}/summary", response_model=SurveyResponseSummary)
-async def get_survey_summary(survey_id: str):
+async def get_survey_summary(
+    survey_id: str,
+    authorization: Optional[str] = Header(None),
+):
     """
     Get summary statistics for a survey.
 
@@ -452,6 +496,7 @@ async def get_survey_summary(survey_id: str):
     Returns:
         SurveyResponseSummary with statistics
     """
+    _require_authenticated_user(authorization)
     # Check if survey exists
     survey_config = await get_survey_config(survey_id)
     if not survey_config:
