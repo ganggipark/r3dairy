@@ -90,6 +90,8 @@ temp/
 
 # Claude Code / OMC
 .claude/settings.json
+.claude/plans/
+.claudeignore
 .omc/
 .playwright-mcp/
 .sisyphus/
@@ -103,6 +105,11 @@ nul
 *-temp/
 *-backup/
 saju-calculator-temp/
+backend/saju-calculator/cli.mjs
+backend/test_cli_direct.json
+
+# Frontend screenshots
+frontend/*.png
 
 # Session files
 *.backup
@@ -127,8 +134,51 @@ SESSSION*.txt
 /*_REPORT.md
 /*_SUMMARY.md
 /CURRENT_TASKS.md
+/*FIX*.md
+/*_ISSUE.md
+/*_GUIDE.md
+/*_RESULT.md
+/NEXT_*.md
+/*_STATUS.md
+/*_SUCCESS.md
+/*_COMPLETE.md
+/*_VERIFICATION.md
+/LOCAL_*.md
+/LOGIN_*.md
+/CORS_*.md
+/PORT_*.md
+/RESPONSIVE_*.md
+
+# Root screenshots
+/*.png
+
+# Playwright reports and test results
+frontend/playwright-report/
+frontend/test-results/
+
+# Test scripts (backend)
+backend/test_*.py
+backend/create_test_user.py
+
+# Test scripts (root)
+browser-test.mjs
+test_*.js
+*.ps1
+
+# Test HTML
+frontend/public/test-login.html
+
+# Experimental folders
+backend/saju-engine/
+saju-engine/
+mcp-servers/
+tests/
+
+# Frontend test specs (ad-hoc)
+frontend/tests/
 
 # Build artifacts (root only)
 /opencode.json
 /package.json
 /playwright.config.ts
+.mcp.json
