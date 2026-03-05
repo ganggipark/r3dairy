@@ -18,6 +18,8 @@ export enum Role {
   FREELANCER = "freelancer"
 }
 
+export type DiaryPeriod = '3months' | '6months' | '1year' | 'custom'
+
 // ============================================================================
 // Auth Types
 // ============================================================================
@@ -101,6 +103,16 @@ export interface TimeDirection {
   notes: string
 }
 
+export interface QimenTimeSlot {
+  hour_start: number    // 시작 시각 (0-23)
+  hour_end: number      // 종료 시각 (2-25)
+  quality: 'good' | 'neutral' | 'avoid'
+  direction: string     // 한국어 방위 (예: "북동")
+  direction_en: string  // 영문 코드 (예: "NE")
+  energy_level: number  // 1-10
+  label: string         // 사용자 노출 라벨
+}
+
 export interface StateTrigger {
   gesture: string
   phrase: string
@@ -126,12 +138,38 @@ date: string
   yongsin_utilization?: string
   daewoon_entry?: string
   sewon_summary?: string
+  // 사주 4기둥 데이터
+  fourPillars?: {
+    year?: { heavenlyStem?: string; earthlyBranch?: string; gan?: string; ji?: string }
+    month?: { heavenlyStem?: string; earthlyBranch?: string; gan?: string; ji?: string }
+    day?: { heavenlyStem?: string; earthlyBranch?: string; gan?: string; ji?: string }
+    hour?: { heavenlyStem?: string; earthlyBranch?: string; gan?: string; ji?: string }
+  }
+  gyeokGuk?: {
+    dayMaster?: string
+    strength?: string
+    monthBranch?: string
+    season?: string
+    [key: string]: any
+  }
+  yongSin?: {
+    yongSin?: string[]
+    [key: string]: any
+  }
+  // 기문둔갑 시간/방위 데이터 (구조화)
+  qimen_slots?: QimenTimeSlot[]
+  best_direction?: string
+  avoid_direction?: string
+  peak_hours?: string
 }
 
 export interface DailyContentResponse {
   date: string
   role: Role | null
   content: DailyContent
+  qimen_slots?: QimenTimeSlot[]
+  best_direction?: string
+  avoid_direction?: string
 }
 
 export interface DailyMarkdownResponse {
@@ -140,17 +178,49 @@ export interface DailyMarkdownResponse {
   markdown: string
 }
 
+export interface MonthlySignal {
+  month: number
+  theme: string
+  energy: number
+}
+
+export interface MonthlyContent {
+  year_month: string
+  theme: string
+  summary: string
+  keywords: string[]
+  priorities: string[]
+  calendar_data: Record<number, number>
+  opportunities: string[]
+  challenges: string[]
+  weekly_focus?: string[]
+  weekly_caution?: string[]
+  flow_description?: string
+}
+
+export interface YearlyContent {
+  year: number
+  theme: string
+  summary: string
+  keywords: string[]
+  flow_summary: string
+  monthly_signals: Record<number, MonthlySignal>
+  core_tasks: string[]
+  first_half_focus?: string
+  second_half_focus?: string
+}
+
 export interface MonthlyContentResponse {
   year: number
   month: number
   role: Role | null
-  content: any  // TODO: MonthlyContent 타입 정의
+  content: MonthlyContent
 }
 
 export interface YearlyContentResponse {
   year: number
   role: Role | null
-  content: any  // TODO: YearlyContent 타입 정의
+  content: YearlyContent
 }
 
 // ============================================================================

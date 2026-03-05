@@ -43,8 +43,7 @@ export default function DailyMarkdown({ date, showJSON = false }: DailyMarkdownP
 
       try {
         setIsLoading(true)
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-        const response = await fetch(`${API_URL}/api/daily/${date}/markdown`, {
+        const response = await fetch(`/api/daily/${date}/markdown`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -54,8 +53,16 @@ export default function DailyMarkdown({ date, showJSON = false }: DailyMarkdownP
           throw new Error('콘텐츠를 불러오는 데 실패했습니다')
         }
 
-        const data = await response.json()
-        setMarkdown(data.markdown || '')
+        // 백엔드가 text/markdown 으로 plain text를 반환하므로 text()로 읽음
+        const contentType = response.headers.get('content-type') || ''
+        let markdownText: string
+        if (contentType.includes('application/json')) {
+          const data = await response.json()
+          markdownText = data.markdown || ''
+        } else {
+          markdownText = await response.text()
+        }
+        setMarkdown(markdownText)
         setIsLoading(false)
       } catch (err: any) {
         setError(err.message || '오류가 발생했습니다')
