@@ -196,10 +196,12 @@ async def n8n_survey_webhook(
     try:
         normalized_data = _normalize_response_data(payload.response_data)
     except Exception as e:
-        errors.append(f"Normalization error: {str(e)}")
+        import logging
+        logging.getLogger(__name__).error(f"Normalization error: {e}", exc_info=True)
+        errors.append("Normalization error")
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid survey response data: {str(e)}"
+            detail="설문 응답 데이터 형식이 올바르지 않습니다."
         )
 
     # Step 5: Transaction - save response and create profile
@@ -268,10 +270,11 @@ async def n8n_survey_webhook(
         # Transaction failed - rollback if possible
         # Note: Supabase doesn't support manual transactions via PostgREST
         # So we rely on atomic operations and error handling
-
+        import logging
+        logging.getLogger(__name__).error(f"Failed to process survey submission: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to process survey submission: {str(e)}"
+            detail="설문 제출 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 

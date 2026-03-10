@@ -156,11 +156,13 @@ async def create_survey(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create survey: {str(e)}")
+        import logging
+        logging.getLogger(__name__).error(f"Failed to create survey: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="설문 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
 
 
 @router.get("/{survey_id}", response_model=Dict[str, Any])
-async def get_survey(survey_id: str):
+async def get_survey(survey_id: str, authorization: Optional[str] = Header(None)):
     """
     Get survey configuration by ID.
 
@@ -170,6 +172,7 @@ async def get_survey(survey_id: str):
     Returns:
         Full survey configuration
     """
+    _require_authenticated_user(authorization)
     survey_config = await get_survey_config(survey_id)
 
     if not survey_config:
@@ -350,7 +353,9 @@ async def deploy_survey(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Deployment failed: {str(e)}")
+        import logging
+        logging.getLogger(__name__).error(f"Deployment failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="배포 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
 
 
 # ============================================================================
@@ -416,9 +421,11 @@ async def submit_survey_response(request: Request, body: SubmitSurveyRequest):
     except ValueError as e:
         # Log error but don't fail the survey submission
         # The survey response is already saved
-        print(f"Warning: Failed to create profile from survey response: {e}")
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to create profile from survey response: {e}")
     except Exception as e:
-        print(f"Error: Unexpected error creating profile: {e}")
+        import logging
+        logging.getLogger(__name__).error(f"Unexpected error creating profile: {e}")
 
     return {
         "success": True,

@@ -36,6 +36,7 @@ def _get_current_user_from_header(
 @router.post("/create")
 async def create_profile(
     survey_response: Dict,
+    authorization: Optional[str] = Header(None),
     supabase: Client = Depends(get_supabase_service),
 ) -> Dict:
     """
@@ -50,6 +51,8 @@ async def create_profile(
 
     Returns: { success, customer_id, profile, warnings, errors }
     """
+    _get_current_user_from_header(authorization, supabase)
+
     processor = DataProcessor()
     success, profile, errors = await processor.process_survey_response(
         survey_response

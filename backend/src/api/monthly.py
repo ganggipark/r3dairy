@@ -1,6 +1,7 @@
 """
 Monthly/Yearly Content API Endpoints
 """
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Query
 from supabase import Client
 import datetime
@@ -12,6 +13,8 @@ from src.rhythm.models import BirthInfo, Gender
 from src.rhythm.saju import calculate_saju, analyze_monthly_rhythm, analyze_yearly_rhythm
 from src.content.assembly import assemble_monthly_content, assemble_yearly_content
 from src.translation.models import Role
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/content", tags=["Monthly/Yearly Content"])
 
@@ -120,9 +123,10 @@ async def get_monthly_content(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"월간 콘텐츠 생성 중 오류가 발생했습니다: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"월간 콘텐츠 생성 중 오류가 발생했습니다: {str(e)}"
+            detail="월간 콘텐츠 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 
@@ -204,7 +208,8 @@ async def get_yearly_content(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"연간 콘텐츠 생성 중 오류가 발생했습니다: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"연간 콘텐츠 생성 중 오류가 발생했습니다: {str(e)}"
+            detail="연간 콘텐츠 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )

@@ -26,12 +26,14 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <button
-            onClick={handleDemoMode}
-            className="w-full sm:w-auto px-8 py-3 text-lg font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-md transition-colors duration-200"
-          >
-            🚀 데모 모드 (개발용)
-          </button>
+          {process.env.NODE_ENV === 'development' && (
+            <button
+              onClick={handleDemoMode}
+              className="w-full sm:w-auto px-8 py-3 text-lg font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-md transition-colors duration-200"
+            >
+              🚀 데모 모드 (개발용)
+            </button>
+          )}
           <Link
             href="/login"
             className="w-full sm:w-auto px-8 py-3 text-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-colors duration-200"

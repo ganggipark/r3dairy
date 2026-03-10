@@ -227,7 +227,7 @@ async def test_full_pipeline_student(student_survey_response, mock_saju_data, mo
 
     # Call assemble_daily_content with correct parameters
     daily_content_dict = assemble_daily_content(
-        date=target_date,
+        target_date=target_date,
         saju_data=mock_saju_data,
         daily_rhythm=mock_rhythm_signal
     )
@@ -292,7 +292,7 @@ async def test_full_pipeline_office_worker(office_worker_survey_response, mock_s
     target_date = date(2026, 1, 30)
 
     daily_content_dict = assemble_daily_content(
-        date=target_date,
+        target_date=target_date,
         saju_data=mock_saju_data,
         daily_rhythm=mock_rhythm_signal
     )
@@ -398,7 +398,7 @@ async def test_char_count_within_bounds(
 
         # Generate daily content
         daily_content_dict = assemble_daily_content(
-            date=target_date,
+            target_date=target_date,
             saju_data=mock_saju_data,
             daily_rhythm=mock_rhythm_signal
         )
@@ -595,7 +595,7 @@ async def test_pipeline_performance(student_survey_response, mock_saju_data, moc
     profile = SurveyResponseToProfile.convert(student_survey_response)
 
     daily_content_dict = assemble_daily_content(
-        date=date(2026, 1, 30),
+        target_date=date(2026, 1, 30),
         saju_data=mock_saju_data,
         daily_rhythm=mock_rhythm_signal
     )

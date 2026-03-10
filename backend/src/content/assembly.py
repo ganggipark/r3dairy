@@ -141,10 +141,10 @@ def assemble_daily_content(
     # DEBUG: 원본 텍스트 로깅
     import logging
     logger = logging.getLogger(__name__)
-    logger.warning(f"[ASSEMBLY DEBUG] fashion_beauty.style: {content['daily_fashion_beauty'].get('style', 'N/A')}")
-    logger.warning(f"[ASSEMBLY DEBUG] daily_routines.morning: {content['daily_routines'].get('morning', 'N/A')}")
-    logger.warning(f"[ASSEMBLY DEBUG] meaning_shift: {content['meaning_shift'][:100]}")
-    logger.warning(f"[ASSEMBLY DEBUG] rhythm_question: {content['rhythm_question']}")
+    logger.debug(f"[ASSEMBLY DEBUG] fashion_beauty.style: {content['daily_fashion_beauty'].get('style', 'N/A')}")
+    logger.debug(f"[ASSEMBLY DEBUG] daily_routines.morning: {content['daily_routines'].get('morning', 'N/A')}")
+    logger.debug(f"[ASSEMBLY DEBUG] meaning_shift: {content['meaning_shift'][:100]}")
+    logger.debug(f"[ASSEMBLY DEBUG] rhythm_question: {content['rhythm_question']}")
 
     return content
 

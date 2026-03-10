@@ -566,8 +566,23 @@ def analyze_monthly_rhythm(
         daily_energy[day] = base_energy
 
     # 기회/도전 요소
-    opportunities = [f"{elem} 오행 활용" for elem in yongsin_list] or ["루틴 최적화"]
-    challenges = [f"{elem} 오행 주의" for elem in gisin_list] or ["과도한 활동 자제"]
+    # 오행 용어를 사용자 친화적 표현으로 변환
+    _ohaeng_opportunity_map = {
+        "목": "성장·확장 에너지 활용",
+        "화": "활동·소통 에너지 활용",
+        "토": "안정·정리 에너지 활용",
+        "금": "결단·실행 에너지 활용",
+        "수": "계획·휴식 에너지 활용",
+    }
+    _ohaeng_challenge_map = {
+        "목": "과도한 확장 주의",
+        "화": "과열·충동 주의",
+        "토": "과도한 고집 주의",
+        "금": "지나친 단호함 주의",
+        "수": "과도한 소극성 주의",
+    }
+    opportunities = [_ohaeng_opportunity_map.get(elem, f"{elem} 에너지 활용") for elem in yongsin_list] or ["루틴 최적화"]
+    challenges = [_ohaeng_challenge_map.get(elem, f"{elem} 에너지 주의") for elem in gisin_list] or ["과도한 활동 자제"]
 
     monthly_analysis = {
         "년월": f"{year}년 {month}월",

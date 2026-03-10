@@ -140,9 +140,11 @@ async def get_daily_markdown(
     except HTTPException:
         raise
     except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"마크다운 콘텐츠 조회 중 오류가 발생했습니다: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"마크다운 콘텐츠 조회 중 오류가 발생했습니다: {str(e)}"
+            detail="마크다운 콘텐츠 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 
@@ -251,9 +253,11 @@ async def get_daily_markdown_html(
     except HTTPException:
         raise
     except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"HTML 변환 중 오류가 발생했습니다: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"HTML 변환 중 오류가 발생했습니다: {str(e)}"
+            detail="HTML 변환 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 

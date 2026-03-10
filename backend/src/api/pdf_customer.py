@@ -65,9 +65,11 @@ async def generate_customer_daily_pdf(
         try:
             customer_profile = CustomerProfile(**profile_data)
         except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Invalid profile data for user {user_id}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid profile data: {str(e)}"
+                detail="프로필 데이터 형식이 올바르지 않습니다."
             )
 
         # 3. Generate personalized content using PersonalizationEngine
@@ -126,9 +128,11 @@ async def generate_customer_daily_pdf(
     except HTTPException:
         raise
     except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"PDF generation failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"PDF generation failed: {str(e)}"
+            detail="PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 
@@ -179,9 +183,11 @@ async def generate_customer_monthly_pdf(
         try:
             customer_profile = CustomerProfile(**profile_data)
         except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Invalid profile data for user {user_id}: {e}", exc_info=True)
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid profile data: {str(e)}"
+                detail="프로필 데이터 형식이 올바르지 않습니다."
             )
 
         # 3. Generate content for all days in month
@@ -248,7 +254,9 @@ async def generate_customer_monthly_pdf(
     except HTTPException:
         raise
     except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Monthly PDF generation failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Monthly PDF generation failed: {str(e)}"
+            detail="월간 PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )

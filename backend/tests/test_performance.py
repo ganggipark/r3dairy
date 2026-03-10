@@ -74,7 +74,7 @@ class TestContentGeneration:
         start_time = time.time()
 
         content = assemble_daily_content(
-            date=date(2026, 1, 20),
+            target_date=date(2026, 1, 20),
             saju_data={"test": "data"},
             daily_rhythm=sample_rhythm,
         )
@@ -99,7 +99,7 @@ class TestContentGeneration:
             "도전_요소": ["조절"],
         }
         content = assemble_daily_content(
-            date=date(2026, 1, 20),
+            target_date=date(2026, 1, 20),
             saju_data={"test": "data"},
             daily_rhythm=sample_rhythm,
         )
@@ -126,7 +126,7 @@ class TestContentGeneration:
 
         # 2. Content Assembly (using signal data as daily_rhythm)
         content = assemble_daily_content(
-            date=date(2026, 1, 20),
+            target_date=date(2026, 1, 20),
             saju_data=signal.saju_data,
             daily_rhythm={
                 "에너지_수준": signal.energy_level,
@@ -210,7 +210,7 @@ class TestMemoryUsage:
         tracemalloc.start()
 
         content = assemble_daily_content(
-            date=date(2026, 1, 20),
+            target_date=date(2026, 1, 20),
             saju_data={"test": "data"},
             daily_rhythm={
                 "에너지_수준": 3,
@@ -239,7 +239,7 @@ class TestMemoryUsage:
 
         for i in range(100):
             content = assemble_daily_content(
-                date=date(2026, 1, 1 + (i % 28)),
+                target_date=date(2026, 1, 1 + (i % 28)),
                 saju_data={"test": "data"},
                 daily_rhythm={
                     "에너지_수준": (i % 5) + 1,
@@ -324,7 +324,7 @@ class TestValidationPerformance:
 
         for _ in range(100):
             content = assemble_daily_content(
-                date=date(2026, 1, 20),
+                target_date=date(2026, 1, 20),
                 saju_data={},
                 daily_rhythm={
                     "에너지_수준": 3,

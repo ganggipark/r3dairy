@@ -1257,6 +1257,22 @@ function ProfileForm() {
           {currentStep === 2 && renderStep2()}
           {currentStep === 3 && renderStep3()}
         </div>
+
+        {/* 로그아웃 */}
+        <div className="mt-8 pt-6 border-t border-gray-200 flex justify-center">
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.removeItem('access_token')
+              localStorage.removeItem('refresh_token')
+              localStorage.removeItem('user_id')
+              router.push('/login')
+            }}
+            className="px-6 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm transition-colors duration-200"
+          >
+            로그아웃
+          </button>
+        </div>
       </div>
     </div>
   )

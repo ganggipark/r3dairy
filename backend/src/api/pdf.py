@@ -168,9 +168,11 @@ async def generate_daily_pdf(
     except HTTPException:
         raise
     except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"PDF 생성 실패: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"PDF 생성 실패: {str(e)}"
+            detail="PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 
@@ -214,6 +216,10 @@ async def generate_monthly_pdf(
                 status_code=400,
                 detail="월은 1-12 범위여야 합니다."
             )
+
+        # 2.5. DB 클라이언트 생성
+        token = authorization.split(" ")[1]
+        supabase_db = SupabaseClient.create_user_db_client(token)
 
         # 3. 프로필 조회
         profile = _get_profile_data(user_id, supabase_db)
@@ -273,7 +279,9 @@ async def generate_monthly_pdf(
     except HTTPException:
         raise
     except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"PDF 생성 실패: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"PDF 생성 실패: {str(e)}"
+            detail="PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )

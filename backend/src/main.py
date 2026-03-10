@@ -5,6 +5,7 @@ Main application entry point
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -13,13 +14,16 @@ from dotenv import load_dotenv
 _env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=_env_path)
 
+_is_production = os.getenv("ENVIRONMENT", "development") == "production"
+
 # Create FastAPI app
 app = FastAPI(
     title="R³ Diary API",
     description="Rhythm-based personalized diary system API",
     version="0.1.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    docs_url=None if _is_production else "/docs",
+    redoc_url=None if _is_production else "/redoc",
+    openapi_url=None if _is_production else "/openapi.json",
 )
 
 # CORS configuration - 개발 환경용 (프로덕션에서는 환경변수 사용)
@@ -34,6 +38,20 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "Accept"],
     max_age=3600,
 )
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        if _is_production:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # OPTIONS 요청 전역 핸들러 (CORS preflight 명시적 처리)
 @app.options("/{full_path:path}")

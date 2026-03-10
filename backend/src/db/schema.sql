@@ -154,6 +154,107 @@ CREATE TABLE yearly_content (
 CREATE INDEX idx_yearly_content_year ON yearly_content(profile_id, year);
 
 -- ============================================================================
+-- SURVEY CONFIGURATIONS TABLE
+-- ============================================================================
+CREATE TABLE survey_configurations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(200) NOT NULL,
+    description TEXT DEFAULT '',
+    form_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'archived')),
+    deployed_to JSONB DEFAULT '{}'::jsonb,
+    response_count INTEGER DEFAULT 0,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_survey_configurations_status ON survey_configurations(status);
+
+-- ============================================================================
+-- SURVEY RESPONSES TABLE
+-- ============================================================================
+CREATE TABLE survey_responses (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    survey_id UUID NOT NULL REFERENCES survey_configurations(id) ON DELETE CASCADE,
+    response_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    normalized_data JSONB DEFAULT '{}'::jsonb,
+    ip_address VARCHAR(45),
+    source VARCHAR(20) DEFAULT 'web',
+    user_id UUID,
+    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_survey_responses_survey_id ON survey_responses(survey_id);
+CREATE INDEX idx_survey_responses_submitted_at ON survey_responses(submitted_at);
+
+-- ============================================================================
+-- CUSTOMERS TABLE
+-- ============================================================================
+CREATE TABLE customers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE,
+    birth_date DATE,
+    gender VARCHAR(10) CHECK (gender IN ('male', 'female', 'other', 'not_specified')),
+    role VARCHAR(50) DEFAULT 'other',
+    subscription_type VARCHAR(50) DEFAULT 'app_only',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_customers_email ON customers(email);
+
+-- ============================================================================
+-- CUSTOMER PERSONALITIES TABLE
+-- ============================================================================
+CREATE TABLE customer_personalities (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    extroversion INTEGER CHECK (extroversion >= 1 AND extroversion <= 5),
+    structured INTEGER CHECK (structured >= 1 AND structured <= 5),
+    openness INTEGER CHECK (openness >= 1 AND openness <= 5),
+    empathy INTEGER CHECK (empathy >= 1 AND empathy <= 5),
+    calm INTEGER CHECK (calm >= 1 AND calm <= 5),
+    focus INTEGER CHECK (focus >= 1 AND focus <= 5),
+    creative INTEGER CHECK (creative >= 1 AND creative <= 5),
+    logical INTEGER CHECK (logical >= 1 AND logical <= 5),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_customer_personalities_customer ON customer_personalities(customer_id);
+
+-- ============================================================================
+-- CUSTOMER INTERESTS TABLE
+-- ============================================================================
+CREATE TABLE customer_interests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    topics JSONB DEFAULT '[]'::jsonb,
+    tone_preference VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_customer_interests_customer ON customer_interests(customer_id);
+
+-- ============================================================================
+-- CUSTOMER PREFERENCES TABLE
+-- ============================================================================
+CREATE TABLE customer_preferences (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    diary_type VARCHAR(50) DEFAULT 'app_only',
+    paper_size VARCHAR(20),
+    delivery_frequency VARCHAR(50),
+    delivery_address TEXT,
+    email_frequency VARCHAR(50),
+    consents JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_customer_preferences_customer ON customer_preferences(customer_id);
+
+-- ============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ============================================================================
 
@@ -165,6 +266,12 @@ ALTER TABLE daily_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE monthly_content ENABLE ROW LEVEL SECURITY;
 ALTER TABLE yearly_content ENABLE ROW LEVEL SECURITY;
 ALTER TABLE role_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE survey_configurations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE survey_responses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE customer_personalities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE customer_interests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE customer_preferences ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: Users can view and update their own profile
 CREATE POLICY "Users can view own profile"
@@ -237,6 +344,41 @@ CREATE TRIGGER update_role_templates_updated_at
     BEFORE UPDATE ON role_templates
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_survey_configurations_updated_at
+    BEFORE UPDATE ON survey_configurations
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_customers_updated_at
+    BEFORE UPDATE ON customers
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Survey tables: service role access only (managed by backend)
+CREATE POLICY "Service role manages surveys"
+    ON survey_configurations FOR ALL
+    USING (true);
+
+CREATE POLICY "Service role manages survey responses"
+    ON survey_responses FOR ALL
+    USING (true);
+
+CREATE POLICY "Service role manages customers"
+    ON customers FOR ALL
+    USING (true);
+
+CREATE POLICY "Service role manages customer personalities"
+    ON customer_personalities FOR ALL
+    USING (true);
+
+CREATE POLICY "Service role manages customer interests"
+    ON customer_interests FOR ALL
+    USING (true);
+
+CREATE POLICY "Service role manages customer preferences"
+    ON customer_preferences FOR ALL
+    USING (true);
 
 -- ============================================================================
 -- SEED DATA

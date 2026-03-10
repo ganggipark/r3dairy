@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 
 from ..skills.form_builder import (
@@ -54,11 +54,18 @@ class DeployRequest(BaseModel):
     target: str = "json"  # json, n8n, html, google_forms, markdown
 
 
+def _require_auth(authorization: Optional[str]) -> None:
+    """Require valid Bearer token."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="인증 토큰이 필요합니다.")
+
+
 # -- Endpoints ----------------------------------------------------------------
 
 @router.post("/create")
-async def create_form(request: FormRequest) -> Dict[str, Any]:
+async def create_form(request: FormRequest, authorization: Optional[str] = Header(None)) -> Dict[str, Any]:
     """Create a new form from specification."""
+    _require_auth(authorization)
     builder = FormBuilder(request.name, request.description)
 
     for section in request.sections:
@@ -90,24 +97,27 @@ async def create_form(request: FormRequest) -> Dict[str, Any]:
 
 
 @router.get("/{form_id}")
-async def get_form(form_id: str) -> Dict[str, Any]:
+async def get_form(form_id: str, authorization: Optional[str] = Header(None)) -> Dict[str, Any]:
     """Get form configuration by ID."""
+    _require_auth(authorization)
     if form_id not in _forms:
         raise HTTPException(status_code=404, detail="Form not found")
     return FormGenerator.to_json(_forms[form_id])
 
 
 @router.get("/{form_id}/responses")
-async def get_form_responses(form_id: str, limit: int = 100) -> Dict[str, Any]:
+async def get_form_responses(form_id: str, limit: int = 100, authorization: Optional[str] = Header(None)) -> Dict[str, Any]:
     """Get form responses (placeholder - integrate with n8n/DB)."""
+    _require_auth(authorization)
     if form_id not in _forms:
         raise HTTPException(status_code=404, detail="Form not found")
     return {"form_id": form_id, "responses": [], "total": 0, "limit": limit}
 
 
 @router.post("/{form_id}/deploy")
-async def deploy_form(form_id: str, request: DeployRequest) -> Dict[str, Any]:
+async def deploy_form(form_id: str, request: DeployRequest, authorization: Optional[str] = Header(None)) -> Dict[str, Any]:
     """Export form in the specified format."""
+    _require_auth(authorization)
     if form_id not in _forms:
         raise HTTPException(status_code=404, detail="Form not found")
 
@@ -129,8 +139,9 @@ async def deploy_form(form_id: str, request: DeployRequest) -> Dict[str, Any]:
 
 
 @router.get("/templates/{template_name}")
-async def get_template(template_name: str) -> Dict[str, Any]:
+async def get_template(template_name: str, authorization: Optional[str] = Header(None)) -> Dict[str, Any]:
     """Get a pre-built form template."""
+    _require_auth(authorization)
     templates = {
         "basic_profile": FormTemplates.basic_profile_form,
         "personality": FormTemplates.personality_assessment_form,

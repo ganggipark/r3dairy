@@ -471,49 +471,6 @@ export default function TodayPage() {
                         {(content.time_direction as any).notes && <div style={{ color: '#6b7280', fontSize: '10px', marginTop: '2px' }}>{(content.time_direction as any).notes}</div>}
                       </div>
                     )}
-                    {/* 오늘의 에너지 분석 (사주/기문/NLP) */}
-                    {((dailyContent?.content as any)?.fourPillars || (dailyContent?.content as any)?.gyeokGuk || (dailyContent?.content as any)?.yongSin) && (
-                      <div style={{ marginBottom: '10px', borderTop: '1px solid #e5e7eb', paddingTop: '8px' }}>
-                        <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#4b5563', marginBottom: '6px' }}>오늘의 에너지 분석</div>
-                        {/* 사주 4기둥 */}
-                        {(dailyContent?.content as any)?.fourPillars && (
-                          <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
-                            {(['year', 'month', 'day', 'hour'] as const).map(pillar => {
-                              const p = (dailyContent?.content as any)?.fourPillars?.[pillar];
-                              return p ? (
-                                <div key={pillar} style={{ flex: 1, textAlign: 'center', background: '#f9fafb', borderRadius: '3px', padding: '3px 2px', border: '1px solid #e5e7eb' }}>
-                                  <div style={{ fontSize: '8px', color: '#9ca3af', marginBottom: '1px' }}>
-                                    {pillar === 'year' ? '년' : pillar === 'month' ? '월' : pillar === 'day' ? '일' : '시'}
-                                  </div>
-                                  <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#374151' }}>
-                                    {p.gan}{p.ji}
-                                  </div>
-                                </div>
-                              ) : null;
-                            })}
-                          </div>
-                        )}
-                        {/* 격국 + 핵심 에너지 */}
-                        <div style={{ display: 'flex', gap: '6px', fontSize: '10px', marginBottom: '4px' }}>
-                          {(dailyContent?.content as any)?.gyeokGuk && (
-                            <div style={{ flex: 1, color: '#6b7280' }}>
-                              <strong>일간:</strong> {(dailyContent?.content as any)?.gyeokGuk?.dayMaster} ({(dailyContent?.content as any)?.gyeokGuk?.strength})
-                            </div>
-                          )}
-                          {(dailyContent?.content as any)?.yongSin?.yongSin && (
-                            <div style={{ flex: 1, color: '#6b7280' }}>
-                              <strong>핵심 에너지:</strong> {(dailyContent?.content as any)?.yongSin?.yongSin?.join(', ')}
-                            </div>
-                          )}
-                        </div>
-                        {/* NLP 앵커 요약 */}
-                        {content.state_trigger && (
-                          <div style={{ fontSize: '10px', color: '#7c3aed' }}>
-                            <strong>앵커:</strong> {content.state_trigger.phrase} | {content.state_trigger.gesture}
-                          </div>
-                        )}
-                      </div>
-                    )}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px', borderTop: '1px solid #e5e7eb', paddingTop: '10px', flex: 1 }}>
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {(content as any).daily_health_sports && (
@@ -739,9 +696,6 @@ export default function TodayPage() {
                 <section className="pb-2 border-b border-gray-100 print:border-gray-300">
                   <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2 print:text-sm">요약</h3>
                   <p className="text-sm text-gray-700 leading-relaxed print:text-xs">{content.summary}</p>
-                  <p className="hidden">
-                    📐 기반: 사주(일간 {(dailyContent?.content as any)?.gyeokGuk?.dayMaster || '?'}, {(dailyContent?.content as any)?.gyeokGuk?.strength || '?'}) + 십성 분석
-                  </p>
                 </section>
 
                 {/* 키워드 */}
@@ -757,18 +711,12 @@ export default function TodayPage() {
                       </span>
                     ))}
                   </div>
-                  <p className="hidden">
-                    📐 기반: 십성(용신 {(dailyContent?.content as any)?.yongSin?.yongSin?.join(', ') || '?'}) + 오행 균형
-                  </p>
                 </section>
 
                 {/* 리듬 해설 */}
                 <section className="pb-2 border-b border-gray-100 print:border-gray-300">
                   <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2 print:text-sm">리듬 해설</h3>
                   <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed print:text-xs">{content.rhythm_description}</p>
-                  <p className="hidden">
-                    📐 기반: 일주({(dailyContent?.content as any)?.fourPillars?.day?.gan}{(dailyContent?.content as any)?.fourPillars?.day?.ji}) + 월지({(dailyContent?.content as any)?.gyeokGuk?.monthBranch}) 상호작용
-                  </p>
                 </section>
 
               {/* 집중/주의 포인트 */}
@@ -792,9 +740,6 @@ export default function TodayPage() {
                     </ul>
                   </div>
                 </div>
-                <p className="hidden">
-                  📐 기반: 용신(喜) vs 기신(忌) 오행 분류
-                </p>
               </section>
 
               {/* 행동 가이드 */}
@@ -818,9 +763,6 @@ export default function TodayPage() {
                     </ul>
                   </div>
                 </div>
-                <p className="hidden">
-                  📐 기반: 십성 분석 + 역할({selectedRole}) 맞춤 번역
-                </p>
               </section>
 
               {/* 시간/방향 */}
@@ -832,7 +774,6 @@ export default function TodayPage() {
                     <p><span className="font-medium">피할 시간:</span> {content.time_direction.avoid_time}</p>
                     <p><span className="font-medium">좋은 방향:</span> {content.time_direction.good_direction}</p>
                   </div>
-                  <p className="hidden">📐 기반: 천을귀인 방향 + 시간대별 십이운성</p>
                 </section>
               )}
 
@@ -845,7 +786,6 @@ export default function TodayPage() {
                       <p><span className="font-medium">추천:</span> {(content as any).daily_health_sports.recommended_activities.join(', ')}</p>
                       <p><span className="font-medium">팁:</span> {(content as any).daily_health_sports.health_tips.join(', ')}</p>
                     </div>
-                    <p className="hidden">📐 기반: 오행 균형 + 계절(월지 {(dailyContent?.content as any)?.gyeokGuk?.season})</p>
                   </section>
                 )}
 
@@ -856,7 +796,6 @@ export default function TodayPage() {
                       <p><span className="font-medium">권장:</span> {(content as any).daily_meal_nutrition.recommended_foods.join(', ')}</p>
                       <p><span className="font-medium">피하기:</span> {(content as any).daily_meal_nutrition.avoid_foods.join(', ')}</p>
                     </div>
-                    <p className="hidden">📐 기반: 용신 오행 매핑</p>
                   </section>
                 )}
 
@@ -867,7 +806,6 @@ export default function TodayPage() {
                       <p><span className="font-medium">색상:</span> {(content as any).daily_fashion_beauty.color_suggestions.join(', ')}</p>
                       <p><span className="font-medium">스타일:</span> {(content as any).daily_fashion_beauty.clothing_style.join(', ')}</p>
                     </div>
-                    <p className="hidden">📐 기반: 오행 → 색상 변환</p>
                   </section>
                 )}
 
@@ -878,7 +816,6 @@ export default function TodayPage() {
                       <p><span className="font-medium">구매:</span> {(content as any).daily_shopping_finance.good_to_buy.join(', ')}</p>
                       <p><span className="font-medium">조언:</span> {(content as any).daily_shopping_finance.finance_advice.join(', ')}</p>
                     </div>
-                    <p className="hidden">📐 기반: 재성(財星) 십성 분석 + 용신 오행</p>
                   </section>
                 )}
 
@@ -889,7 +826,6 @@ export default function TodayPage() {
                       <p><span className="font-medium">정리:</span> {(content as any).daily_living_space.space_organization.join(', ')}</p>
                       <p><span className="font-medium">환경:</span> {(content as any).daily_living_space.environmental_tips.join(', ')}</p>
                     </div>
-                    <p className="hidden">📐 기반: 용신 오행 → 방위/공간 배치 + 인성(印星) 분석</p>
                   </section>
                 )}
 
@@ -900,7 +836,6 @@ export default function TodayPage() {
                       <p><span className="font-medium">아침:</span> {(content as any).daily_routines.morning_routine.join(', ')}</p>
                       <p><span className="font-medium">저녁:</span> {(content as any).daily_routines.evening_routine.join(', ')}</p>
                     </div>
-                    <p className="hidden">📐 기반: 일지(日支) 분석 + 시간대별 십이운성</p>
                   </section>
                 )}
 
@@ -911,7 +846,6 @@ export default function TodayPage() {
                       <p><span className="font-medium">기기:</span> {(content as any).digital_communication.device_usage.join(', ')}</p>
                       <p><span className="font-medium">SNS:</span> {(content as any).digital_communication.social_media.join(', ')}</p>
                     </div>
-                    <p className="hidden">📐 기반: 식상(食傷) + 비겁(比劫) 십성 에너지</p>
                   </section>
                 )}
 
@@ -922,7 +856,6 @@ export default function TodayPage() {
                       <p><span className="font-medium">창작:</span> {(content as any).hobbies_creativity.creative_activities.join(', ')}</p>
                       <p><span className="font-medium">학습:</span> {(content as any).hobbies_creativity.learning_recommendations.join(', ')}</p>
                     </div>
-                    <p className="hidden">📐 기반: 식상(食傷) 창작력 + 인성(印星) 학습 에너지</p>
                   </section>
                 )}
 
@@ -933,7 +866,6 @@ export default function TodayPage() {
                       <p><span className="font-medium">소통:</span> {(content as any).relationships_social.communication_style.join(', ')}</p>
                       <p><span className="font-medium">팁:</span> {(content as any).relationships_social.relationship_tips.join(', ')}</p>
                     </div>
-                    <p className="hidden">📐 기반: 비겁(比劫) + 관살(官殺) 십성 상호작용</p>
                   </section>
                 )}
 
@@ -944,7 +876,6 @@ export default function TodayPage() {
                       <p><span className="font-medium">날씨:</span> {(content as any).seasonal_environment.weather_adaptation.join(', ')}</p>
                       <p><span className="font-medium">활동:</span> {(content as any).seasonal_environment.seasonal_activities.join(', ')}</p>
                     </div>
-                    <p className="hidden">📐 기반: 월지({(dailyContent?.content as any)?.gyeokGuk?.monthBranch}) 계절 오행 + 대운 흐름</p>
                   </section>
                 )}
               </div>
@@ -961,21 +892,18 @@ export default function TodayPage() {
                     <p><span className="font-medium">문구:</span> {content.state_trigger.phrase}</p>
                     <p><span className="font-medium">방법:</span> {content.state_trigger.how_to}</p>
                   </div>
-                  <p className="hidden">📐 기반: NLP 앵커링 기법 + 오늘의 불안 트리거 감지</p>
                 </section>
 
                 {/* 리프레이밍 (의미 전환) */}
                 <section className="pb-2 border-b border-gray-100 print:border-gray-300 mb-2">
                   <h4 className="text-xs font-semibold text-gray-800 mb-1 print:text-[10px]">리프레이밍 <span className="font-normal text-gray-500">(상황 재해석)</span></h4>
                   <p className="text-xs text-gray-700 whitespace-pre-line print:text-[10px]">{content.meaning_shift}</p>
-                  <p className="hidden">📐 기반: NLP 리프레이밍 + 용신/기신 관점 전환</p>
                 </section>
 
                 {/* 메타 질문 (리듬 질문) */}
                 <section>
                   <h4 className="text-xs font-semibold text-gray-800 mb-1 print:text-[10px]">메타 질문 <span className="font-normal text-gray-500">(관점 전환)</span></h4>
                   <p className="text-xs text-gray-700 italic print:text-[10px]">{content.rhythm_question}</p>
-                  <p className="hidden">📐 기반: NLP 메타모델 질문 + 오늘의 핵심 십성 과제</p>
                 </section>
               </div>
               </div>

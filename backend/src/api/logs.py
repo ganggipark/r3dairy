@@ -1,6 +1,7 @@
 """
 Daily Log API Endpoints
 """
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from typing import Optional
 from supabase import Client
@@ -10,6 +11,7 @@ from src.api.auth import get_current_user
 from src.api.models import DailyLogCreate, DailyLogUpdate, DailyLogResponse, SuccessResponse
 
 router = APIRouter(prefix="/api/logs", tags=["Daily Logs"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/{target_date}", response_model=DailyLogResponse, status_code=status.HTTP_201_CREATED)
@@ -83,9 +85,10 @@ async def create_daily_log(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"기록 생성 중 오류가 발생했습니다: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"기록 생성 중 오류가 발생했습니다: {str(e)}"
+            detail="기록 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 
@@ -137,9 +140,10 @@ async def get_daily_log(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"기록 조회 중 오류가 발생했습니다: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"기록 조회 중 오류가 발생했습니다: {str(e)}"
+            detail="기록 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 
@@ -220,9 +224,10 @@ async def update_daily_log(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"기록 수정 중 오류가 발생했습니다: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"기록 수정 중 오류가 발생했습니다: {str(e)}"
+            detail="기록 수정 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 
@@ -274,7 +279,8 @@ async def delete_daily_log(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"기록 삭제 중 오류가 발생했습니다: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"기록 삭제 중 오류가 발생했습니다: {str(e)}"
+            detail="기록 삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )

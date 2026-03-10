@@ -1,6 +1,7 @@
 """
 Profile API Endpoints
 """
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from supabase import Client
 from typing import Optional
@@ -11,6 +12,7 @@ from src.api.models import ProfileCreate, ProfileUpdate, ProfileResponse, Succes
 from src.api.auth import get_current_user
 
 router = APIRouter(prefix="/api/profile", tags=["Profile"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("", response_model=ProfileResponse, status_code=status.HTTP_201_CREATED)
@@ -83,9 +85,10 @@ async def create_profile(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"프로필 생성 중 오류가 발생했습니다: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"프로필 생성 중 오류가 발생했습니다: {str(e)}"
+            detail="프로필 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 
@@ -134,9 +137,10 @@ async def get_profile(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"프로필 조회 중 오류가 발생했습니다: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"프로필 조회 중 오류가 발생했습니다: {str(e)}"
+            detail="프로필 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 
@@ -213,9 +217,10 @@ async def update_profile(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"프로필 수정 중 오류가 발생했습니다: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"프로필 수정 중 오류가 발생했습니다: {str(e)}"
+            detail="프로필 수정 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 
@@ -265,9 +270,10 @@ async def delete_profile(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"프로필 삭제 중 오류가 발생했습니다: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"프로필 삭제 중 오류가 발생했습니다: {str(e)}"
+            detail="프로필 삭제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
         )
 
 
