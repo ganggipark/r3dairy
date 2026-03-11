@@ -109,7 +109,9 @@ export default function DiaryPrintPage() {
             allDays.push(...rangeData)
           }
         } catch (err) {
-          console.warn(`청크 로드 실패: ${start}~${end}`, err)
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`청크 로드 실패: ${start}~${end}`, err)
+          }
         }
         setLoadingProgress({ loaded: i + 1, total: chunks.length })
       }
@@ -229,9 +231,32 @@ export default function DiaryPrintPage() {
       {/* Print CSS */}
       <style>{`
         @media print {
+          @page {
+            size: ${paper.widthMm}mm ${paper.heightMm}mm;
+            margin: 8mm;
+          }
+          body {
+            margin: 0;
+            padding: 0;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+          }
           .diary-controls { display: none !important; }
-          .diary-page { page-break-after: always; break-after: page; }
-          body { margin: 0; padding: 0; }
+          .diary-content-area { padding-top: 0 !important; }
+          .diary-page {
+            width: ${paper.widthMm - 16}mm !important;
+            height: ${paper.heightMm - 16}mm !important;
+            max-height: ${paper.heightMm - 16}mm !important;
+            overflow: hidden !important;
+            page-break-after: always;
+            break-after: page;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin: 0 !important;
+            padding: 10px 12px !important;
+            box-shadow: none !important;
+            box-sizing: border-box;
+          }
         }
         @media screen {
           body { background: #9ca3af; }
@@ -305,7 +330,7 @@ export default function DiaryPrintPage() {
       </div>
 
       {/* Content area */}
-      <div style={{ paddingTop: '60px', fontFamily: 'serif' }}>
+      <div className="diary-content-area" style={{ paddingTop: '60px', fontFamily: 'serif' }}>
         {/* Cover Page */}
         <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
           <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1f2937', letterSpacing: '0.05em' }}>나의 리듬 다이어리</div>
@@ -331,105 +356,226 @@ export default function DiaryPrintPage() {
           const content = day.content
           const qimenSlots = day.qimen_slots
 
+          // Helper: render a compact lifestyle line (icon + title + items in one line)
+          const renderCompactLifestyleCard = (title: string, icon: string, block: { explanation?: string; [key: string]: any } | undefined, listKeys: string[]) => {
+            if (!block) return null
+            const items = listKeys.flatMap(k => {
+              const arr = block[k]
+              return Array.isArray(arr) ? arr.slice(0, 2) : []
+            })
+            if (items.length === 0) return null
+            return (
+              <div style={{ fontSize: '7.5px', color: '#4b5563', lineHeight: '1.4', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                <span style={{ fontWeight: 'bold', color: '#374151' }}>{icon} {title}:</span>{' '}
+                {items.join(' · ')}
+              </div>
+            )
+          }
+
+          // Helper: render inline chip for small paper
+          const renderLifestyleChip = (title: string, icon: string, block: { [key: string]: any } | undefined, listKeys: string[]) => {
+            if (!block) return null
+            const items = listKeys.flatMap(k => {
+              const arr = block[k]
+              return Array.isArray(arr) ? arr.slice(0, 1) : []
+            })
+            if (items.length === 0) return null
+            return (
+              <span style={{ fontSize: '7px', color: '#374151', background: '#f3f4f6', borderRadius: '6px', padding: '1px 4px', whiteSpace: 'nowrap' }}>
+                {icon} {items[0]}
+              </span>
+            )
+          }
+
+          const isSmallPaper = paper.heightMm <= 220
+          const timeSlotHeight = isSmallPaper ? 14 : 16
+
           return (
-            <div key={day.date}>
-              {/* Left page: Today's guide */}
-              <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', padding: '20px', boxSizing: 'border-box', overflow: 'hidden', fontSize: '11px', fontFamily: 'serif', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+            <div key={day.date} className="diary-day-spread">
+              {/* Left page: 오늘의 안내 (표준 10개 블록 + 압축 라이프스타일) */}
+              <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', padding: '16px 18px', boxSizing: 'border-box', overflow: 'hidden', fontSize: '10px', fontFamily: 'serif', display: 'flex', flexDirection: 'column', gap: '5px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
                 {/* Header */}
-                <div style={{ borderBottom: '2px solid #1f2937', paddingBottom: '8px', marginBottom: '4px' }}>
+                <div style={{ borderBottom: '2px solid #1f2937', paddingBottom: '4px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937' }}>{day.date}</span>
-                    <span style={{ fontSize: '10px', color: '#6b7280' }}>Day {dayIndex + 1} / {days.length}</span>
+                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1f2937' }}>{day.date}</span>
+                    <span style={{ fontSize: '9px', color: '#6b7280' }}>Day {dayIndex + 1} / {days.length}</span>
                   </div>
                 </div>
 
-                {/* Summary */}
+                {/* 1. 요약 */}
                 {content?.summary && (
                   <div>
-                    <div style={{ fontWeight: 'bold', fontSize: '10px', color: '#374151', marginBottom: '2px' }}>요약</div>
-                    <div style={{ color: '#4b5563', lineHeight: '1.5' }}>{content.summary}</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '9px', color: '#1f2937', marginBottom: '1px' }}>오늘의 요약</div>
+                    <div style={{ color: '#4b5563', lineHeight: '1.5', fontSize: '9.5px' }}>{content.summary}</div>
                   </div>
                 )}
 
-                {/* Keywords */}
+                {/* 2. 키워드 */}
                 {content?.keywords && content.keywords.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
                     {content.keywords.map((kw: string, i: number) => (
-                      <span key={i} style={{ padding: '1px 6px', border: '1px solid #d1d5db', borderRadius: '10px', fontSize: '9px', color: '#374151' }}>{kw}</span>
+                      <span key={i} style={{ padding: '1px 5px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '8px', color: '#374151', background: '#f9fafb' }}>{kw}</span>
                     ))}
                   </div>
                 )}
 
-                {/* Rhythm description */}
+                {/* 3. 리듬 해설 */}
                 {content?.rhythm_description && (
-                  <div style={{ flex: '1', overflow: 'hidden' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '10px', color: '#374151', marginBottom: '2px' }}>리듬 해설</div>
-                    <div style={{ color: '#4b5563', lineHeight: '1.5', fontSize: '10px' }}>{content.rhythm_description.slice(0, 300)}</div>
+                  <div>
+                    <div style={{ fontWeight: 'bold', fontSize: '9px', color: '#1f2937', marginBottom: '1px' }}>리듬 해설</div>
+                    <div style={{ color: '#4b5563', lineHeight: '1.5', fontSize: '9px' }}>{content.rhythm_description}</div>
                   </div>
                 )}
 
-                {/* Action guide */}
+                {/* 4. 집중/주의 포인트 */}
+                {content?.focus_caution && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                    <div style={{ background: '#f0fdf4', borderRadius: '3px', padding: '3px 5px' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#16a34a', marginBottom: '1px' }}>집중 포인트</div>
+                      {content.focus_caution.focus?.map((item: string, i: number) => (
+                        <div key={i} style={{ fontSize: '8px', color: '#374151', lineHeight: '1.4' }}>&#10003; {item}</div>
+                      ))}
+                    </div>
+                    <div style={{ background: '#fef2f2', borderRadius: '3px', padding: '3px 5px' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#dc2626', marginBottom: '1px' }}>주의 포인트</div>
+                      {content.focus_caution.caution?.map((item: string, i: number) => (
+                        <div key={i} style={{ fontSize: '8px', color: '#374151', lineHeight: '1.4' }}>&#9888; {item}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. 행동 가이드 */}
                 {content?.action_guide && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                     <div>
-                      <div style={{ fontWeight: 'bold', fontSize: '9px', color: '#16a34a', marginBottom: '2px' }}>오늘 할 일</div>
-                      {content.action_guide.do?.slice(0, 3).map((item: string, i: number) => (
-                        <div key={i} style={{ fontSize: '9px', color: '#374151', paddingLeft: '8px' }}>&#8226; {item}</div>
+                      <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#16a34a', marginBottom: '1px' }}>오늘 할 일</div>
+                      {content.action_guide.do?.slice(0, 4).map((item: string, i: number) => (
+                        <div key={i} style={{ fontSize: '8px', color: '#374151', paddingLeft: '6px', lineHeight: '1.4' }}>&#8226; {item}</div>
                       ))}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 'bold', fontSize: '9px', color: '#dc2626', marginBottom: '2px' }}>피할 것</div>
-                      {content.action_guide.avoid?.slice(0, 3).map((item: string, i: number) => (
-                        <div key={i} style={{ fontSize: '9px', color: '#374151', paddingLeft: '8px' }}>&#8226; {item}</div>
+                      <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#dc2626', marginBottom: '1px' }}>피할 것</div>
+                      {content.action_guide.avoid?.slice(0, 4).map((item: string, i: number) => (
+                        <div key={i} style={{ fontSize: '8px', color: '#374151', paddingLeft: '6px', lineHeight: '1.4' }}>&#8226; {item}</div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Direction / Time */}
-                {(day.best_direction || content?.time_direction?.good_time) && (
-                  <div style={{ display: 'flex', gap: '12px', fontSize: '9px', color: '#6b7280', borderTop: '1px solid #e5e7eb', paddingTop: '4px' }}>
-                    {day.best_direction && <span>좋은 방향: {day.best_direction}</span>}
-                    {content?.time_direction?.good_time && <span>집중 시간: {content.time_direction.good_time}</span>}
+                {/* 6. 시간/방향 */}
+                {content?.time_direction && (
+                  <div style={{ background: '#eff6ff', borderRadius: '3px', padding: '4px 6px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#1d4ed8', marginBottom: '2px' }}>시간 · 방향 안내</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '8px', color: '#374151' }}>
+                      {content.time_direction.good_time && <div>집중 시간: {content.time_direction.good_time}</div>}
+                      {content.time_direction.avoid_time && <div>주의 시간: {content.time_direction.avoid_time}</div>}
+                      {(content.time_direction.good_direction || day.best_direction) && <div>좋은 방향: {content.time_direction.good_direction || day.best_direction}</div>}
+                      {(content.time_direction.avoid_direction || day.avoid_direction) && <div>피할 방향: {content.time_direction.avoid_direction || day.avoid_direction}</div>}
+                    </div>
+                    {content.time_direction.notes && (
+                      <div style={{ fontSize: '7.5px', color: '#6b7280', marginTop: '2px' }}>{content.time_direction.notes}</div>
+                    )}
+                    {day.peak_hours && (
+                      <div style={{ fontSize: '7.5px', color: '#1d4ed8', marginTop: '1px' }}>에너지 최고 시간대: {day.peak_hours}</div>
+                    )}
                   </div>
                 )}
 
-                {/* Rhythm question */}
+                {/* 7. 상태 트리거 */}
+                {content?.state_trigger && (content.state_trigger.gesture || content.state_trigger.phrase) && (
+                  <div style={{ background: '#faf5ff', borderRadius: '3px', padding: '3px 5px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#7c3aed', marginBottom: '1px' }}>상태 전환 트리거</div>
+                    <div style={{ fontSize: '8px', color: '#374151', lineHeight: '1.5' }}>
+                      {content.state_trigger.gesture && <div>동작: {content.state_trigger.gesture}</div>}
+                      {content.state_trigger.phrase && <div>문구: &ldquo;{content.state_trigger.phrase}&rdquo;</div>}
+                      {content.state_trigger.how_to && <div style={{ fontSize: '7.5px', color: '#6b7280' }}>방법: {content.state_trigger.how_to}</div>}
+                    </div>
+                  </div>
+                )}
+
+                {/* 8. 의미 전환 */}
+                {content?.meaning_shift && (
+                  <div style={{ borderLeft: '3px solid #f59e0b', paddingLeft: '6px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#b45309', marginBottom: '1px' }}>오늘의 의미 전환</div>
+                    <div style={{ fontSize: '8.5px', color: '#4b5563', lineHeight: '1.5' }}>{content.meaning_shift}</div>
+                  </div>
+                )}
+
+                {/* 9. 리듬 질문 */}
                 {content?.rhythm_question && (
-                  <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '6px', fontStyle: 'italic', fontSize: '10px', color: '#6b7280' }}>
-                    {content.rhythm_question}
+                  <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '4px', fontStyle: 'italic', fontSize: '9px', color: '#6b7280' }}>
+                    &ldquo;{content.rhythm_question}&rdquo;
                   </div>
                 )}
+
+                {/* 10. 압축 라이프스타일 가이드 */}
+                <div style={{ borderTop: '1px solid #d1d5db', paddingTop: '3px', marginTop: 'auto' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#1f2937', marginBottom: '2px' }}>라이프스타일 가이드</div>
+                  {isSmallPaper ? (
+                    /* Small paper (A5/B5): inline chips, 5 categories only */
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+                      {renderLifestyleChip('건강', '💪', content?.daily_health_sports, ['recommended_activities', 'health_tips'])}
+                      {renderLifestyleChip('식사', '🍽', content?.daily_meal_nutrition, ['recommended_foods'])}
+                      {renderLifestyleChip('패션', '👔', content?.daily_fashion_beauty, ['color_suggestions', 'clothing_style'])}
+                      {renderLifestyleChip('루틴', '⏰', content?.daily_routines, ['morning_routine', 'evening_routine'])}
+                      {renderLifestyleChip('관계', '🤝', content?.relationships_social, ['communication_style', 'relationship_tips'])}
+                    </div>
+                  ) : (
+                    /* Large paper (A4/B4/Letter): 2-column compact cards */
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px 12px' }}>
+                      {renderCompactLifestyleCard('건강·운동', '💪', content?.daily_health_sports, ['recommended_activities', 'health_tips'])}
+                      {renderCompactLifestyleCard('식사·영양', '🍽', content?.daily_meal_nutrition, ['recommended_foods', 'flavor_profile'])}
+                      {renderCompactLifestyleCard('패션·뷰티', '👔', content?.daily_fashion_beauty, ['clothing_style', 'color_suggestions'])}
+                      {renderCompactLifestyleCard('쇼핑·재정', '💰', content?.daily_shopping_finance, ['good_to_buy', 'finance_advice'])}
+                      {renderCompactLifestyleCard('생활·공간', '🏠', content?.daily_living_space, ['space_organization', 'environmental_tips'])}
+                      {renderCompactLifestyleCard('일과·루틴', '⏰', content?.daily_routines, ['morning_routine', 'evening_routine'])}
+                      {renderCompactLifestyleCard('디지털·소통', '📱', content?.digital_communication, ['device_usage', 'social_media'])}
+                      {renderCompactLifestyleCard('취미·창작', '🎨', content?.hobbies_creativity, ['creative_activities', 'learning_recommendations'])}
+                      {renderCompactLifestyleCard('관계·사회', '🤝', content?.relationships_social, ['communication_style', 'relationship_tips'])}
+                      {renderCompactLifestyleCard('계절·환경', '🌿', content?.seasonal_environment, ['weather_adaptation', 'seasonal_activities'])}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Right page: User recording area with qimen time grid */}
-              <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', padding: '20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+              <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', padding: '16px 18px', boxSizing: 'border-box', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
                 {/* Header */}
-                <div style={{ borderBottom: '2px solid #1f2937', paddingBottom: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+                <div style={{ borderBottom: '2px solid #1f2937', paddingBottom: '4px', fontWeight: 'bold', fontSize: '12px' }}>
                   오늘의 기록
                 </div>
 
+                {/* Qimen summary bar */}
+                {(day.best_direction || day.peak_hours) && (
+                  <div style={{ display: 'flex', gap: '8px', fontSize: '8px', color: '#1d4ed8', background: '#eff6ff', padding: '3px 6px', borderRadius: '3px' }}>
+                    {day.best_direction && <span>최적 방향: {day.best_direction}</span>}
+                    {day.avoid_direction && <span>주의 방향: {day.avoid_direction}</span>}
+                    {day.peak_hours && <span>에너지 피크: {day.peak_hours}</span>}
+                  </div>
+                )}
+
                 {/* Qimen Time Grid */}
-                <div style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '6px', flex: '1' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '10px', marginBottom: '4px', color: '#374151' }}>시간대별 흐름</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100% - 20px)', overflow: 'hidden' }}>
+                <div style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '4px 6px' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '9px', marginBottom: '3px', color: '#374151' }}>시간대별 흐름</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                     {['05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23'].map(h => {
                       const hourNum = parseInt(h, 10)
                       const slot = getQimenSlotForHour(qimenSlots, hourNum)
                       const indicator = slot ? QIMEN_QUALITY_INDICATORS[slot.quality] : null
                       const energyBar = slot ? renderEnergyBar(slot.energy_level) : null
                       return (
-                        <div key={h} style={{ display: 'flex', alignItems: 'center', height: '24px', minHeight: '24px', flexShrink: 1, backgroundColor: slot ? QIMEN_QUALITY_COLORS[slot.quality] : 'transparent' }}>
-                          <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#374151', width: '30px', flexShrink: 0 }}>{h}:00</span>
+                        <div key={h} style={{ display: 'flex', alignItems: 'center', height: `${timeSlotHeight}px`, minHeight: `${timeSlotHeight}px`, backgroundColor: slot ? QIMEN_QUALITY_COLORS[slot.quality] : 'transparent' }}>
+                          <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#374151', width: '28px', flexShrink: 0 }}>{h}:00</span>
                           {slot ? (
                             <>
-                              <span style={{ fontSize: '9px', fontWeight: 'bold', color: indicator!.color, width: '10px', flexShrink: 0 }}>{indicator!.symbol}</span>
+                              <span style={{ fontSize: '8px', fontWeight: 'bold', color: indicator!.color, width: '10px', flexShrink: 0 }}>{indicator!.symbol}</span>
                               {energyBar && (
-                                <span style={{ ...energyBar.containerStyle, flexShrink: 0, marginRight: '4px' }}>
+                                <span style={{ ...energyBar.containerStyle, flexShrink: 0, marginRight: '3px' }}>
                                   <span style={energyBar.fillStyle} />
                                 </span>
                               )}
-                              <span style={{ fontSize: '8px', color: '#6b7280', width: '24px', flexShrink: 0 }}>{slot.direction}</span>
+                              <span style={{ fontSize: '7px', color: '#6b7280', width: '22px', flexShrink: 0 }}>{slot.direction}</span>
                               <div style={{ flex: 1, borderBottom: '1px dashed #d1d5db', height: '100%' }} />
                             </>
                           ) : (
@@ -442,24 +588,34 @@ export default function DiaryPrintPage() {
                 </div>
 
                 {/* Todos */}
-                <div style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '6px', flex: '0 0 auto' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '10px', marginBottom: '4px' }}>오늘의 할 일</div>
+                <div style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '4px 6px', flex: '0 0 auto' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '9px', marginBottom: '3px' }}>오늘의 할 일</div>
                   {[1,2,3,4].map(i => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', borderBottom: '1px dashed #e5e7eb', padding: '2px 0' }}>
-                      <div style={{ width: '10px', height: '10px', border: '1px solid #9ca3af', borderRadius: '2px', flexShrink: 0 }} />
+                      <div style={{ width: '9px', height: '9px', border: '1px solid #9ca3af', borderRadius: '2px', flexShrink: 0 }} />
                       <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
                     </div>
                   ))}
                 </div>
 
-                {/* Notes */}
+                {/* Gratitude */}
                 <div style={{ flex: '0 0 auto' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '10px', marginBottom: '2px' }}>감사한 일</div>
-                  {[1,2,3].map(i => <div key={i} style={{ borderBottom: '1px dashed #e5e7eb', height: '16px' }} />)}
+                  <div style={{ fontWeight: 'bold', fontSize: '9px', marginBottom: '2px' }}>감사한 일</div>
+                  {[1,2,3].map(i => <div key={i} style={{ borderBottom: '1px dashed #e5e7eb', height: '14px' }} />)}
                 </div>
-                <div style={{ borderBottom: '2px solid #9ca3af', padding: '4px 0', flex: '0 0 auto' }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '10px' }}>오늘의 한 줄: </span>
+
+                {/* One-liner */}
+                <div style={{ flex: '0 0 auto' }}>
+                  <span style={{ fontWeight: 'bold', fontSize: '9px' }}>오늘의 한 줄: </span>
                   <span style={{ color: '#d1d5db' }}>_________________________</span>
+                </div>
+
+                {/* Memo - fills remaining space */}
+                <div style={{ flex: 1, borderTop: '1px solid #d1d5db', paddingTop: '3px', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '9px', marginBottom: '3px', color: '#374151' }}>메모</div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    {[1,2,3,4,5,6,7,8].map(i => <div key={i} style={{ borderBottom: '1px dashed #e5e7eb', flex: 1 }} />)}
+                  </div>
                 </div>
               </div>
             </div>
