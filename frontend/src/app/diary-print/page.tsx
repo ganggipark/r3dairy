@@ -6,7 +6,7 @@
  * 프로필의 diary_period 기반으로 다중 날짜 콘텐츠를 로드하여 인쇄 레이아웃으로 표시
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import type { DailyContentResponse, Profile } from '@/types'
@@ -90,6 +90,48 @@ export default function DiaryPrintPage() {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
   const [availableMonths, setAvailableMonths] = useState<string[]>([])
   const profileRef = useRef<Profile | null>(null)
+  const [viewMode, setViewMode] = useState<'preview' | 'scroll'>('preview')
+  const [currentPage, setCurrentPage] = useState(0)
+
+  // Total pages: cover(1) + blank(1) + days * 2 (left + right)
+  const totalPages = 2 + days.length * 2
+
+  const goToPage = useCallback((page: number) => {
+    setCurrentPage(Math.max(0, Math.min(page, totalPages - 1)))
+  }, [totalPages])
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (viewMode !== 'preview') return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        goToPage(currentPage + 1)
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        goToPage(currentPage - 1)
+      } else if (e.key === 'Home') {
+        e.preventDefault()
+        goToPage(0)
+      } else if (e.key === 'End') {
+        e.preventDefault()
+        goToPage(totalPages - 1)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [viewMode, currentPage, totalPages, goToPage])
+
+  // Get page label for current page
+  const getPageLabel = (pageIndex: number): string => {
+    if (pageIndex === 0) return '표지'
+    if (pageIndex === 1) return '(빈 페이지)'
+    const dayIndex = Math.floor((pageIndex - 2) / 2)
+    const isLeft = (pageIndex - 2) % 2 === 0
+    const day = days[dayIndex]
+    if (!day) return ''
+    return `${day.date} ${isLeft ? '안내' : '기록'}`
+  }
 
   /** Reusable data loading: fetch content for a date range */
   const loadData = async (startDate: string, endDate: string, profile: Profile, token: string) => {
@@ -244,6 +286,7 @@ export default function DiaryPrintPage() {
           .diary-controls { display: none !important; }
           .diary-content-area { padding-top: 0 !important; }
           .diary-page {
+            display: flex !important;
             width: ${paper.widthMm - 16}mm !important;
             height: ${paper.heightMm - 16}mm !important;
             max-height: ${paper.heightMm - 16}mm !important;
@@ -257,6 +300,8 @@ export default function DiaryPrintPage() {
             box-shadow: none !important;
             box-sizing: border-box;
           }
+          .diary-day-spread { display: block !important; }
+          .diary-page-nav { display: none !important; }
         }
         @media screen {
           body { background: #9ca3af; }
@@ -319,7 +364,35 @@ export default function DiaryPrintPage() {
           </select>
         )}
 
-        <span style={{ fontSize: '14px', color: '#6b7280' }}>{days.length}일 로드됨 ({dateRange.start} ~ {dateRange.end})</span>
+        {/* View mode toggle */}
+        <div style={{ display: 'flex', gap: '4px', marginLeft: '8px', borderLeft: '1px solid #e5e7eb', paddingLeft: '8px' }}>
+          <button
+            onClick={() => setViewMode('preview')}
+            style={{ padding: '4px 8px', fontSize: '12px', border: 'none', borderRadius: '4px', cursor: 'pointer', background: viewMode === 'preview' ? '#7c3aed' : '#e5e7eb', color: viewMode === 'preview' ? 'white' : '#374151' }}
+          >
+            페이지 보기
+          </button>
+          <button
+            onClick={() => setViewMode('scroll')}
+            style={{ padding: '4px 8px', fontSize: '12px', border: 'none', borderRadius: '4px', cursor: 'pointer', background: viewMode === 'scroll' ? '#7c3aed' : '#e5e7eb', color: viewMode === 'scroll' ? 'white' : '#374151' }}
+          >
+            전체 보기
+          </button>
+        </div>
+
+        {/* Page navigation (preview mode only) */}
+        {viewMode === 'preview' && days.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '8px' }}>
+            <button onClick={() => goToPage(0)} disabled={currentPage === 0} style={{ padding: '2px 6px', fontSize: '12px', border: '1px solid #d1d5db', borderRadius: '3px', cursor: currentPage === 0 ? 'default' : 'pointer', background: 'white', color: currentPage === 0 ? '#d1d5db' : '#374151' }}>⟪</button>
+            <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0} style={{ padding: '2px 8px', fontSize: '14px', border: '1px solid #d1d5db', borderRadius: '3px', cursor: currentPage === 0 ? 'default' : 'pointer', background: 'white', color: currentPage === 0 ? '#d1d5db' : '#374151' }}>◀</button>
+            <span style={{ fontSize: '13px', color: '#374151', minWidth: '80px', textAlign: 'center' }}>{currentPage + 1} / {totalPages}</span>
+            <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage >= totalPages - 1} style={{ padding: '2px 8px', fontSize: '14px', border: '1px solid #d1d5db', borderRadius: '3px', cursor: currentPage >= totalPages - 1 ? 'default' : 'pointer', background: 'white', color: currentPage >= totalPages - 1 ? '#d1d5db' : '#374151' }}>▶</button>
+            <button onClick={() => goToPage(totalPages - 1)} disabled={currentPage >= totalPages - 1} style={{ padding: '2px 6px', fontSize: '12px', border: '1px solid #d1d5db', borderRadius: '3px', cursor: currentPage >= totalPages - 1 ? 'default' : 'pointer', background: 'white', color: currentPage >= totalPages - 1 ? '#d1d5db' : '#374151' }}>⟫</button>
+            <span style={{ fontSize: '11px', color: '#6b7280', marginLeft: '4px' }}>{getPageLabel(currentPage)}</span>
+          </div>
+        )}
+
+        <span style={{ fontSize: '13px', color: '#6b7280', marginLeft: viewMode === 'preview' ? '0' : '8px' }}>{days.length}일</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
           <span style={{ fontSize: '13px', color: '#6b7280' }}>용지:</span>
           <PaperSizeSelector paperSize={paperSize} onChange={setPaperSize} />
@@ -332,7 +405,7 @@ export default function DiaryPrintPage() {
       {/* Content area */}
       <div className="diary-content-area" style={{ paddingTop: '60px', fontFamily: 'serif' }}>
         {/* Cover Page */}
-        <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+        <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', display: viewMode === 'preview' && currentPage !== 0 ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
           <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1f2937', letterSpacing: '0.05em' }}>나의 리듬 다이어리</div>
           <div style={{ fontSize: '20px', color: '#374151' }}>{profileName}</div>
           <div style={{ fontSize: '16px', color: '#6b7280', borderTop: '1px solid #e5e7eb', paddingTop: '16px', textAlign: 'center' }}>
@@ -347,7 +420,11 @@ export default function DiaryPrintPage() {
         </div>
 
         {/* Blank page after cover for duplex printing alignment */}
-        <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }} />
+        <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: viewMode === 'preview' && currentPage !== 1 ? 'none' : 'block' }}>
+          {viewMode === 'preview' && currentPage === 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#d1d5db', fontSize: '14px', fontFamily: 'sans-serif' }}>(양면 인쇄용 빈 페이지)</div>
+          )}
+        </div>
 
         {/* Empty state for monthly mode */}
         {days.length === 0 && (
@@ -392,11 +469,17 @@ export default function DiaryPrintPage() {
 
           const isSmallPaper = paper.heightMm <= 220
           const timeSlotHeight = isSmallPaper ? 14 : 16
+          const leftPageIndex = 2 + dayIndex * 2
+          const rightPageIndex = 2 + dayIndex * 2 + 1
+          const showLeft = viewMode === 'scroll' || currentPage === leftPageIndex
+          const showRight = viewMode === 'scroll' || currentPage === rightPageIndex
+
+          if (viewMode === 'preview' && !showLeft && !showRight) return null
 
           return (
             <div key={day.date} className="diary-day-spread">
               {/* Left page: 오늘의 안내 (표준 10개 블록 + 압축 라이프스타일) */}
-              <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', padding: '16px 18px', boxSizing: 'border-box', overflow: 'hidden', fontSize: '10px', fontFamily: 'serif', display: 'flex', flexDirection: 'column', gap: '5px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+              <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', padding: '16px 18px', boxSizing: 'border-box', overflow: 'hidden', fontSize: '10px', fontFamily: 'serif', display: showLeft ? 'flex' : 'none', flexDirection: 'column', gap: '5px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
                 {/* Header */}
                 <div style={{ borderBottom: '2px solid #1f2937', paddingBottom: '4px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -543,7 +626,7 @@ export default function DiaryPrintPage() {
               </div>
 
               {/* Right page: User recording area with qimen time grid */}
-              <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', padding: '16px 18px', boxSizing: 'border-box', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+              <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', padding: '16px 18px', boxSizing: 'border-box', overflow: 'hidden', display: showRight ? 'flex' : 'none', flexDirection: 'column', gap: '6px', fontSize: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
                 {/* Header */}
                 <div style={{ borderBottom: '2px solid #1f2937', paddingBottom: '4px', fontWeight: 'bold', fontSize: '12px' }}>
                   오늘의 기록
