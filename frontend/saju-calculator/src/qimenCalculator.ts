@@ -1,0 +1,1 @@
+[{"*": ".*exports\": {", "QimenCalculator": "public calculateQimen(input: QimenInput): QimenResult"}, {"public getEightGates(ichingTrigrams)": "string[]"}, 2, {"public getNineStars(nineStarsData)": "number[]"}, 60, {"(?:\\d)": "(\\d)"}]

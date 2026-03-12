@@ -16,6 +16,8 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
     "@supabase/supabase-js": "^2.39.3",
+    "korean-lunar-calendar": "^0.3.6",
+    "saju-calculator": "file:./saju-calculator",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^3.3.1",

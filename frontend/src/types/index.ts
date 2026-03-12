@@ -156,6 +156,17 @@ date: string
     yongSin?: string[]
     [key: string]: any
   }
+  // 라이프스타일 블록
+  daily_health_sports?: { recommended_activities?: string[]; health_tips?: string[]; wellness_focused?: string[]; explanation?: string }
+  daily_meal_nutrition?: { flavor_profile?: string[]; recommended_foods?: string[]; avoid_foods?: string[]; explanation?: string }
+  daily_fashion_beauty?: { clothing_style?: string[]; color_suggestions?: string[]; beauty_tips?: string[]; explanation?: string }
+  daily_shopping_finance?: { good_to_buy?: string[]; finance_advice?: string[]; investment_focus?: string[]; explanation?: string }
+  daily_living_space?: { space_organization?: string[]; plants_decor?: string[]; environmental_tips?: string[]; explanation?: string }
+  daily_routines?: { sleep_schedule?: string[]; morning_routine?: string[]; evening_routine?: string[]; explanation?: string }
+  digital_communication?: { device_usage?: string[]; social_media?: string[]; online_focus_areas?: string[]; explanation?: string }
+  hobbies_creativity?: { creative_activities?: string[]; learning_recommendations?: string[]; entertainment_options?: string[]; explanation?: string }
+  relationships_social?: { communication_style?: string[]; social_energies?: string[]; relationship_tips?: string[]; explanation?: string }
+  seasonal_environment?: { weather_adaptation?: string[]; seasonal_activities?: string[]; environmental_focus?: string[]; explanation?: string }
   // 기문둔갑 시간/방위 데이터 (구조화)
   qimen_slots?: QimenTimeSlot[]
   best_direction?: string
@@ -170,6 +181,7 @@ export interface DailyContentResponse {
   qimen_slots?: QimenTimeSlot[]
   best_direction?: string
   avoid_direction?: string
+  peak_hours?: string
 }
 
 export interface DailyMarkdownResponse {
