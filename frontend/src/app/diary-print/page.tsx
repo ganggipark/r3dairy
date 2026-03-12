@@ -346,6 +346,9 @@ export default function DiaryPrintPage() {
           <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '32px' }}>생성일: {new Date().toISOString().split('T')[0]}</div>
         </div>
 
+        {/* Blank page after cover for duplex printing alignment */}
+        <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }} />
+
         {/* Empty state for monthly mode */}
         {days.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>선택한 달에 데이터가 없습니다.</div>
