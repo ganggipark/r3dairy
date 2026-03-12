@@ -99,7 +99,8 @@ function translateText(text: string, expressionMap: Record<string, string>): str
   // 단어 경계로 인정하는 문자들 (한국어 조사 포함)
   const boundary = '[\\s\\(\\[\\{\\u300C\\u300E\\u3010\\.,!?;:\\u00B7\\-]'
   // 한국어 조사: 을/를/이/가/은/는/에/에서/으로/로/와/과/의/도/만/까지/부터/처럼/보다
-  const koreanJosa = '(?:을|를|이|가|은|는|에서|에|으로|로|와|과|의|도|만|까지|부터|처럼|보다)?'
+  // 긴 조사가 짧은 접두사보다 먼저 매칭되도록 정렬 (에서 before 에, 으로 before 로)
+  const koreanJosa = '(?:에서|으로|까지|부터|처럼|보다|을|를|이|가|은|는|에|로|와|과|의|도|만)?'
 
   for (const [originalExpr, roleExpr] of sortedExpressions) {
     // 앞: 문자열 시작 또는 경계 문자 (캡처 그룹으로 유지)
