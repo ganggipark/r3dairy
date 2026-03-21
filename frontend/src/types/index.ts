@@ -56,7 +56,7 @@ export interface Profile {
   gender: Gender
   birth_place: string
   roles: Role[]
-  preferences?: Record<string, any>
+  preferences?: Record<string, unknown>
   created_at: string
   updated_at: string
 }
@@ -68,7 +68,7 @@ export interface ProfileCreate {
   gender: Gender
   birth_place: string
   roles: Role[]
-  preferences?: Record<string, any>
+  preferences?: Record<string, unknown>
 }
 
 export interface ProfileUpdate {
@@ -78,100 +78,35 @@ export interface ProfileUpdate {
   gender?: Gender
   birth_place?: string
   roles?: Role[]
-  preferences?: Record<string, any>
+  preferences?: Record<string, unknown>
 }
 
 // ============================================================================
-// Content Types
+// Content Types (re-exported from canonical source)
 // ============================================================================
 
-export interface FocusCaution {
-  focus: string[]
-  caution: string[]
-}
+import type {
+  DailyContent,
+  MonthlyContent,
+  YearlyContent,
+  MonthlySignal,
+  FocusCaution,
+  ActionGuide,
+  TimeDirection,
+  StateTrigger,
+  QimenTimeSlot,
+} from '@/lib/content/types'
 
-export interface ActionGuide {
-  do: string[]
-  avoid: string[]
-}
-
-export interface TimeDirection {
-  good_time: string
-  avoid_time: string
-  good_direction: string
-  avoid_direction: string
-  notes: string
-}
-
-export interface QimenTimeSlot {
-  hour_start: number    // 시작 시각 (0-23)
-  hour_end: number      // 종료 시각 (2-25)
-  quality: 'good' | 'neutral' | 'avoid'
-  direction: string     // 한국어 방위 (예: "북동")
-  direction_en: string  // 영문 코드 (예: "NE")
-  energy_level: number  // 1-10
-  label: string         // 사용자 노출 라벨
-}
-
-export interface StateTrigger {
-  gesture: string
-  phrase: string
-  how_to: string
-}
-
-export interface DailyContent {
-date: string
-  summary: string
-  keywords: string[]
-  rhythm_description: string
-  focus_caution: FocusCaution
-  action_guide: ActionGuide
-  time_direction: TimeDirection
-  state_trigger: StateTrigger
-  meaning_shift: string
-  rhythm_question: string
-  // Extended content blocks (optional)
-  saju_summary?: string
-  sinsal_influence?: string
-  direction_detail?: string
-  palace_insight?: string
-  yongsin_utilization?: string
-  daewoon_entry?: string
-  sewon_summary?: string
-  // 사주 4기둥 데이터
-  fourPillars?: {
-    year?: { heavenlyStem?: string; earthlyBranch?: string; gan?: string; ji?: string }
-    month?: { heavenlyStem?: string; earthlyBranch?: string; gan?: string; ji?: string }
-    day?: { heavenlyStem?: string; earthlyBranch?: string; gan?: string; ji?: string }
-    hour?: { heavenlyStem?: string; earthlyBranch?: string; gan?: string; ji?: string }
-  }
-  gyeokGuk?: {
-    dayMaster?: string
-    strength?: string
-    monthBranch?: string
-    season?: string
-    [key: string]: any
-  }
-  yongSin?: {
-    yongSin?: string[]
-    [key: string]: any
-  }
-  // 라이프스타일 블록
-  daily_health_sports?: { recommended_activities?: string[]; health_tips?: string[]; wellness_focused?: string[]; explanation?: string }
-  daily_meal_nutrition?: { flavor_profile?: string[]; recommended_foods?: string[]; avoid_foods?: string[]; explanation?: string }
-  daily_fashion_beauty?: { clothing_style?: string[]; color_suggestions?: string[]; beauty_tips?: string[]; explanation?: string }
-  daily_shopping_finance?: { good_to_buy?: string[]; finance_advice?: string[]; investment_focus?: string[]; explanation?: string }
-  daily_living_space?: { space_organization?: string[]; plants_decor?: string[]; environmental_tips?: string[]; explanation?: string }
-  daily_routines?: { sleep_schedule?: string[]; morning_routine?: string[]; evening_routine?: string[]; explanation?: string }
-  digital_communication?: { device_usage?: string[]; social_media?: string[]; online_focus_areas?: string[]; explanation?: string }
-  hobbies_creativity?: { creative_activities?: string[]; learning_recommendations?: string[]; entertainment_options?: string[]; explanation?: string }
-  relationships_social?: { communication_style?: string[]; social_energies?: string[]; relationship_tips?: string[]; explanation?: string }
-  seasonal_environment?: { weather_adaptation?: string[]; seasonal_activities?: string[]; environmental_focus?: string[]; explanation?: string }
-  // 기문둔갑 시간/방위 데이터 (구조화)
-  qimen_slots?: QimenTimeSlot[]
-  best_direction?: string
-  avoid_direction?: string
-  peak_hours?: string
+export type {
+  DailyContent,
+  MonthlyContent,
+  YearlyContent,
+  MonthlySignal,
+  FocusCaution,
+  ActionGuide,
+  TimeDirection,
+  StateTrigger,
+  QimenTimeSlot,
 }
 
 export interface DailyContentResponse {
@@ -188,38 +123,6 @@ export interface DailyMarkdownResponse {
   date: string
   role: Role | null
   markdown: string
-}
-
-export interface MonthlySignal {
-  month: number
-  theme: string
-  energy: number
-}
-
-export interface MonthlyContent {
-  year_month: string
-  theme: string
-  summary: string
-  keywords: string[]
-  priorities: string[]
-  calendar_data: Record<number, number>
-  opportunities: string[]
-  challenges: string[]
-  weekly_focus?: string[]
-  weekly_caution?: string[]
-  flow_description?: string
-}
-
-export interface YearlyContent {
-  year: number
-  theme: string
-  summary: string
-  keywords: string[]
-  flow_summary: string
-  monthly_signals: Record<number, MonthlySignal>
-  core_tasks: string[]
-  first_half_focus?: string
-  second_half_focus?: string
 }
 
 export interface MonthlyContentResponse {

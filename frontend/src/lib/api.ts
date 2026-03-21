@@ -39,12 +39,70 @@ class APIError extends Error {
   }
 }
 
+// ============================================================================
+// Token Auto-Refresh (중복 방지 뮤텍스)
+// ============================================================================
+
+let refreshPromise: Promise<boolean> | null = null
+
 /**
- * Fetch 래퍼 (에러 처리 포함)
+ * refresh_token으로 access_token 갱신 시도.
+ * 동시 다중 401 시 refresh 요청이 1회만 발생하도록 뮤텍스 사용.
+ * @returns true if refresh succeeded, false otherwise
+ */
+async function tryRefreshToken(): Promise<boolean> {
+  // 이미 진행 중인 refresh가 있으면 그 결과를 기다림
+  if (refreshPromise) return refreshPromise
+
+  refreshPromise = (async () => {
+    try {
+      const refreshToken = localStorage.getItem('refresh_token')
+      if (!refreshToken) return false
+
+      const res = await fetch(`${API_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      })
+
+      if (!res.ok) return false
+
+      const data = await res.json()
+      if (data.access_token) {
+        localStorage.setItem('access_token', data.access_token)
+        if (data.refresh_token) {
+          localStorage.setItem('refresh_token', data.refresh_token)
+        }
+        return true
+      }
+      return false
+    } catch {
+      return false
+    } finally {
+      refreshPromise = null
+    }
+  })()
+
+  return refreshPromise
+}
+
+/** Clear auth tokens and redirect to login */
+function clearAuthAndRedirect(): void {
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  localStorage.removeItem('user_id')
+  if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+    window.location.href = '/login'
+  }
+}
+
+/**
+ * Fetch 래퍼 (에러 처리 + 401 자동 토큰 갱신 포함)
  */
 async function fetchAPI<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  _retried = false
 ): Promise<T> {
   const url = `${API_URL}${endpoint}`
 
@@ -55,6 +113,28 @@ async function fetchAPI<T>(
       ...options.headers
     }
   })
+
+  // 401 자동 토큰 갱신: auth 엔드포인트가 아닌 경우에만
+  if (response.status === 401 && !_retried && !endpoint.startsWith('/api/auth/')) {
+    const refreshed = await tryRefreshToken()
+    if (refreshed) {
+      // 갱신된 토큰으로 원래 요청 재시도
+      const newToken = localStorage.getItem('access_token')
+      const retryHeaders = { ...options.headers } as Record<string, string>
+      if (newToken && retryHeaders['Authorization']) {
+        retryHeaders['Authorization'] = `Bearer ${newToken}`
+      } else if (newToken) {
+        // Authorization 헤더가 원래 options.headers에 있었는지 확인
+        const origAuth = (options.headers as Record<string, string>)?.['Authorization']
+        if (origAuth) {
+          retryHeaders['Authorization'] = `Bearer ${newToken}`
+        }
+      }
+      return fetchAPI<T>(endpoint, { ...options, headers: retryHeaders }, true)
+    } else {
+      clearAuthAndRedirect()
+    }
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({

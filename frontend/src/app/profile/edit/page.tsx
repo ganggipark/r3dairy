@@ -51,7 +51,7 @@ export default function ProfilePage() {
           roles: profile.roles,
           preferences: profile.preferences || {}
         })
-      } catch (err: any) {
+      } catch (err: any) { // TODO: type this — use unknown with type guard
         // 프로필이 없으면 프로필 생성 페이지로
         if (err.status === 404) {
           router.push('/profile')
@@ -149,7 +149,7 @@ export default function ProfilePage() {
 
       // 오늘 페이지로 이동
       router.push('/today')
-    } catch (err: any) {
+    } catch (err: any) { // TODO: type this — use unknown with type guard
       setError(err.message || '프로필 저장에 실패했습니다')
     } finally {
       setIsSaving(false)

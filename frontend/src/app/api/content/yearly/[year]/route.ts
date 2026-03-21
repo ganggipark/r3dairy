@@ -65,14 +65,14 @@ export async function GET(
       if (yearlyContent?.monthly_signals) {
         const transformed: Record<number, { month: number; theme: string; energy: number }> = {}
         for (const [key, signal] of Object.entries(yearlyContent.monthly_signals)) {
-          const s = signal as any
+          const s = signal as { 월?: number; month?: number; 테마?: string; theme?: string; 에너지?: number; energy?: number }
           transformed[Number(key)] = {
             month: s['월'] ?? s.month ?? Number(key),
             theme: s['테마'] ?? s.theme ?? '',
             energy: s['에너지'] ?? s.energy ?? 3,
           }
         }
-        ;(yearlyContent as any).monthly_signals = transformed
+        yearlyContent.monthly_signals = transformed
       }
 
       return NextResponse.json({
@@ -80,8 +80,8 @@ export async function GET(
         role: role || null,
         content: yearlyContent,
       })
-    } catch (importError: any) {
-      console.error('Content library not available:', importError.message)
+    } catch (importError: unknown) {
+      console.error('Content library not available:', importError instanceof Error ? importError.message : String(importError))
       return NextResponse.json({
         year: yearNum,
         role: role || null,
@@ -96,7 +96,7 @@ export async function GET(
         },
       })
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof AuthError) {
       return NextResponse.json({ detail: error.message }, { status: error.status })
     }

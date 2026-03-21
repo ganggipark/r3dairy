@@ -81,7 +81,7 @@ export async function GET(
 
           // Qimen (non-blocking)
           let qimenSlots = null
-          let qimenSummary: Record<string, any> = {}
+          let qimenSummary: Record<string, unknown> = {}
           try {
             qimenSlots = calculateDailyQimen(profile.birth_date, dateStr)
             const summary = getDailySummary(profile.birth_date, dateStr)
@@ -90,8 +90,8 @@ export async function GET(
               avoid_direction: summary.avoid_direction,
               peak_hours: summary.peak_hours,
             }
-          } catch (e: any) {
-            console.warn(`Qimen calculation skipped for ${dateStr}:`, e?.message)
+          } catch (e: unknown) {
+            console.warn(`Qimen calculation skipped for ${dateStr}:`, e instanceof Error ? e.message : String(e))
           }
 
           let dailyContent = assembleDailyContent(dateStr, sajuData, dailyRhythm, qimenSummary)
@@ -109,9 +109,9 @@ export async function GET(
             avoid_direction: qimenSummary.avoid_direction || null,
             peak_hours: qimenSummary.peak_hours || null,
           })
-        } catch (dayError: any) {
+        } catch (dayError: unknown) {
           // Skip failed dates but continue
-          console.error(`Date ${dateStr} content error:`, dayError.message)
+          console.error(`Date ${dateStr} content error:`, dayError instanceof Error ? dayError.message : String(dayError))
           results.push({
             date: dateStr,
             role: role || null,
@@ -127,8 +127,8 @@ export async function GET(
       }
 
       return NextResponse.json(results)
-    } catch (importError: any) {
-      console.error('Content library not available:', importError.message)
+    } catch (importError: unknown) {
+      console.error('Content library not available:', importError instanceof Error ? importError.message : String(importError))
       // Return empty array with minimal data for each date
       const results = []
       const current = new Date(startDate)
@@ -157,7 +157,7 @@ export async function GET(
       }
       return NextResponse.json(results)
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof AuthError) {
       return NextResponse.json({ detail: error.message }, { status: error.status })
     }

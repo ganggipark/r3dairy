@@ -2,10 +2,15 @@
  * 정확한 절기(節氣) 계산 시스템
  *
  * 데이터 출처:
- * - 2024-2026년: 한국천문연구원 (https://astro.kasi.re.kr) 공식 데이터
- * - 2027-2030년: uncle.tools (한국천문연구원 공식 데이터 발표 대기 중)
+ * - 2024-2026년: 한국천문연구원 (https://astro.kasi.re.kr) 공식 데이터 ✅
+ * - 2027-2030년: uncle.tools (한국천문연구원 공식 데이터 발표 대기 중) ⚠️
  * - 기타 연도(1900-2100): 천문학적 알고리즘 (Meeus, Astronomical Algorithms) 기반 계산
  * 모든 시각은 KST (한국표준시) 기준
+ *
+ * ⚠️ WARNING: 2027-2030년 절기 데이터는 uncle.tools 기반 임시 데이터입니다.
+ * 한국천문연구원(https://astro.kasi.re.kr)에서 해당 연도의 공식 절기 데이터가
+ * 발표되면 반드시 교체해야 합니다. 임시 데이터는 실제 절기 시각과 수 분~수십 분
+ * 차이가 있을 수 있으며, 이는 월주(月柱) 계산의 정확성에 영향을 줄 수 있습니다.
  *
  * @author Claude Code
  * @version 2.0.0
@@ -195,6 +200,7 @@ const SOLAR_TERMS_2026: SolarTermData[] = [
 
 /**
  * 2027년 24절기 데이터 (KST)
+ * ⚠️ WARNING: 임시 데이터 — 한국천문연구원 공식 데이터로 교체 필요
  * 출처: uncle.tools (한국천문연구원 공식 데이터 대기 중)
  */
 const SOLAR_TERMS_2027: SolarTermData[] = [
@@ -226,6 +232,7 @@ const SOLAR_TERMS_2027: SolarTermData[] = [
 
 /**
  * 2028년 24절기 데이터 (KST)
+ * ⚠️ WARNING: 임시 데이터 — 한국천문연구원 공식 데이터로 교체 필요
  * 출처: uncle.tools (한국천문연구원 공식 데이터 대기 중)
  */
 const SOLAR_TERMS_2028: SolarTermData[] = [
@@ -257,6 +264,7 @@ const SOLAR_TERMS_2028: SolarTermData[] = [
 
 /**
  * 2029년 24절기 데이터 (KST)
+ * ⚠️ WARNING: 임시 데이터 — 한국천문연구원 공식 데이터로 교체 필요
  * 출처: uncle.tools (한국천문연구원 공식 데이터 대기 중)
  */
 const SOLAR_TERMS_2029: SolarTermData[] = [
@@ -288,6 +296,7 @@ const SOLAR_TERMS_2029: SolarTermData[] = [
 
 /**
  * 2030년 24절기 데이터 (KST)
+ * ⚠️ WARNING: 임시 데이터 — 한국천문연구원 공식 데이터로 교체 필요
  * 출처: uncle.tools (한국천문연구원 공식 데이터 대기 중)
  */
 const SOLAR_TERMS_2030: SolarTermData[] = [

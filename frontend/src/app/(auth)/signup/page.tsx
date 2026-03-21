@@ -86,7 +86,7 @@ export default function SignUpPage() {
         // 프로필 페이지로 이동 (추가 정보 입력 필요)
         router.push('/profile')
       }
-    } catch (err: any) {
+    } catch (err: any) { // TODO: type this — use unknown with type guard
       console.error('Signup error:', err)
       setError(err.message || err.details || '회원가입에 실패했습니다')
     } finally {

@@ -1,86 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
-interface DailyContentJSON {
-  summary: string;
-  keywords: string[];
-  rhythm_explanation: string;
-  focus_points: {
-    focus: string[];
-    caution: string[];
-  };
-  action_guide: {
-    do: string[];
-    avoid: string[];
-  };
-  time_direction: {
-    good_time: string;
-    avoid_time: string;
-    good_direction: string;
-    avoid_direction: string;
-  };
-  state_trigger: {
-    gesture: string;
-    phrase: string;
-    how_to: string;
-  };
-  meaning_shift: string;
-  rhythm_question: string;
-  daily_health_sports: {
-    recommended_activities: string[];
-    health_tips: string[];
-    explanation: string;
-  };
-  daily_meal_nutrition: {
-    recommended_foods: string[];
-    avoid_foods: string[];
-    explanation: string;
-  };
-  daily_fashion_beauty: {
-    color_suggestions: string[];
-    clothing_style: string[];
-    explanation: string;
-  };
-  daily_shopping_finance: {
-    good_to_buy: string[];
-    finance_advice: string[];
-    explanation: string;
-  };
-  daily_living_space: {
-    space_organization: string[];
-    environmental_tips: string[];
-    explanation: string;
-  };
-  daily_routines: {
-    morning_routine: string[];
-    evening_routine: string[];
-    explanation: string;
-  };
-  digital_communication: {
-    device_usage: string[];
-    social_media: string[];
-    explanation: string;
-  };
-  hobbies_creativity: {
-    creative_activities: string[];
-    learning_recommendations: string[];
-    explanation: string;
-  };
-  relationships_social: {
-    communication_style: string[];
-    relationship_tips: string[];
-    explanation: string;
-  };
-  seasonal_environment: {
-    weather_adaptation: string[];
-    seasonal_activities: string[];
-    explanation: string;
-  };
-}
+import type { DailyContent } from '@/lib/content/types';
 
 export default function ComparisonPage() {
-  const [jsonContent, setJsonContent] = useState<DailyContentJSON | null>(null);
+  const [jsonContent, setJsonContent] = useState<DailyContent | null>(null);
   const [markdownContent, setMarkdownContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -167,7 +91,7 @@ export default function ComparisonPage() {
                   {/* 리듬 해설 */}
                   <div>
                     <h3 className="text-lg font-semibold mb-2">리듬 해설</h3>
-                    <p className="text-gray-700">{jsonContent.rhythm_explanation}</p>
+                    <p className="text-gray-700">{jsonContent.rhythm_description}</p>
                   </div>
 
                   {/* 집중/주의 포인트 */}
@@ -177,7 +101,7 @@ export default function ComparisonPage() {
                       <div>
                         <h4 className="font-medium text-green-700">집중</h4>
                         <ul className="list-disc list-inside text-sm text-gray-700">
-                          {jsonContent.focus_points.focus.map((item, idx) => (
+                          {jsonContent.focus_caution.focus.map((item, idx) => (
                             <li key={idx}>{item}</li>
                           ))}
                         </ul>
@@ -185,7 +109,7 @@ export default function ComparisonPage() {
                       <div>
                         <h4 className="font-medium text-red-700">주의</h4>
                         <ul className="list-disc list-inside text-sm text-gray-700">
-                          {jsonContent.focus_points.caution.map((item, idx) => (
+                          {jsonContent.focus_caution.caution.map((item, idx) => (
                             <li key={idx}>{item}</li>
                           ))}
                         </ul>

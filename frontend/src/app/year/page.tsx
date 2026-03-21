@@ -56,7 +56,7 @@ export default function YearPage() {
 
         const content = await api.content.getYearly(token, currentYear, role)
         setYearlyContent(content)
-      } catch (err: any) {
+      } catch (err: any) { // TODO: type this — use unknown with type guard
         setError(err.message || '데이터를 불러오는 데 실패했습니다')
       } finally {
         setIsLoading(false)
@@ -74,7 +74,7 @@ export default function YearPage() {
     try {
       const content = await api.content.getYearly(token, currentYear, newRole)
       setYearlyContent(content)
-    } catch (err: any) {
+    } catch (err: any) { // TODO: type this — use unknown with type guard
       setError('콘텐츠를 불러오는 데 실패했습니다')
     }
   }
@@ -290,8 +290,10 @@ export default function YearPage() {
       {/* Print CSS */}
       <style jsx global>{`
         @media print {
+          @page { size: 210mm 297mm; margin: 8mm; }
           .no-print { display: none !important; }
           body { background: white; }
+          main > div { page-break-inside: avoid; break-inside: avoid; }
         }
       `}</style>
     </div>

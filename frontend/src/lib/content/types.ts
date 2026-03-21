@@ -45,11 +45,79 @@ export interface SajuData {
     용신: string[]
     기신: string[]
   }
-  대운: any
-  세운: any
-  신살: any
-  성격: any
-  원본데이터: any
+  대운: {
+    startAge: number
+    direction: '순행' | '역행'
+    list: Array<{
+      cycle: number
+      startAge: number
+      endAge: number
+      gan: string
+      ji: string
+      ganJi: string
+      ohHaeng: string
+      score: number
+      description: string
+      isYongSin: boolean
+      isGiSin: boolean
+    }>
+    current: {
+      cycle: number
+      startAge: number
+      endAge: number
+      gan: string
+      ji: string
+      ganJi: string
+      ohHaeng: string
+      score: number
+      description: string
+      isYongSin: boolean
+      isGiSin: boolean
+    } | null
+    currentAge: number
+    bestPeriod: { gan: string; ji: string; ganJi: string; startAge: number; endAge: number; score: number } | null
+    worstPeriod: { gan: string; ji: string; ganJi: string; startAge: number; endAge: number; score: number } | null
+  } | null
+  세운: {
+    year: number
+    age: number
+    gan: string
+    ji: string
+    ganJi: string
+    ohHaeng: string
+    animal: string
+    score: number
+    description: string
+    isYongSin: boolean
+    daewoonInteraction: number
+  } | null
+  신살: {
+    gilSin: string[]
+    hyungSin: string[]
+    hasCheonEulGuiIn: boolean
+    hasMunChangGuiIn: boolean
+    hasYeokMaSal: boolean
+    hasDoHwaSal: boolean
+    hasGongMang: boolean
+    hasYangInSal: boolean
+    hasGeopSal: boolean
+    summary: string
+  } | null
+  성격: {
+    dayMasterTraits: {
+      keyword: string
+      strengths: string[]
+      weaknesses: string[]
+      advice: string
+    }
+    dominantSipsung: {
+      type: string
+      traits: string[]
+    }
+    careerAptitude: string[]
+    relationshipStyle: string
+  } | null
+  원본데이터: Record<string, unknown>
 }
 
 // ============================================================
@@ -67,7 +135,12 @@ export interface DailyRhythm {
   주요_흐름: string
   기회_요소: string[]
   도전_요소: string[]
-  격국: any
+  격국: {
+    일간: string
+    일간오행: string
+    강약: string
+    계절: string
+  } | Record<string, string>
   세운점수: number
   일진: {
     천간: string
@@ -102,8 +175,32 @@ export interface MonthlyRhythm {
 export interface YearlyRhythm {
   년도: number
   주제: string
-  대운_정보: any
-  세운_정보: any
+  대운_정보: {
+    cycle: number
+    startAge: number
+    endAge: number
+    gan: string
+    ji: string
+    ganJi: string
+    ohHaeng: string
+    score: number
+    description: string
+    isYongSin: boolean
+    isGiSin: boolean
+  } | null
+  세운_정보: {
+    year: number
+    age: number
+    gan: string
+    ji: string
+    ganJi: string
+    ohHaeng: string
+    animal: string
+    score: number
+    description: string
+    isYongSin: boolean
+    daewoonInteraction: number
+  } | null
   월별_신호: Record<number, { 월: number; 테마: string; 에너지: number }>
   용신: string[]
   기신: string[]
@@ -137,6 +234,16 @@ export interface StateTrigger {
   gesture: string
   phrase: string
   how_to: string
+}
+
+export interface QimenTimeSlot {
+  hour_start: number    // 시작 시각 (0-23)
+  hour_end: number      // 종료 시각 (2-25)
+  quality: 'good' | 'neutral' | 'avoid'
+  direction: string     // 한국어 방위 (예: "북동")
+  direction_en: string  // 영문 코드 (예: "NE")
+  energy_level: number  // 1-10
+  label: string         // 사용자 노출 라벨
 }
 
 export interface HealthSports {
@@ -233,6 +340,19 @@ export interface DailyContent {
   fourPillars: Record<string, { heavenlyStem: string; earthlyBranch: string; gan: string; ji: string }> | null
   gyeokGuk: { dayMaster: string; strength: string; monthBranch: string; season: string } | null
   yongSin: { yongSin: string[] } | null
+  // Extended saju fields (optional — only present when extra data is available)
+  saju_summary?: string
+  sinsal_influence?: string
+  direction_detail?: string
+  palace_insight?: string
+  yongsin_utilization?: string
+  daewoon_entry?: string
+  sewon_summary?: string
+  // 기문둔갑 시간/방위 데이터 (optional — structured qimen data)
+  qimen_slots?: QimenTimeSlot[]
+  best_direction?: string
+  avoid_direction?: string
+  peak_hours?: string
 }
 
 export interface MonthlyContent {
@@ -249,11 +369,17 @@ export interface MonthlyContent {
   flow_description: string
 }
 
+export interface MonthlySignal {
+  month: number
+  theme: string
+  energy: number
+}
+
 export interface YearlyContent {
   year: number
   theme: string
   flow_summary: string
-  monthly_signals: Record<number, { 월: number; 테마: string; 에너지: number }>
+  monthly_signals: Record<number, MonthlySignal>
   core_tasks: string[]
   summary: string
   keywords: string[]

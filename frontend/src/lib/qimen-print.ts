@@ -45,19 +45,21 @@ export function getQimenSlotForHour(
 /**
  * 에너지 레벨(1-10)을 인쇄용 compact bar 스타일로 변환
  */
-export function renderEnergyBar(energyLevel: number): {
+export function renderEnergyBar(energyLevel: number, scale = 1.0): {
   containerStyle: React.CSSProperties
   fillStyle: React.CSSProperties
 } {
   const pct = Math.max(0, Math.min(100, (energyLevel / 10) * 100))
   const color = energyLevel >= 7 ? '#16a34a' : energyLevel >= 4 ? '#ca8a04' : '#dc2626'
+  const w = Math.round(32 * scale)
+  const h = Math.max(2, Math.round(4 * scale))
   return {
     containerStyle: {
       display: 'inline-block',
-      width: '32px',
-      height: '4px',
+      width: `${w}px`,
+      height: `${h}px`,
       background: '#e5e7eb',
-      borderRadius: '2px',
+      borderRadius: `${Math.max(1, Math.round(2 * scale))}px`,
       overflow: 'hidden',
       verticalAlign: 'middle',
     },

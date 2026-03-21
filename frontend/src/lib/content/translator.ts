@@ -54,6 +54,9 @@ const ROLE_EXPRESSIONS: Record<UserRole, Record<string, string>> = {
     // 관계 관련
     '친구': '동료',
     '선생님': '상사',
+    // 결정/에너지 관련
+    '결정': '판단',
+    '에너지': '업무 집중도',
   },
 
   freelancer: {
@@ -74,7 +77,89 @@ const ROLE_EXPRESSIONS: Record<UserRole, Record<string, string>> = {
     '상사': '발주처',
     // 결정 관련
     '결정': '계약',
+    // 체력 관련
+    '체력': '작업 에너지',
   },
+}
+
+// ============================================================
+// 한국어 조사 유틸리티
+// ============================================================
+
+/**
+ * 한국어 문자의 받침(종성) 유무 확인
+ * @param char 한글 문자 1개
+ * @returns true if the character has a final consonant (받침)
+ */
+function hasBatchim(char: string): boolean {
+  const code = char.charCodeAt(0)
+  // 한글 유니코드 범위: 0xAC00 ~ 0xD7A3
+  if (code < 0xAC00 || code > 0xD7A3) return false
+  // (code - 0xAC00) % 28 === 0 means no batchim
+  return (code - 0xAC00) % 28 !== 0
+}
+
+/**
+ * 대체된 단어 뒤의 조사를 받침에 맞게 조정
+ *
+ * 조사 쌍:
+ * - 은/는 (topic marker)
+ * - 이/가 (subject marker)
+ * - 을/를 (object marker)
+ * - 으로/로 (direction/method marker)
+ * - 과/와 (and)
+ *
+ * 주의: 이/가 패턴은 한글 직후에만 적용하여 일반 단어 오염 방지
+ */
+function adaptJosa(text: string): string {
+  // 조사 쌍 정의: [받침 있을 때, 받침 없을 때]
+  // 이/가는 오탐이 많아 별도로 신중하게 처리
+  const josaPairs: [string, string][] = [
+    ['은', '는'],
+    ['을', '를'],
+    ['으로', '로'],
+    ['과', '와'],
+  ]
+
+  let result = text
+
+  for (const [withBatchim, withoutBatchim] of josaPairs) {
+    const escWith = withBatchim.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const escWithout = withoutBatchim.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const followBoundary = '(?=[\\s\\.,!?;:\\)\\]\\}가-힣]|$)'
+
+    // 받침 없는 글자 + 받침 있는 조사 → 받침 없는 조사로 교정
+    const patternWrong1 = new RegExp(`([가-힣])${escWith}${followBoundary}`, 'g')
+    result = result.replace(patternWrong1, (match, prevChar) => {
+      if (!hasBatchim(prevChar)) {
+        return prevChar + withoutBatchim
+      }
+      return match
+    })
+
+    // 받침 있는 글자 + 받침 없는 조사 → 받침 있는 조사로 교정
+    const patternWrong2 = new RegExp(`([가-힣])${escWithout}${followBoundary}`, 'g')
+    result = result.replace(patternWrong2, (match, prevChar) => {
+      if (hasBatchim(prevChar)) {
+        return prevChar + withBatchim
+      }
+      return match
+    })
+  }
+
+  // 이/가 는 오탐 위험이 높으므로 별도 보수적 처리:
+  // 받침 없는 글자 + 이 → 가 (단, 뒤가 공백/문장부호/문자열 끝인 경우만)
+  result = result.replace(/([가-힣])이(?=[\s\.,!?;:\)\]\}]|$)/g, (match, prevChar) => {
+    if (!hasBatchim(prevChar)) return prevChar + '가'
+    return match
+  })
+  // 받침 있는 글자 + 가 → 이 (단, 뒤가 공백/문장부호/문자열 끝인 경우만)
+  result = result.replace(/([가-힣])가(?=[\s\.,!?;:\)\]\}]|$)/g, (match, prevChar) => {
+    if (hasBatchim(prevChar)) return prevChar + '이'
+    return match
+  })
+
+  return result
 }
 
 // ============================================================
@@ -87,6 +172,7 @@ const ROLE_EXPRESSIONS: Record<UserRole, Record<string, string>> = {
  * 한국어 단어 경계를 고려하여 치환합니다.
  * 앞뒤가 공백/문장부호/문자열 시작/끝인 경우에만 치환하여
  * "스타일", "일어나기" 같은 단어 내부 오염을 방지합니다.
+ * 단어 치환 후 조사를 받침에 맞게 자동 조정합니다.
  */
 function translateText(text: string, expressionMap: Record<string, string>): string {
   let translated = text
@@ -112,6 +198,9 @@ function translateText(text: string, expressionMap: Record<string, string>): str
     )
     translated = translated.replace(pattern, `$1${roleExpr}`)
   }
+
+  // 조사 적응 적용 (단어 교체 후)
+  translated = adaptJosa(translated)
 
   return translated
 }

@@ -74,8 +74,8 @@ export async function GET(
         role: role || null,
         content: monthlyContent,
       })
-    } catch (importError: any) {
-      console.error('Content library not available:', importError.message)
+    } catch (importError: unknown) {
+      console.error('Content library not available:', importError instanceof Error ? importError.message : String(importError))
       return NextResponse.json({
         year: yearNum,
         month: monthNum,
@@ -92,7 +92,7 @@ export async function GET(
         },
       })
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof AuthError) {
       return NextResponse.json({ detail: error.message }, { status: error.status })
     }

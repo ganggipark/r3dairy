@@ -6,7 +6,7 @@
  * 인쇄 친화적 디자인 (A4 규격)
  */
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import type { DailyContentResponse, DailyLog, DailyLogCreate, DailyLogUpdate, Role as RoleType } from '@/types'
@@ -18,10 +18,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import TimeGrid from '@/components/TimeGrid'
 import DailyMarkdown from '@/components/DailyMarkdown'
-import PaperSizeSelector, { PAPER_SIZES, PaperSize } from '@/components/PaperSizeSelector'
-import { getQimenSlotForHour, QIMEN_QUALITY_COLORS, QIMEN_QUALITY_INDICATORS, renderEnergyBar } from '@/lib/qimen-print'
-
-const MM_TO_PX = 3.7795  // 96dpi 기준
 
 export default function TodayPage() {
   const router = useRouter()
@@ -33,11 +29,7 @@ export default function TodayPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [userRoles, setUserRoles] = useState<Role[]>([])
   const [viewMode, setViewMode] = useState<'standard' | 'markdown'>('standard')
-  const [paperSize, setPaperSize] = useState<PaperSize>('A4')
-  const [previewMode, setPreviewMode] = useState(false)
   const [hasDiaryPeriod, setHasDiaryPeriod] = useState(false)
-  // 뷰포트 너비 (미리보기 스케일 계산용 - 하이드레이션 안전 초기값)
-  const [viewportWidth, setViewportWidth] = useState(1200)
 
   // 기록 상태
   const [log, setLog] = useState<DailyLog | null>(null)
@@ -50,18 +42,6 @@ export default function TodayPage() {
     gratitude: ''
   })
   const [isSavingLog, setIsSavingLog] = useState(false)
-
-  // 뷰포트 너비 추적 (미리보기 반응형 스케일링)
-  useEffect(() => {
-    setViewportWidth(window.innerWidth)
-    const handleResize = () => {
-      const width = window.innerWidth
-      setViewportWidth(width)
-      if (width < 768) setPreviewMode(false)
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
 
   // 오늘 날짜
   const today = new Date().toISOString().split('T')[0];
@@ -99,18 +79,6 @@ export default function TodayPage() {
     return null
   }
 
-  // 미리보기 치수 계산 (paperSize + viewportWidth 변경 시 자동 재계산)
-  const previewDimensions = useMemo(() => {
-    const paper = PAPER_SIZES[paperSize]
-    const pageWidthPx = paper.widthMm * MM_TO_PX
-    const pageHeightPx = paper.heightMm * MM_TO_PX
-    const marginPx = 8 * MM_TO_PX
-    const totalWidthPx = pageWidthPx * 2 + 16 * MM_TO_PX
-    const availableWidth = viewportWidth - 64
-    const scale = Math.min(1.0, Math.max(0.4, availableWidth / totalWidthPx))
-    return { paper, pageWidthPx, pageHeightPx, marginPx, totalWidthPx, scale }
-  }, [paperSize, viewportWidth])
-
   // 초기 데이터 로드
   useEffect(() => {
     const loadData = async () => {
@@ -134,7 +102,7 @@ export default function TodayPage() {
           if (profileData?.preferences?.diary_period) {
             setHasDiaryPeriod(true)
           }
-        } catch (err: any) {
+        } catch (err: any) { // TODO: type this — use unknown with type guard
           console.error('[ERROR] Profile load failed:', err)
           if (err.status === 401) {
             // 토큰 만료 → 갱신 시도
@@ -182,7 +150,7 @@ export default function TodayPage() {
             hasGyeokGuk: !!(content.content as any)?.gyeokGuk,
             summary: content.content?.summary?.substring(0, 50)
           })
-        } catch (err: any) {
+        } catch (err: any) { // TODO: type this — use unknown with type guard
           console.error('[ERROR] Daily content load failed:', err)
           if (err.status === 401) {
             const newToken = await refreshAccessToken()
@@ -229,7 +197,7 @@ export default function TodayPage() {
         }
 
         setIsLoading(false)
-      } catch (err: any) {
+      } catch (err: any) { // TODO: type this — use unknown with type guard
         console.error('데이터 로드 오류:', err)
         if (err.status === 401) {
           router.push('/login')
@@ -253,7 +221,7 @@ export default function TodayPage() {
     try {
       const content = await api.daily.getContent(token, today, newRole)
       setDailyContent(content)
-    } catch (err: any) {
+    } catch (err: any) { // TODO: type this — use unknown with type guard
       setError('콘텐츠를 불러오는 데 실패했습니다')
     }
   }
@@ -296,7 +264,7 @@ export default function TodayPage() {
         setLog(created)
       }
       alert('기록이 저장되었습니다')
-    } catch (err: any) {
+    } catch (err: any) { // TODO: type this — use unknown with type guard
       alert(err.message || '기록 저장에 실패했습니다')
     } finally {
       setIsSavingLog(false)
@@ -364,23 +332,6 @@ export default function TodayPage() {
                 </Button>
               </div>
 
-              {/* 용지 선택 */}
-              <div className="hidden md:flex items-center gap-2 md:border-r md:pr-3 print:hidden">
-                <span className="text-sm text-gray-600">용지:</span>
-                <PaperSizeSelector paperSize={paperSize} onChange={setPaperSize} />
-              </div>
-
-              {/* 미리보기 모드 토글 */}
-              <div className="hidden md:flex items-center gap-2 md:border-r md:pr-3 print:hidden">
-                <Button
-                  onClick={() => setPreviewMode(!previewMode)}
-                  variant={previewMode ? 'default' : 'outline'}
-                  size="sm"
-                >
-                  {previewMode ? '📄 미리보기 ON' : '📄 미리보기'}
-                </Button>
-              </div>
-
               {/* 기간별 인쇄 버튼 */}
               {hasDiaryPeriod && (
                 <div className="hidden md:flex items-center gap-2 print:hidden">
@@ -414,275 +365,9 @@ export default function TodayPage() {
         </div>
       </header>
 
-      {/* 메인 콘텐츠: 좌우 레이아웃 (A4 인쇄 규격) */}
-      <main className={`print:max-w-none print:p-0 ${previewMode ? 'bg-gray-400 min-h-screen py-8 px-4 flex flex-col items-center' : 'max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-8'}`}>
-        {previewMode ? (
-          /* 미리보기 모드: 실제 용지 크기로 표시 (previewDimensions 반응형) */
-          <div style={{ width: `${previewDimensions.totalWidthPx * previewDimensions.scale}px`, height: `${previewDimensions.pageHeightPx * previewDimensions.scale}px`, margin: '0 auto' }}>
-            <div
-              style={{
-                width: `${previewDimensions.totalWidthPx}px`,
-                transformOrigin: 'top left',
-                transform: `scale(${previewDimensions.scale})`,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                background: 'white',
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: `${8 * MM_TO_PX}px`,
-                padding: `${previewDimensions.marginPx}px`,
-                boxSizing: 'border-box',
-                minHeight: `${previewDimensions.pageHeightPx}px`,
-              }}
-            >
-              {/* 인쇄용 헤더 - 미리보기에서 항상 표시 */}
-              <div style={{ gridColumn: '1 / -1', borderBottom: '2px solid #1f2937', paddingBottom: '8px', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                  <div>
-                    <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', margin: 0 }}>오늘의 리듬</h1>
-                    <p style={{ fontSize: '12px', color: '#6b7280', margin: '2px 0 0' }}>{today}</p>
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#9ca3af' }}>{previewDimensions.paper.label}</div>
-                </div>
-              </div>
-
-              {/* 좌측 패널 */}
-              <div style={{ height: `${previewDimensions.pageHeightPx - previewDimensions.marginPx * 2 - 50}px`, overflow: 'hidden', border: '1px solid #d1d5db', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ background: 'linear-gradient(to right, #eff6ff, #eef2ff)', borderBottom: '2px solid #1f2937', padding: '10px 16px', flexShrink: 0 }}>
-                  <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#111827', margin: 0 }}>오늘의 안내</h2>
-                </div>
-                <div style={{ padding: '14px', fontSize: '11.5px', lineHeight: '1.5', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden' }}>
-                  {/* 상단 콘텐츠 그룹 */}
-                  <div style={{ flex: 1, overflow: 'hidden' }}>
-                    <p style={{ color: '#374151', marginBottom: '10px' }}><strong>요약:</strong> {content.summary}</p>
-                    <p style={{ color: '#374151', marginBottom: '10px' }}><strong>키워드:</strong> {content.keywords.join(', ')}</p>
-                    <p style={{ color: '#374151', marginBottom: '10px', lineHeight: '1.5' }}><strong>리듬 해설:</strong> {content.rhythm_description}</p>
-                    <div style={{ marginBottom: '10px' }}>
-                      <strong>집중:</strong> {content.focus_caution.focus.join(', ')} &nbsp;|&nbsp;
-                      <strong>주의:</strong> {content.focus_caution.caution.join(', ')}
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                      <strong>권장:</strong> {content.action_guide.do.join(', ')} &nbsp;|&nbsp;
-                      <strong>지양:</strong> {content.action_guide.avoid.join(', ')}
-                    </div>
-                    {content.time_direction && (
-                      <div style={{ marginBottom: '10px' }}>
-                        <div><strong>집중 시간:</strong> {content.time_direction.good_time} &nbsp;|&nbsp; <strong>주의 시간:</strong> {(content.time_direction as any).avoid_time}</div>
-                        <div><strong>좋은 방향:</strong> {content.time_direction.good_direction} &nbsp;|&nbsp; <strong>주의 방향:</strong> {(content.time_direction as any).avoid_direction}</div>
-                        {(content.time_direction as any).notes && <div style={{ color: '#6b7280', fontSize: '10px', marginTop: '2px' }}>{(content.time_direction as any).notes}</div>}
-                      </div>
-                    )}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px', borderTop: '1px solid #e5e7eb', paddingTop: '10px', flex: 1 }}>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(content as any).daily_health_sports && (
-                        <div style={{ background: '#f9fafb', borderRadius: '4px', padding: '6px 8px', border: '1px solid #f3f4f6' }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '3px', color: '#374151' }}>🏃 건강</div>
-                          <div style={{ color: '#6b7280' }}>{(content as any).daily_health_sports.recommended_activities.join(', ')}</div>
-                          {(content as any).daily_health_sports.health_tips && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '10px' }}>{(content as any).daily_health_sports.health_tips.join(', ')}</div>
-                          )}
-                          {(content as any).daily_health_sports.explanation && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '9.5px', lineHeight: '1.3' }}>{(content as any).daily_health_sports.explanation}</div>
-                          )}
-                        </div>
-                      )}
-                      {(content as any).daily_meal_nutrition && (
-                        <div style={{ background: '#f9fafb', borderRadius: '4px', padding: '6px 8px', border: '1px solid #f3f4f6' }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '3px', color: '#374151' }}>🍽 음식</div>
-                          <div style={{ color: '#6b7280' }}>{(content as any).daily_meal_nutrition.recommended_foods.join(', ')}</div>
-                          {(content as any).daily_meal_nutrition.avoid_foods && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '10px' }}>피할 것: {(content as any).daily_meal_nutrition.avoid_foods.join(', ')}</div>
-                          )}
-                          {(content as any).daily_meal_nutrition.explanation && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '9.5px', lineHeight: '1.3' }}>{(content as any).daily_meal_nutrition.explanation}</div>
-                          )}
-                        </div>
-                      )}
-                      {(content as any).daily_fashion_beauty && (
-                        <div style={{ background: '#f9fafb', borderRadius: '4px', padding: '6px 8px', border: '1px solid #f3f4f6' }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '3px', color: '#374151' }}>👔 패션</div>
-                          <div style={{ color: '#6b7280' }}>{(content as any).daily_fashion_beauty.color_suggestions.join(', ')}</div>
-                          {(content as any).daily_fashion_beauty.clothing_style && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '10px' }}>{(content as any).daily_fashion_beauty.clothing_style}</div>
-                          )}
-                          {(content as any).daily_fashion_beauty.explanation && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '9.5px', lineHeight: '1.3' }}>{(content as any).daily_fashion_beauty.explanation}</div>
-                          )}
-                        </div>
-                      )}
-                      {(content as any).daily_shopping_finance && (
-                        <div style={{ background: '#f9fafb', borderRadius: '4px', padding: '6px 8px', border: '1px solid #f3f4f6' }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '3px', color: '#374151' }}>💰 금융</div>
-                          <div style={{ color: '#6b7280' }}>{(content as any).daily_shopping_finance.finance_advice.join(', ')}</div>
-                          {(content as any).daily_shopping_finance.good_to_buy && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '10px' }}>추천 구매: {(content as any).daily_shopping_finance.good_to_buy.join(', ')}</div>
-                          )}
-                          {(content as any).daily_shopping_finance.explanation && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '9.5px', lineHeight: '1.3' }}>{(content as any).daily_shopping_finance.explanation}</div>
-                          )}
-                        </div>
-                      )}
-                      {(content as any).daily_living_space && (
-                        <div style={{ background: '#f9fafb', borderRadius: '4px', padding: '6px 8px', border: '1px solid #f3f4f6' }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '3px', color: '#374151' }}>🏡 공간</div>
-                          <div style={{ color: '#6b7280' }}>{(content as any).daily_living_space.space_organization.join(', ')}</div>
-                          {(content as any).daily_living_space.environmental_tips && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '10px' }}>{(content as any).daily_living_space.environmental_tips.join(', ')}</div>
-                          )}
-                          {(content as any).daily_living_space.explanation && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '9.5px', lineHeight: '1.3' }}>{(content as any).daily_living_space.explanation}</div>
-                          )}
-                        </div>
-                      )}
-                      {(content as any).daily_routines && (
-                        <div style={{ background: '#f9fafb', borderRadius: '4px', padding: '6px 8px', border: '1px solid #f3f4f6' }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '3px', color: '#374151' }}>⏰ 루틴</div>
-                          <div style={{ color: '#6b7280' }}>{(content as any).daily_routines.morning_routine.join(', ')}</div>
-                          {(content as any).daily_routines.evening_routine && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '10px' }}>저녁: {(content as any).daily_routines.evening_routine.join(', ')}</div>
-                          )}
-                          {(content as any).daily_routines.explanation && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '9.5px', lineHeight: '1.3' }}>{(content as any).daily_routines.explanation}</div>
-                          )}
-                        </div>
-                      )}
-                      {(content as any).hobbies_creativity && (
-                        <div style={{ background: '#f9fafb', borderRadius: '4px', padding: '6px 8px', border: '1px solid #f3f4f6' }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '3px', color: '#374151' }}>🎨 창작</div>
-                          <div style={{ color: '#6b7280' }}>{(content as any).hobbies_creativity.creative_activities.join(', ')}</div>
-                          {(content as any).hobbies_creativity.learning_recommendations && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '10px' }}>{(content as any).hobbies_creativity.learning_recommendations.join(', ')}</div>
-                          )}
-                          {(content as any).hobbies_creativity.explanation && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '9.5px', lineHeight: '1.3' }}>{(content as any).hobbies_creativity.explanation}</div>
-                          )}
-                        </div>
-                      )}
-                      {(content as any).relationships_social && (
-                        <div style={{ background: '#f9fafb', borderRadius: '4px', padding: '6px 8px', border: '1px solid #f3f4f6' }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '3px', color: '#374151' }}>👥 관계</div>
-                          <div style={{ color: '#6b7280' }}>{(content as any).relationships_social.communication_style.join(', ')}</div>
-                          {(content as any).relationships_social.relationship_tips && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '10px' }}>{(content as any).relationships_social.relationship_tips.join(', ')}</div>
-                          )}
-                          {(content as any).relationships_social.explanation && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '9.5px', lineHeight: '1.3' }}>{(content as any).relationships_social.explanation}</div>
-                          )}
-                        </div>
-                      )}
-                      {(content as any).digital_communication && (
-                        <div style={{ background: '#f9fafb', borderRadius: '4px', padding: '6px 8px', border: '1px solid #f3f4f6' }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '3px', color: '#374151' }}>📱 디지털</div>
-                          <div style={{ color: '#6b7280' }}>{(content as any).digital_communication.device_usage.join(', ')}</div>
-                          {(content as any).digital_communication.social_media && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '10px' }}>{(content as any).digital_communication.social_media.join(', ')}</div>
-                          )}
-                          {(content as any).digital_communication.explanation && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '9.5px', lineHeight: '1.3' }}>{(content as any).digital_communication.explanation}</div>
-                          )}
-                        </div>
-                      )}
-                      {(content as any).seasonal_environment && (
-                        <div style={{ background: '#f9fafb', borderRadius: '4px', padding: '6px 8px', border: '1px solid #f3f4f6' }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '3px', color: '#374151' }}>🌿 계절</div>
-                          <div style={{ color: '#6b7280' }}>{(content as any).seasonal_environment.weather_adaptation.join(', ')}</div>
-                          {(content as any).seasonal_environment.seasonal_activities && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '10px' }}>{(content as any).seasonal_environment.seasonal_activities.join(', ')}</div>
-                          )}
-                          {(content as any).seasonal_environment.explanation && (
-                            <div style={{ color: '#9ca3af', marginTop: '2px', fontSize: '9.5px', lineHeight: '1.3' }}>{(content as any).seasonal_environment.explanation}</div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {/* 하단 NLP 섹션 - 패널 아래에 고정 */}
-                  <div style={{ borderTop: '1px solid #e5e7eb', background: '#faf5ff', padding: '12px', borderRadius: '6px', flexShrink: 0 }}>
-                    <strong style={{ color: '#7c3aed' }}>🧠 마음 설계</strong>
-                    <div style={{ marginTop: '6px', marginBottom: '4px', lineHeight: '1.5' }}>
-                      <strong>앵커링:</strong> {content.state_trigger.phrase} / {content.state_trigger.gesture}
-                    </div>
-                    {(content.state_trigger as any).how_to && (
-                      <div style={{ marginBottom: '4px', lineHeight: '1.5', color: '#6b7280', fontSize: '10px' }}><strong>사용법:</strong> {(content.state_trigger as any).how_to}</div>
-                    )}
-                    <div style={{ marginBottom: '4px', lineHeight: '1.5' }}><strong>리프레이밍:</strong> {content.meaning_shift}</div>
-                    <div style={{ lineHeight: '1.5' }}><strong>메타 질문:</strong> <em>{content.rhythm_question}</em></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 우측 패널 */}
-              <div style={{ height: `${previewDimensions.pageHeightPx - previewDimensions.marginPx * 2 - 50}px`, overflow: 'hidden', border: '1px solid #d1d5db', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ background: 'linear-gradient(to right, #f0fdf4, #ecfdf5)', borderBottom: '2px solid #1f2937', padding: '10px 16px', flexShrink: 0 }}>
-                  <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#111827', margin: 0 }}>나의 하루</h2>
-                </div>
-                <div style={{ padding: '12px', fontSize: '10px', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {/* 시간대별 일정 - 전형적 다이어리 형식 */}
-                  <div style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '6px', flex: '1 1 auto', overflow: 'hidden' }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '11px' }}>시간대별 일정</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100% - 24px)', overflow: 'hidden' }}>
-                      {['05:00','06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00'].map(t => {
-                        const hourNum = parseInt(t.split(':')[0], 10)
-                        const slot = getQimenSlotForHour(dailyContent?.qimen_slots, hourNum)
-                        const indicator = slot ? QIMEN_QUALITY_INDICATORS[slot.quality] : null
-                        const energyBar = slot ? renderEnergyBar(slot.energy_level) : null
-                        return (
-                          <div key={t} style={{ display: 'flex', alignItems: 'center', height: '30px', minHeight: '30px', flexShrink: 1, backgroundColor: slot ? QIMEN_QUALITY_COLORS[slot.quality] : 'transparent' }}>
-                            <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#374151', width: '40px', flexShrink: 0 }}>{t}</span>
-                            {slot ? (
-                              <>
-                                <span style={{ fontSize: '9px', fontWeight: 'bold', color: indicator!.color, width: '10px', flexShrink: 0 }}>{indicator!.symbol}</span>
-                                {energyBar && (
-                                  <span style={{ ...energyBar.containerStyle, flexShrink: 0, marginRight: '2px' }}>
-                                    <span style={energyBar.fillStyle} />
-                                  </span>
-                                )}
-                                <span style={{ fontSize: '8px', color: '#6b7280', flex: 1 }}>{slot.direction}</span>
-                              </>
-                            ) : (
-                              <div style={{ flex: 1, borderBottom: '1px dashed #d1d5db', height: '100%' }}></div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  {/* 할 일 */}
-                  <div style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '6px', flex: '0 0 auto' }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>오늘의 할 일</div>
-                    {[1,2,3,4,5].map(i => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', borderBottom: '1px dashed #e5e7eb', padding: '2px 0' }}>
-                        <div style={{ width: '10px', height: '10px', border: '1px solid #9ca3af', borderRadius: '2px', flexShrink: 0 }}></div>
-                        <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
-                      </div>
-                    ))}
-                  </div>
-                  {/* 감사한 일 + 한 줄 */}
-                  <div style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '6px', flex: '0 0 auto' }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>감사한 일</div>
-                    {[1,2,3].map(i => <div key={i} style={{ borderBottom: '1px dashed #e5e7eb', height: '18px' }}></div>)}
-                  </div>
-                  <div style={{ borderBottom: '2px solid #9ca3af', padding: '4px 0', flex: '0 0 auto' }}>
-                    <span style={{ fontWeight: 'bold' }}>오늘의 한 줄: </span>
-                    <span style={{ color: '#d1d5db' }}>_________________________</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* 인쇄용 헤더 (화면에서는 숨김) */}
-            <div className="hidden print:block mb-4 border-b-2 border-gray-800 pb-2">
-              <div className="flex justify-between items-end">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">오늘의 리듬</h1>
-                  <p className="text-sm text-gray-600">{today}</p>
-                </div>
-                <div className="text-xs text-gray-500">{PAPER_SIZES[paperSize].label}</div>
-              </div>
-            </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 lg:gap-6 print:grid-cols-2 print:gap-4 print-grid">
+      {/* 메인 콘텐츠: WYSIWYG 좌우 레이아웃 — 화면 그대로 인쇄 */}
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-8 print:max-w-none print:p-0 print:m-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 lg:gap-6 print:block">
           {/* 좌측: 오늘의 안내 */}
           <div className="w-full h-full min-h-0 md:min-h-[600px] lg:min-h-[900px] print-page">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full print:shadow-none print:border print:border-gray-300 print-card">
@@ -1050,44 +735,48 @@ export default function TodayPage() {
             </div>
           </div>
         </div>
-          </>
-        )}
       </main>
 
-      {/* 인쇄용 CSS */}
+      {/* 인쇄용 CSS — WYSIWYG: 화면 레이아웃 그대로 인쇄 */}
       <style jsx global>{`
         @media print {
           @page {
-            size: ${PAPER_SIZES[paperSize].width} ${PAPER_SIZES[paperSize].height};
+            size: A4;
             margin: 8mm;
           }
 
           body {
+            margin: 0;
+            padding: 0;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
           }
 
-          /* 좌우 컨테이너 동일 높이 */
+          /* 헤더 및 인터랙티브 요소 숨김 */
+          header, .no-print, .print\\:hidden { display: none !important; }
+
+          /* 각 패널을 독립 페이지로 분리 */
           .print-page {
-            height: calc(${PAPER_SIZES[paperSize].height} - 16mm) !important;
-            overflow: hidden !important;
-            box-sizing: border-box !important;
+            page-break-after: always;
+            break-after: page;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          .print-page:last-child {
+            page-break-after: auto;
+            break-after: auto;
           }
 
-          /* 인쇄 시 그리드 2컬럼 고정 */
-          .print-grid {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 8mm !important;
-            height: calc(${PAPER_SIZES[paperSize].height} - 16mm) !important;
-            align-items: stretch !important;
-          }
+          /* 그리드를 블록으로 전환 (각 컬럼이 별도 페이지) */
+          main > div { display: block !important; }
 
-          /* 내부 카드도 높이 채우기 */
+          /* 카드 스타일 인쇄 최적화 */
           .print-card {
-            height: 100% !important;
-            overflow: hidden !important;
+            box-shadow: none !important;
+            border: 1px solid #d1d5db !important;
           }
+
+          main { padding: 0 !important; margin: 0 !important; max-width: none !important; }
         }
       `}</style>
     </div>

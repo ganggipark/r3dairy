@@ -64,7 +64,7 @@ export default function SettingsPage() {
       setTimeout(() => {
         router.push('/profile');
       }, 3000);
-    } catch (err: any) {
+    } catch (err: any) { // TODO: type this — use unknown with type guard
       setError(err.message || '비밀번호 변경에 실패했습니다.');
     } finally {
       setIsLoading(false);

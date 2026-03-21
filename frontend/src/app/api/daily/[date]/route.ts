@@ -62,7 +62,7 @@ export async function GET(
 
       // Qimen calculation (non-blocking)
       let qimenSlots = null
-      let qimenSummary: Record<string, any> = {}
+      let qimenSummary: Record<string, unknown> = {}
       try {
         const qimenResults = calculateDailyQimen(profile.birth_date, date)
         qimenSlots = qimenResults
@@ -93,9 +93,9 @@ export async function GET(
         avoid_direction: qimenSummary.avoid_direction || null,
         peak_hours: qimenSummary.peak_hours || null,
       })
-    } catch (importError: any) {
+    } catch (importError: unknown) {
       // Content library not yet available - return minimal response
-      console.error('Content library not available:', importError.message)
+      console.error('Content library not available:', importError instanceof Error ? importError.message : String(importError))
       return NextResponse.json({
         date,
         role: role || null,
@@ -117,7 +117,7 @@ export async function GET(
         peak_hours: null,
       })
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof AuthError) {
       return NextResponse.json({ detail: error.message }, { status: error.status })
     }

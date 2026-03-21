@@ -64,7 +64,7 @@ export default function DailyMarkdown({ date, showJSON = false }: DailyMarkdownP
         }
         setMarkdown(markdownText)
         setIsLoading(false)
-      } catch (err: any) {
+      } catch (err: any) { // TODO: type this — use unknown with type guard
         setError(err.message || '오류가 발생했습니다')
         setIsLoading(false)
       }

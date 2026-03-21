@@ -52,7 +52,7 @@ export function assembleDailyContent(
   qimenSummary?: { best_direction?: string; avoid_direction?: string; peak_hours?: string },
 ): DailyContent {
   // 1. 요약
-  const summary = generateSummary(dailyRhythm)
+  const summary = generateSummary(dailyRhythm, sajuData)
 
   // 2. 키워드
   const keywords = generateKeywords(dailyRhythm, sajuData)
@@ -80,7 +80,7 @@ export function assembleDailyContent(
 
   // 10-19. 라이프스타일 블록
   const healthSports = generateDailyHealthSports(dailyRhythm)
-  const mealNutrition = generateDailyMealNutrition(dailyRhythm)
+  const mealNutrition = generateDailyMealNutrition(dailyRhythm, sajuData)
   const fashionBeauty = generateDailyFashionBeauty(dailyRhythm, sajuData)
   const shoppingFinance = generateDailyShoppingFinance(dailyRhythm)
   const livingSpace = generateDailyLivingSpace(dailyRhythm)
@@ -164,8 +164,10 @@ export function assembleDailyContent(
 // 요약 생성
 // ============================================================
 
-function generateSummary(dailyRhythm: DailyRhythm): string {
+function generateSummary(dailyRhythm: DailyRhythm, sajuData: SajuData): string {
   const energy = dailyRhythm.에너지_수준 ?? 3
+  const concentration = dailyRhythm.집중력 ?? 3
+  const social = dailyRhythm.사회운 ?? 3
   const flow = dailyRhythm.주요_흐름 ?? '균형의 시기'
 
   const energyText: Record<number, string> = {
@@ -173,23 +175,70 @@ function generateSummary(dailyRhythm: DailyRhythm): string {
   }
   const et = energyText[energy] || '평온한'
 
-  if (energy >= 4) {
+  // stemTendency for personalized summary
+  let dayStem = ''
+  if (sajuData) {
+    dayStem = sajuData.사주?.일주?.천간 || ''
+  }
+  const stemTendency: Record<string, string> = {
+    '갑': '추진력과 리더십', '을': '유연한 적응력',
+    '병': '열정과 표현력', '정': '섬세한 집중력',
+    '무': '안정적인 포용력', '기': '실용적 섬세함',
+    '경': '결단력과 실행력', '신': '정밀한 완벽주의',
+    '임': '깊은 통찰력', '계': '직관적 감수성',
+    '甲': '추진력과 리더십', '乙': '유연한 적응력',
+    '丙': '열정과 표현력', '丁': '섬세한 집중력',
+    '戊': '안정적인 포용력', '己': '실용적 섬세함',
+    '庚': '결단력과 실행력', '辛': '정밀한 완벽주의',
+    '壬': '깊은 통찰력', '癸': '직관적 감수성',
+  }
+  const personalTendency = stemTendency[dayStem] || ''
+
+  if (energy === 5) {
+    const stemNote = personalTendency
+      ? ` 당신의 ${personalTendency}이(가) 최고조에 달하는 날이니, 가장 중요한 일에 이 에너지를 집중하세요.`
+      : ' 이 에너지를 가장 의미 있는 일에 집중적으로 활용해보세요.'
+    return (
+      `오늘은 ${et} 에너지가 넘치는 날입니다. ` +
+      `${flow}의 시간을 맞이하여, 준비해온 일들을 적극적으로 펼치기에 최적의 하루입니다.` +
+      stemNote
+    )
+  } else if (energy === 4) {
     return (
       `오늘은 ${et} 에너지가 흐르는 날입니다. ` +
       `${flow}의 시간을 맞이하여, 준비해온 일들을 적극적으로 펼치기에 좋은 하루입니다. ` +
       '활기차게 시작하고 과감히 움직여 보세요.'
     )
-  } else if (energy <= 2) {
+  } else if (energy === 3 && concentration >= 4) {
+    return (
+      `오늘은 ${et} 에너지 속에서 집중력이 빛나는 날입니다. ` +
+      `${flow}의 흐름 안에서, 깊이 있는 작업이나 학습에 몰입하기에 이상적인 조건입니다. ` +
+      '차분하게 한 가지에 집중하면 뛰어난 성과를 거둘 수 있습니다.'
+    )
+  } else if (energy === 3 && social >= 4) {
+    return (
+      `오늘은 ${et} 에너지 속에서 관계의 흐름이 활발한 날입니다. ` +
+      `${flow}을 경험하며, 주변 사람들과의 따뜻한 교류가 하루를 더욱 풍성하게 만들어줄 것입니다. ` +
+      '소통에 마음을 열고 인연의 소중함을 느껴보세요.'
+    )
+  } else if (energy === 3) {
+    return (
+      `오늘은 ${et} 에너지가 흐르는 날입니다. ` +
+      `${flow}을 경험하며, 지나치게 힘을 쏟지도, 너무 물러서지도 않는 균형 잡힌 하루를 설계해보세요. ` +
+      '안정 속에서 꾸준한 성과를 만들 수 있습니다.'
+    )
+  } else if (energy === 2) {
     return (
       `오늘은 ${et} 에너지의 날입니다. ` +
       `${flow}의 흐름 속에서 자신을 조용히 돌보는 시간이 필요합니다. ` +
       '무리하기보다 내면의 목소리에 귀를 기울이며 차분히 하루를 보내세요.'
     )
   } else {
+    // energy === 1
     return (
-      `오늘은 ${et} 에너지가 흐르는 날입니다. ` +
-      `${flow}을 경험하며, 지나치게 힘을 쏟지도, 너무 물러서지도 않는 균형 잡힌 하루를 설계해보세요. ` +
-      '안정 속에서 꾸준한 성과를 만들 수 있습니다.'
+      `오늘은 ${et} 에너지가 감싸는 날입니다. ` +
+      `${flow}의 흐름 속에서 깊은 휴식과 내면의 충전이 가장 필요한 시간입니다. ` +
+      '세상의 속도에 맞추려 하지 말고, 온전히 자신을 위한 하루를 선물하세요.'
     )
   }
 }
@@ -281,16 +330,38 @@ function generateRhythmDescription(dailyRhythm: DailyRhythm, sajuData: SajuData)
     description += '이 흐름이 어떤 의미를 가지는지, 하루 동안 어떻게 활용할 수 있는지 살펴보겠습니다. '
   }
 
+  // 일진 관계 기반 세부 분기
+  const ilJinRelation = dailyRhythm.일진?.관계 || ''
+
   if (energy >= 4) {
     description += '현재 에너지 수준이 매우 높아, 활동적이고 적극적인 하루가 될 가능성이 큽니다. '
     if (personalTendency) {
       description += `특히 ${personalTendency}을(를) 살려 주도적으로 움직이면 더 큰 성과를 얻을 수 있습니다. `
     }
-    description += '이 시기에는 오랫동안 미뤄두었던 과제나 새로운 시도를 실행에 옮기는 것이 효과적입니다. '
+    // 일진.관계에 따른 세부 분기
+    if (ilJinRelation === 'sheng_in') {
+      description += '오늘은 학습과 수용의 에너지가 강한 날로, 새로운 지식을 흡수하거나 배움의 기회를 잡기에 최적입니다. '
+    } else if (ilJinRelation === 'ke_out') {
+      description += '오늘은 실행과 성취의 에너지가 강한 날로, 준비해온 일을 과감히 밀어붙이면 좋은 결과를 얻을 수 있습니다. '
+    } else if (ilJinRelation === 'bi') {
+      description += '오늘은 협력의 에너지가 강한 날로, 동료나 파트너와 함께 움직이면 시너지를 극대화할 수 있습니다. '
+    } else if (ilJinRelation === 'sheng_out') {
+      description += '오늘은 표현과 발산의 에너지가 풍부한 날로, 자신의 아이디어를 적극적으로 펼쳐보세요. '
+    } else if (ilJinRelation === 'ke_in') {
+      description += '오늘은 내면의 단련이 함께 이뤄지는 날로, 높은 에너지를 자기 발전에 투자하면 큰 보상이 따릅니다. '
+    } else {
+      description += '이 시기에는 오랫동안 미뤄두었던 과제나 새로운 시도를 실행에 옮기는 것이 효과적입니다. '
+    }
   } else if (energy <= 2) {
     description += '에너지가 낮은 상태로, 몸과 마음 모두 충분한 쉼을 요청하고 있는 신호입니다. '
     if (personalTendency) {
       description += `이런 날은 ${personalTendency}을(를) 내면으로 돌려 자기 성찰에 활용하면 좋습니다. `
+    }
+    // 집중력에 따른 세부 분기
+    if (concentration <= 2) {
+      description += '집중력도 함께 낮으니, 완전한 휴식 모드로 전환하여 몸과 마음을 회복하는 데 집중하세요. '
+    } else {
+      description += '다행히 집중력은 유지되고 있어, 조용한 환경에서의 가벼운 학습이나 독서는 가능합니다. '
     }
     description += '이런 날은 생산성보다 회복을 우선순위로 삼고, 가벼운 일만 처리하는 것이 지혜롭습니다. '
   } else {
@@ -318,6 +389,11 @@ function generateRhythmDescription(dailyRhythm: DailyRhythm, sajuData: SajuData)
 
   if (decision >= 4) {
     description += '결단력이 강화된 날로, 오랫동안 고민해온 선택을 내리기에 적합한 시기입니다. '
+    if (energy >= 4) {
+      description += '높은 에너지와 결합된 결단력은 큰 결정을 실행으로 바로 옮길 수 있는 힘을 줍니다. '
+    } else if (energy <= 2) {
+      description += '에너지는 낮지만 판단력은 맑으니, 머릿속에서 정리해온 결정을 조용히 확정하기에 좋습니다. '
+    }
   }
 
   const opportunities = dailyRhythm.기회_요소 || []
@@ -388,10 +464,37 @@ function generateActionGuide(dailyRhythm: DailyRhythm, sajuData: SajuData): Acti
 
   // 사주 성격 기반 강점 Do 추가
   if (sajuData) {
-    const personality = sajuData.성격 || {}
-    const dayMasterTraits = personality.dayMasterTraits || {}
-    const advice = dayMasterTraits.advice || ''
+    const advice = sajuData.성격?.dayMasterTraits?.advice || ''
     if (advice) doItems.push(advice)
+
+    // stemTendency 기반 Do 항목 추가
+    const dayStem = sajuData.사주?.일주?.천간 || ''
+    const stemDoAdvice: Record<string, string> = {
+      '갑': '리더십을 발휘할 기회를 찾아보세요',
+      '을': '유연하게 상황에 적응하며 나아가세요',
+      '병': '열정을 표현할 창구를 만들어보세요',
+      '정': '세심한 관찰력을 활용해보세요',
+      '무': '주변을 포용하는 마음으로 하루를 시작하세요',
+      '기': '실용적인 접근으로 문제를 해결해보세요',
+      '경': '과감한 결단을 내려보세요',
+      '신': '완벽함을 추구하되 자신에게 관대하세요',
+      '임': '깊은 통찰로 상황을 읽어보세요',
+      '계': '직관을 믿고 감성적 판단을 존중하세요',
+      '甲': '리더십을 발휘할 기회를 찾아보세요',
+      '乙': '유연하게 상황에 적응하며 나아가세요',
+      '丙': '열정을 표현할 창구를 만들어보세요',
+      '丁': '세심한 관찰력을 활용해보세요',
+      '戊': '주변을 포용하는 마음으로 하루를 시작하세요',
+      '己': '실용적인 접근으로 문제를 해결해보세요',
+      '庚': '과감한 결단을 내려보세요',
+      '辛': '완벽함을 추구하되 자신에게 관대하세요',
+      '壬': '깊은 통찰로 상황을 읽어보세요',
+      '癸': '직관을 믿고 감성적 판단을 존중하세요',
+    }
+    const stemAdvice = stemDoAdvice[dayStem]
+    if (stemAdvice && !doItems.includes(stemAdvice)) {
+      doItems.push(stemAdvice)
+    }
   }
 
   if (energy <= 2) {
@@ -402,9 +505,7 @@ function generateActionGuide(dailyRhythm: DailyRhythm, sajuData: SajuData): Acti
 
   // 사주 성격 기반 약점 Avoid 추가
   if (sajuData) {
-    const personality = sajuData.성격 || {}
-    const dayMasterTraits = personality.dayMasterTraits || {}
-    const weaknesses: string[] = dayMasterTraits.weaknesses || []
+    const weaknesses: string[] = sajuData.성격?.dayMasterTraits?.weaknesses || []
     for (const w of weaknesses.slice(0, 2)) {
       const avoidItem = `${w}에 빠지지 않도록 주의`
       if (!avoidItems.includes(avoidItem)) avoidItems.push(avoidItem)
@@ -466,6 +567,8 @@ function generateTimeDirection(
 
 function generateStateTrigger(dailyRhythm: DailyRhythm): StateTrigger {
   const energy = dailyRhythm.에너지_수준 ?? 3
+  const concentration = dailyRhythm.집중력 ?? 3
+  const social = dailyRhythm.사회운 ?? 3
 
   if (energy >= 4) {
     return {
@@ -482,6 +585,22 @@ function generateStateTrigger(dailyRhythm: DailyRhythm): StateTrigger {
       how_to:
         '에너지가 낮게 느껴질 때, 의자에 앉아 어깨를 천천히 으쓱이며 긴장을 풀어주세요. ' +
         "이 동작과 함께 '휴식도 생산적인 활동이다'라는 인식을 상기하면 불필요한 죄책감을 내려놓을 수 있습니다.",
+    }
+  } else if (energy === 3 && concentration >= 4) {
+    return {
+      gesture: '검지를 관자놀이에 대고 천천히 원을 그리기',
+      phrase: '"지금 이 집중을 소중히 간직한다"',
+      how_to:
+        '집중력이 높아지는 순간, 검지를 양쪽 관자놀이에 가볍게 대고 천천히 원을 그려보세요. ' +
+        '이 동작은 집중 상태를 의식적으로 인지하고, 더 깊은 몰입으로 이어지는 트리거가 됩니다.',
+    }
+  } else if (energy === 3 && social >= 4) {
+    return {
+      gesture: '양손을 펴서 상대방을 향해 부드럽게 내밀기',
+      phrase: '"따뜻한 연결이 오늘을 채운다"',
+      how_to:
+        '사람들과의 교류가 활발해지는 순간, 양손을 부드럽게 펴서 마음을 여는 제스처를 취해보세요. ' +
+        '이 동작은 관계 에너지를 의식적으로 높이고, 진심 어린 소통의 문을 여는 데 도움이 됩니다.',
     }
   } else {
     return {
@@ -514,6 +633,45 @@ function generateMeaningShift(dailyRhythm: DailyRhythm, sajuData: SajuData): str
     }
   }
 
+  // stemTendency for personalized meaning shift
+  let stemHint = ''
+  if (sajuData) {
+    const dayStem = sajuData.사주?.일주?.천간 || ''
+    const stemMeaningShift: Record<string, string> = {
+      '갑': '당신의 추진력은 때로 쉬어갈 때 더 강해집니다. 멈춤도 전진의 일부입니다.',
+      '을': '유연함이야말로 당신의 가장 큰 무기입니다. 흔들림 속에서도 방향을 잃지 않는 힘을 믿으세요.',
+      '병': '당신의 열정은 주변을 밝히는 빛과 같습니다. 오늘 그 빛의 방향을 의식적으로 선택해보세요.',
+      '정': '섬세한 감각은 남들이 놓치는 것을 포착합니다. 오늘 그 세심함이 빛을 발할 순간이 옵니다.',
+      '무': '당신의 포용력은 주변을 안정시킵니다. 오늘 그 안정감이 누군가에게 큰 힘이 될 수 있습니다.',
+      '기': '실용적인 감각으로 복잡한 것을 단순하게 만드는 것이 당신의 재능입니다. 오늘도 그 힘을 발휘하세요.',
+      '경': '과감한 결단은 당신의 특기이지만, 오늘은 부드러움 속에서도 강함을 찾아보세요.',
+      '신': '완벽을 향한 노력은 존중받아야 합니다. 하지만 오늘은 불완전함 속의 아름다움도 발견해보세요.',
+      '임': '깊은 생각은 당신의 강점입니다. 오늘 떠오르는 통찰을 기록으로 남겨보세요.',
+      '계': '직관이 이끄는 방향을 신뢰하세요. 오늘 당신의 감성이 정확한 답을 알고 있을 수 있습니다.',
+      '甲': '당신의 추진력은 때로 쉬어갈 때 더 강해집니다. 멈춤도 전진의 일부입니다.',
+      '乙': '유연함이야말로 당신의 가장 큰 무기입니다. 흔들림 속에서도 방향을 잃지 않는 힘을 믿으세요.',
+      '丙': '당신의 열정은 주변을 밝히는 빛과 같습니다. 오늘 그 빛의 방향을 의식적으로 선택해보세요.',
+      '丁': '섬세한 감각은 남들이 놓치는 것을 포착합니다. 오늘 그 세심함이 빛을 발할 순간이 옵니다.',
+      '戊': '당신의 포용력은 주변을 안정시킵니다. 오늘 그 안정감이 누군가에게 큰 힘이 될 수 있습니다.',
+      '己': '실용적인 감각으로 복잡한 것을 단순하게 만드는 것이 당신의 재능입니다. 오늘도 그 힘을 발휘하세요.',
+      '庚': '과감한 결단은 당신의 특기이지만, 오늘은 부드러움 속에서도 강함을 찾아보세요.',
+      '辛': '완벽을 향한 노력은 존중받아야 합니다. 하지만 오늘은 불완전함 속의 아름다움도 발견해보세요.',
+      '壬': '깊은 생각은 당신의 강점입니다. 오늘 떠오르는 통찰을 기록으로 남겨보세요.',
+      '癸': '직관이 이끄는 방향을 신뢰하세요. 오늘 당신의 감성이 정확한 답을 알고 있을 수 있습니다.',
+    }
+    stemHint = stemMeaningShift[dayStem] || ''
+  }
+
+  // 일진.관계 기반 통찰
+  const ilJinRelation = dailyRhythm.일진?.관계 || ''
+  const ilJinInsight: Record<string, string> = {
+    'sheng_in': '오늘은 배움과 성장의 에너지가 흘러옵니다. 받아들이는 자세가 더 큰 깨달음을 가져옵니다.',
+    'sheng_out': '오늘은 표현과 발산의 에너지가 흐릅니다. 내면의 것을 밖으로 나누는 것이 서로를 풍요롭게 합니다.',
+    'ke_out': '오늘은 실행과 성취의 에너지가 강합니다. 목표를 향해 한 걸음 내딛는 것이 의미 있는 전환이 됩니다.',
+    'ke_in': '오늘은 내면의 단련이 이뤄지는 날입니다. 외부의 압박을 성장의 연료로 전환하는 지혜가 필요합니다.',
+    'bi': '오늘은 조화와 협력의 에너지가 지배합니다. 함께하는 것이 혼자보다 더 큰 가치를 만듭니다.',
+  }
+
   let shift: string
   if (energy <= 2) {
     shift =
@@ -542,6 +700,15 @@ function generateMeaningShift(dailyRhythm: DailyRhythm, sajuData: SajuData): str
     shift += ' ' + strengthHint
   }
 
+  if (stemHint) {
+    shift += ' ' + stemHint
+  }
+
+  const ilJinNote = ilJinInsight[ilJinRelation] || ''
+  if (ilJinNote) {
+    shift += ' ' + ilJinNote
+  }
+
   return shift
 }
 
@@ -551,11 +718,28 @@ function generateMeaningShift(dailyRhythm: DailyRhythm, sajuData: SajuData): str
 
 function generateRhythmQuestion(dailyRhythm: DailyRhythm): string {
   const energy = dailyRhythm.에너지_수준 ?? 3
+  const concentration = dailyRhythm.집중력 ?? 3
+  const social = dailyRhythm.사회운 ?? 3
+  const decision = dailyRhythm.결정력 ?? 3
 
-  if (energy >= 4) {
+  if (energy >= 4 && concentration >= 4) {
+    return '오늘 집중하고 싶은 가장 의미 있는 도전은 무엇인가요?'
+  } else if (energy >= 4 && social >= 4) {
+    return '오늘 만나고 싶은 사람, 나누고 싶은 이야기는 무엇인가요?'
+  } else if (energy >= 4 && decision >= 4) {
+    return '오늘 내리고 싶은 가장 중요한 결정은 무엇인가요?'
+  } else if (energy >= 4) {
     return '오늘의 높은 에너지를 어떤 방향으로 사용하고 싶나요?'
+  } else if (energy <= 2 && concentration >= 3) {
+    return '조용한 시간에 떠오르는 생각을 기록해볼까요?'
   } else if (energy <= 2) {
     return '지금 나에게 필요한 휴식의 형태는 무엇일까요?'
+  } else if (energy === 3 && concentration >= 4) {
+    return '오늘 깊이 파고들고 싶은 주제는 무엇인가요?'
+  } else if (energy === 3 && social >= 4) {
+    return '주변 사람들에게 전하고 싶은 감사한 마음이 있나요?'
+  } else if (energy === 3 && decision >= 4) {
+    return '최근 미뤄왔던 선택 중 오늘 정리할 수 있는 것이 있을까요?'
   } else {
     return '오늘 하루 동안 가장 소중하게 여기고 싶은 순간은 무엇인가요?'
   }
@@ -567,40 +751,85 @@ function generateRhythmQuestion(dailyRhythm: DailyRhythm): string {
 
 function generateDailyHealthSports(dailyRhythm: DailyRhythm): HealthSports {
   const energy = dailyRhythm.에너지_수준 ?? 3
+  const concentration = dailyRhythm.집중력 ?? 3
+  const strength = (dailyRhythm.격국 as { 강약?: string })?.강약 || ''
 
-  if (energy >= 4) {
+  if (energy >= 4 && strength === '신강') {
     return {
-      recommended_activities: ['조깅', '수영'],
+      recommended_activities: ['달리기', 'HIIT', '등산'],
+      health_tips: ['고강도 운동으로 에너지 소진', '충분한 수분과 전해질 보충'],
+      wellness_focused: ['심폐 기능 극대화', '근력 강화', '지구력 향상'],
+      explanation: '오늘은 에너지가 매우 높고 체력도 강한 날입니다. 고강도 운동으로 넘치는 에너지를 건강하게 발산하세요.',
+    }
+  } else if (energy >= 4) {
+    return {
+      recommended_activities: ['조깅', '수영', '자전거'],
       health_tips: ['활동적인 운동으로 에너지 발산', '충분한 수분 섭취'],
       wellness_focused: ['심폐 기능 강화', '체력 향상'],
-      explanation: '오늘은 에너지가 높은 날입니다. 활동적인 운동으로 에너지를 건강하게 발산하세요.',
+      explanation: '오늘은 에너지가 높은 날입니다. 적당한 강도의 유산소 운동으로 에너지를 건강하게 활용하세요.',
+    }
+  } else if (energy === 3 && concentration >= 4) {
+    return {
+      recommended_activities: ['필라테스', '태극권', '요가 플로우'],
+      health_tips: ['마음과 몸의 연결에 집중', '호흡과 동작의 조화'],
+      wellness_focused: ['코어 강화', '자세 교정', '정신 집중력 향상'],
+      explanation: '오늘은 집중력이 높은 날입니다. 마음과 몸을 하나로 연결하는 운동이 효과적입니다.',
+    }
+  } else if (energy === 3) {
+    return {
+      recommended_activities: ['걷기', '가벼운 체조', '스트레칭'],
+      health_tips: ['가벼운 운동으로 컨디션 유지', '규칙적인 움직임'],
+      wellness_focused: ['유연성 향상', '혈액 순환 개선'],
+      explanation: '오늘은 적당한 운동이 좋습니다. 가벼운 움직임으로 몸의 리듬을 유지하세요.',
     }
   } else {
     return {
-      recommended_activities: ['걷기', '요가'],
-      health_tips: ['가벼운 운동으로 컨디션 유지', '충분한 휴식'],
-      wellness_focused: ['유연성 향상', '스트레스 해소'],
-      explanation: '오늘은 편안한 운동이 좋습니다. 몸과 마음을 부드럽게 풀어주는 활동을 선택하세요.',
+      recommended_activities: ['요가', '스트레칭', '명상'],
+      health_tips: ['회복 중심의 부드러운 운동', '충분한 휴식과 수면'],
+      wellness_focused: ['긴장 해소', '스트레스 완화', '심신 회복'],
+      explanation: '오늘은 몸과 마음의 회복이 우선입니다. 부드러운 스트레칭과 명상으로 자신을 돌보세요.',
     }
   }
 }
 
-function generateDailyMealNutrition(dailyRhythm: DailyRhythm): MealNutrition {
+function generateDailyMealNutrition(dailyRhythm: DailyRhythm, sajuData?: SajuData): MealNutrition {
   const energy = dailyRhythm.에너지_수준 ?? 3
+  const yongsinList = sajuData?.용신?.용신 || []
 
   if (energy >= 4) {
     return {
       flavor_profile: ['신선한 맛', '상큼한 맛'],
-      recommended_foods: ['과일', '샐러드', '생선'],
+      recommended_foods: ['과일', '샐러드', '단백질 위주 식사'],
       avoid_foods: ['기름진 음식', '과도한 당분'],
-      explanation: '오늘은 가벼우면서 영양가 있는 음식이 좋습니다. 신선한 재료로 에너지를 보충하세요.',
+      explanation: '오늘은 가벼우면서 영양가 있는 음식이 좋습니다. 신선한 재료와 양질의 단백질로 에너지를 보충하세요.',
+    }
+  } else if (energy === 3 && yongsinList.includes('목')) {
+    return {
+      flavor_profile: ['신맛', '상큼한 맛'],
+      recommended_foods: ['녹색 채소', '신선한 샐러드', '레몬 물', '시금치'],
+      avoid_foods: ['과도한 매운 음식', '가공식품'],
+      explanation: '오늘은 신선한 녹색 채소와 상큼한 맛이 기운 보충에 도움이 됩니다. 자연에서 온 재료를 선택하세요.',
+    }
+  } else if (energy === 3 && yongsinList.includes('화')) {
+    return {
+      flavor_profile: ['쓴맛', '따뜻한 맛'],
+      recommended_foods: ['붉은 음식', '토마토', '고구마', '대추차'],
+      avoid_foods: ['차가운 음료', '냉동 식품'],
+      explanation: '오늘은 따뜻하고 붉은 색감의 음식이 활력을 더해줍니다. 따뜻한 차 한 잔도 좋습니다.',
+    }
+  } else if (energy === 3) {
+    return {
+      flavor_profile: ['담백한 맛', '고소한 맛'],
+      recommended_foods: ['곡물', '뿌리채소', '두부', '견과류'],
+      avoid_foods: ['과식', '인스턴트 식품'],
+      explanation: '오늘은 균형 잡힌 식사가 좋습니다. 곡물과 뿌리채소로 안정적인 에너지를 유지하세요.',
     }
   } else {
     return {
       flavor_profile: ['따뜻한 맛', '편안한 맛'],
-      recommended_foods: ['따뜻한 국물', '죽', '야채'],
-      avoid_foods: ['자극적인 음식', '차가운 음식'],
-      explanation: '오늘은 소화가 편안한 음식이 좋습니다. 따뜻하고 부드러운 음식으로 컨디션을 회복하세요.',
+      recommended_foods: ['죽', '따뜻한 국물', '부드러운 음식'],
+      avoid_foods: ['자극적인 음식', '차가운 음식', '과식'],
+      explanation: '오늘은 소화가 편안한 음식이 좋습니다. 따뜻하고 부드러운 음식으로 몸을 달래주세요.',
     }
   }
 }
@@ -669,53 +898,122 @@ function generateDailyFashionBeauty(dailyRhythm: DailyRhythm, sajuData: SajuData
 
 function generateDailyShoppingFinance(dailyRhythm: DailyRhythm): ShoppingFinance {
   const decision = dailyRhythm.결정력 ?? 3
+  const energy = dailyRhythm.에너지_수준 ?? 3
+  const concentration = dailyRhythm.집중력 ?? 3
 
-  if (decision >= 4) {
+  if (decision >= 4 && energy >= 4) {
+    return {
+      good_to_buy: ['가치 있는 투자 상품', '오래 사용할 고품질 용품'],
+      finance_advice: ['계획적인 큰 소비 적합', '장기 투자 결정하기 좋은 날'],
+      investment_focus: ['적극적 투자 검토', '새로운 기회 포착'],
+      explanation: '오늘은 결정력과 에너지 모두 높은 날입니다. 미뤄왔던 중요한 구매나 투자 결정을 내리기에 최적의 시기입니다.',
+    }
+  } else if (decision >= 4) {
     return {
       good_to_buy: ['필요한 생활용품', '건강 관련 용품'],
-      finance_advice: ['계획적인 소비', '가치 있는 투자 검토'],
+      finance_advice: ['계획적인 소비', '가치 있는 소규모 투자 검토'],
       investment_focus: ['장기적 관점', '신중한 판단'],
-      explanation: '오늘은 결정력이 좋은 날입니다. 필요한 것을 계획적으로 구매하기 좋은 시기입니다.',
+      explanation: '오늘은 결정력이 좋은 날입니다. 계획해둔 소비를 실행하기에 적합합니다.',
+    }
+  } else if (decision === 3 && concentration >= 4) {
+    return {
+      good_to_buy: ['비교 분석 후 신중한 구매', '리뷰 확인 후 결정'],
+      finance_advice: ['가격 비교와 리서치', '재정 계획 점검'],
+      investment_focus: ['정보 수집과 분석', '다음 기회를 위한 준비'],
+      explanation: '오늘은 집중력이 좋아 꼼꼼한 비교와 분석에 적합합니다. 구매 전 충분히 조사하고 결정하세요.',
+    }
+  } else if (decision <= 2 && energy >= 4) {
+    return {
+      good_to_buy: ['체험형 소비', '운동용품', '건강식품'],
+      finance_advice: ['에너지를 돈이 아닌 활동에 투자', '충동구매 주의'],
+      investment_focus: ['소비보다 경험에 집중', '금전적 결정 보류'],
+      explanation: '오늘은 에너지는 높지만 결정력은 낮습니다. 돈보다 시간과 에너지를 의미 있게 쓰는 데 집중하세요.',
     }
   } else {
     return {
       good_to_buy: ['긴급하지 않으면 보류', '충동구매 자제'],
       finance_advice: ['지출 기록하기', '예산 점검하기'],
       investment_focus: ['관망', '정보 수집'],
-      explanation: '오늘은 큰 지출을 미루는 것이 좋습니다. 계획을 세우고 다음을 기약하세요.',
+      explanation: '오늘은 큰 지출을 미루는 것이 좋습니다. 절약 모드로 전환하고 다음 기회를 기다리세요.',
     }
   }
 }
 
 function generateDailyLivingSpace(dailyRhythm: DailyRhythm): LivingSpace {
   const energy = dailyRhythm.에너지_수준 ?? 3
+  const concentration = dailyRhythm.집중력 ?? 3
+  const social = dailyRhythm.사회운 ?? 3
 
-  if (energy >= 4) {
+  if (energy >= 4 && concentration >= 4) {
     return {
-      space_organization: ['불필요한 물건 정리', '공간 재배치'],
-      plants_decor: ['공기정화 식물 배치', '화분 관리'],
-      environmental_tips: ['환기하기', '자연광 활용'],
-      explanation: '오늘은 공간을 정리하기 좋은 날입니다. 깨끗하고 상쾌한 환경을 만들어보세요.',
+      space_organization: ['대청소', '불필요한 물건 과감히 정리', '수납 시스템 재정비'],
+      plants_decor: ['공기정화 식물 배치', '화분 위치 최적화'],
+      environmental_tips: ['환기하기', '자연광 극대화', '동선 정리'],
+      explanation: '오늘은 에너지와 집중력이 모두 높습니다. 깊이 있는 정리와 공간 재구성에 도전해보세요.',
+    }
+  } else if (energy >= 4 && social >= 4) {
+    return {
+      space_organization: ['손님맞이 준비', '공유 공간 정리', '거실 정돈'],
+      plants_decor: ['꽃 장식', '테이블 센터피스'],
+      environmental_tips: ['향기로운 분위기 조성', '밝은 조명 설정'],
+      explanation: '오늘은 사람들과의 교류가 활발한 날입니다. 공유 공간을 따뜻하고 환영하는 분위기로 꾸며보세요.',
+    }
+  } else if (energy === 3) {
+    return {
+      space_organization: ['기본 청소', '눈에 보이는 곳 정돈'],
+      plants_decor: ['관상용 식물 감상', '물주기'],
+      environmental_tips: ['적절한 환기', '쾌적한 온도 유지'],
+      explanation: '오늘은 기본적인 청소와 정돈으로 공간을 유지하세요. 무리하지 않는 선에서 깔끔함을 유지하면 충분합니다.',
+    }
+  } else if (energy <= 2 && concentration >= 3) {
+    return {
+      space_organization: ['서재나 책상만 정리', '작은 서랍 하나 정돈'],
+      plants_decor: ['책상 위 작은 식물 관리'],
+      environmental_tips: ['집중에 도움되는 환경 조성', '불필요한 시각 자극 제거'],
+      explanation: '오늘은 에너지는 낮지만 집중력은 있습니다. 자주 사용하는 작은 공간 하나만 깔끔히 정리해보세요.',
     }
   } else {
     return {
-      space_organization: ['작은 영역만 정리', '필수 정돈'],
-      plants_decor: ['관상용 식물 감상', '물주기'],
-      environmental_tips: ['편안한 조명', '쾌적한 온도 유지'],
-      explanation: '오늘은 편안한 공간 유지에 집중하세요. 무리한 정리보다 현상 유지가 좋습니다.',
+      space_organization: ['정리 대신 편안한 공간 유지', '이불 정리 정도만'],
+      plants_decor: ['편안한 분위기의 소품 감상'],
+      environmental_tips: ['편안한 조명', '아로마 활용', '따뜻한 온도 유지'],
+      explanation: '오늘은 편안함이 최우선입니다. 정리보다 아늑한 분위기 조성에 집중하세요.',
     }
   }
 }
 
 function generateDailyRoutines(dailyRhythm: DailyRhythm): DailyRoutines {
   const energy = dailyRhythm.에너지_수준 ?? 3
+  const concentration = dailyRhythm.집중력 ?? 3
+  const social = dailyRhythm.사회운 ?? 3
 
-  if (energy >= 4) {
+  if (energy >= 4 && concentration >= 4) {
     return {
-      sleep_schedule: ['일찍 자고 일찍 일어나기', '규칙적인 수면 패턴'],
-      morning_routine: ['가벼운 스트레칭', '충분한 아침 식사'],
-      evening_routine: ['활동 정리', '내일 준비'],
-      explanation: '오늘은 활동적인 루틴이 어울립니다. 아침부터 활기차게 시작하세요.',
+      sleep_schedule: ['일찍 자고 일찍 일어나기', '6-7시간 집중 수면'],
+      morning_routine: ['명상 5분', '목표 설정', '충분한 아침 식사'],
+      evening_routine: ['성과 기록', '내일 집중 블록 계획', '가벼운 독서'],
+      explanation: '오늘은 생산적인 루틴이 어울립니다. 아침 명상과 목표 설정으로 시작하고, 집중 블록을 활용하세요.',
+    }
+  } else if (energy >= 4 && social >= 4) {
+    return {
+      sleep_schedule: ['규칙적인 수면 패턴', '활력 있는 기상'],
+      morning_routine: ['가벼운 스트레칭', '활기찬 아침 인사', '에너지 넘치는 준비'],
+      evening_routine: ['하루 교류 정리', '감사 일기', '편안한 취침'],
+      explanation: '오늘은 활동적이고 사교적인 루틴이 어울립니다. 아침부터 주변과 에너지를 나누며 시작하세요.',
+    }
+  } else if (energy === 3) {
+    return {
+      sleep_schedule: ['적당한 시간 기상', '7-8시간 수면'],
+      morning_routine: ['가벼운 스트레칭', '균형 잡힌 식사'],
+      evening_routine: ['하루 돌아보기', '내일 일정 확인', '편안한 마무리'],
+      explanation: '오늘은 균형 잡힌 루틴이 좋습니다. 규칙적인 일과를 유지하며 안정감을 느껴보세요.',
+    }
+  } else if (energy <= 2 && social <= 2) {
+    return {
+      sleep_schedule: ['충분한 수면', '알람 없이 자연 기상'],
+      morning_routine: ['느긋하게 일어나기', '따뜻한 차 한 잔', '혼자만의 조용한 시간'],
+      evening_routine: ['디지털 기기 끄기', '따뜻한 목욕', '일찍 취침'],
+      explanation: '오늘은 혼자만의 회복 루틴이 가장 효과적입니다. 외부 자극을 최소화하고 자신만의 시간을 보내세요.',
     }
   } else {
     return {
@@ -730,13 +1028,28 @@ function generateDailyRoutines(dailyRhythm: DailyRhythm): DailyRoutines {
 function generateDigitalCommunication(dailyRhythm: DailyRhythm): DigitalCommunication {
   const social = dailyRhythm.사회운 ?? 3
   const concentration = dailyRhythm.집중력 ?? 3
+  const energy = dailyRhythm.에너지_수준 ?? 3
 
-  if (social >= 4) {
+  if (social >= 4 && concentration >= 4) {
+    return {
+      device_usage: ['목적 있는 소통', '효율적인 메시지 작성'],
+      social_media: ['전문적 콘텐츠 공유', '의미 있는 댓글 교환'],
+      online_focus_areas: ['전략적 네트워킹', '효율적 정보 교환', '생산적 협업 도구 활용'],
+      explanation: '오늘은 집중력과 소통 능력이 모두 뛰어납니다. 목적을 가진 전략적 디지털 소통에 집중하세요.',
+    }
+  } else if (social >= 4) {
     return {
       device_usage: ['적극적인 소통', '영상 통화 활용'],
       social_media: ['긍정적인 게시물 공유', '댓글 소통'],
       online_focus_areas: ['네트워킹', '정보 교환'],
       explanation: '오늘은 디지털 소통이 활발한 날입니다. 적극적으로 연락하고 교류하세요.',
+    }
+  } else if (social <= 2 && energy >= 4) {
+    return {
+      device_usage: ['디지털 최소화', '필수 업무 연락만'],
+      social_media: ['SNS 사용 자제', '오프라인 활동 우선'],
+      online_focus_areas: ['오프라인 프로젝트 집중', '실제 경험 쌓기', '디지털 프리 시간 확보'],
+      explanation: '오늘은 에너지는 높지만 혼자 집중하고 싶은 날입니다. 디지털 기기를 내려놓고 오프라인 활동에 에너지를 쏟으세요.',
     }
   } else if (concentration <= 2) {
     return {
@@ -758,13 +1071,28 @@ function generateDigitalCommunication(dailyRhythm: DailyRhythm): DigitalCommunic
 function generateHobbiesCreativity(dailyRhythm: DailyRhythm): HobbiesCreativity {
   const energy = dailyRhythm.에너지_수준 ?? 3
   const concentration = dailyRhythm.집중력 ?? 3
+  const social = dailyRhythm.사회운 ?? 3
 
-  if (energy >= 4 && concentration >= 4) {
+  if (energy >= 4 && concentration >= 4 && social >= 4) {
     return {
-      creative_activities: ['그림 그리기', '글쓰기'],
+      creative_activities: ['팀 프로젝트', '공동 창작', '워크숍 참여'],
+      learning_recommendations: ['스터디 그룹 참여', '함께 배우는 강의'],
+      entertainment_options: ['공연 관람', '전시회 투어', '문화 행사 참여'],
+      explanation: '오늘은 에너지, 집중력, 사교성이 모두 높습니다. 사람들과 함께하는 창작 활동이나 문화 체험이 가장 빛나는 날입니다.',
+    }
+  } else if (energy >= 4 && concentration >= 4) {
+    return {
+      creative_activities: ['그림 그리기', '글쓰기', '작곡'],
       learning_recommendations: ['새로운 기술 배우기', '온라인 강의 수강'],
       entertainment_options: ['영화 감상', '전시회 관람'],
       explanation: '오늘은 창작 활동에 집중하기 좋은 날입니다. 새로운 것을 배우고 표현해보세요.',
+    }
+  } else if (energy <= 2 && social >= 3) {
+    return {
+      creative_activities: ['편안한 대화 나누기', '함께 음악 듣기'],
+      learning_recommendations: ['가벼운 토론', '관심사 공유'],
+      entertainment_options: ['보드게임', '카페에서 대화', '편안한 모임'],
+      explanation: '오늘은 에너지는 낮지만 사교적인 흐름이 있습니다. 편안한 분위기에서 가까운 사람들과 여유로운 시간을 보내세요.',
     }
   } else if (concentration <= 2) {
     return {
@@ -785,13 +1113,21 @@ function generateHobbiesCreativity(dailyRhythm: DailyRhythm): HobbiesCreativity 
 
 function generateRelationshipsSocial(dailyRhythm: DailyRhythm): RelationshipsSocial {
   const social = dailyRhythm.사회운 ?? 3
+  const energy = dailyRhythm.에너지_수준 ?? 3
 
-  if (social >= 4) {
+  if (social >= 4 && energy >= 4) {
     return {
-      communication_style: ['적극적인 대화', '진솔한 표현'],
-      social_energies: ['모임 참여', '새로운 인연', '협력 활동'],
-      relationship_tips: ['긍정적인 태도 유지', '경청하기'],
-      explanation: '오늘은 관계 운이 좋은 날입니다. 사람들과 적극적으로 교류하세요.',
+      communication_style: ['적극적인 대화', '리더십 발휘', '열린 마음'],
+      social_energies: ['새로운 인연 만들기', '적극적 교류', '그룹 활동 주도'],
+      relationship_tips: ['먼저 다가가기', '긍정적 에너지 전파', '새로운 만남에 열린 자세'],
+      explanation: '오늘은 에너지와 사교성이 모두 최고조입니다. 새로운 인연을 만들고 적극적으로 관계를 넓혀보세요.',
+    }
+  } else if (social >= 4 && energy <= 3) {
+    return {
+      communication_style: ['깊이 있는 대화', '진솔한 표현', '공감 중심 소통'],
+      social_energies: ['소수의 깊은 대화', '의미 있는 만남', '진심 어린 교류'],
+      relationship_tips: ['양보다 질', '가까운 사람과 깊이 연결', '경청에 집중'],
+      explanation: '오늘은 관계 운이 좋지만 에너지가 넉넉하지 않습니다. 소수의 소중한 사람과 깊이 있는 대화를 나누세요.',
     }
   } else if (social <= 2) {
     return {
@@ -812,34 +1148,71 @@ function generateRelationshipsSocial(dailyRhythm: DailyRhythm): RelationshipsSoc
 
 function generateSeasonalEnvironment(dailyRhythm: DailyRhythm, targetDate: string): SeasonalEnvironment {
   const month = parseInt(targetDate.split('-')[1], 10) || new Date().getMonth() + 1
+  const energy = dailyRhythm.에너지_수준 ?? 3
 
   if (month >= 3 && month <= 5) {
-    return {
-      weather_adaptation: ['가벼운 외출복 준비', '일교차 대비'],
-      seasonal_activities: ['봄나물 먹기', '꽃 구경', '산책'],
-      environmental_focus: ['환절기 건강 관리', '꽃가루 알레르기 주의'],
-      explanation: '봄철입니다. 화사한 계절을 즐기되, 일교차와 알레르기에 주의하세요.',
+    if (energy >= 4) {
+      return {
+        weather_adaptation: ['가벼운 외출복 준비', '일교차 대비', '활동적인 복장'],
+        seasonal_activities: ['봄 등산', '꽃길 산책', '야외 운동', '자전거 타기'],
+        environmental_focus: ['환절기 건강 관리', '꽃가루 알레르기 주의', '자외선 차단'],
+        explanation: '봄철에 에너지가 높은 날입니다. 야외 활동으로 봄기운을 만끽하되, 알레르기와 일교차에 주의하세요.',
+      }
+    } else {
+      return {
+        weather_adaptation: ['따뜻한 겉옷 챙기기', '일교차 대비'],
+        seasonal_activities: ['실내에서 봄나물 요리', '창가에서 꽃 감상', '가벼운 산책'],
+        environmental_focus: ['환절기 면역력 관리', '충분한 수면', '꽃가루 대비'],
+        explanation: '봄철이지만 에너지가 낮은 날입니다. 실내에서 봄의 정취를 즐기며 몸을 편히 쉬세요.',
+      }
     }
   } else if (month >= 6 && month <= 8) {
-    return {
-      weather_adaptation: ['통풍 잘되는 옷', '자외선 차단'],
-      seasonal_activities: ['시원한 음식', '수분 보충', '물놀이'],
-      environmental_focus: ['에어컨 적정 온도 유지', '실내외 온도차 조절'],
-      explanation: '여름철입니다. 더위를 식히되, 과도한 냉방은 피하세요.',
+    if (energy >= 4) {
+      return {
+        weather_adaptation: ['통풍 잘되는 옷', '자외선 차단', '모자 착용'],
+        seasonal_activities: ['물놀이', '아침 조깅', '여름 과일 즐기기', '야외 바비큐'],
+        environmental_focus: ['충분한 수분 섭취', '열사병 주의', '실외 활동 시간 조절'],
+        explanation: '여름철에 에너지가 넘치는 날입니다. 물놀이나 야외 활동을 즐기되, 더위에는 충분히 주의하세요.',
+      }
+    } else {
+      return {
+        weather_adaptation: ['시원한 소재 옷', '냉방 환경 준비'],
+        seasonal_activities: ['시원한 음식', '실내 문화 활동', '수분 보충'],
+        environmental_focus: ['에어컨 적정 온도 유지', '실내외 온도차 조절', '냉방병 주의'],
+        explanation: '여름철에 에너지가 낮은 날입니다. 시원한 실내에서 편안히 보내며 수분 보충에 신경 쓰세요.',
+      }
     }
   } else if (month >= 9 && month <= 11) {
-    return {
-      weather_adaptation: ['겹쳐 입기', '환절기 대비'],
-      seasonal_activities: ['단풍 구경', '독서', '가을 과일'],
-      environmental_focus: ['건조함 주의', '환기 자주 하기'],
-      explanation: '가을철입니다. 선선한 날씨를 즐기되, 건조함에 대비하세요.',
+    if (energy >= 4) {
+      return {
+        weather_adaptation: ['겹쳐 입기', '활동적인 가을 복장'],
+        seasonal_activities: ['단풍 등산', '가을 캠핑', '야외 마라톤', '농장 체험'],
+        environmental_focus: ['건조함 주의', '수분 크림 사용', '활동 후 보습'],
+        explanation: '가을철에 에너지가 높은 날입니다. 선선한 날씨 속 야외 활동으로 가을을 만끽하세요.',
+      }
+    } else {
+      return {
+        weather_adaptation: ['따뜻한 겹옷', '환절기 대비 목도리'],
+        seasonal_activities: ['단풍 구경 드라이브', '독서', '가을 과일 즐기기', '따뜻한 차'],
+        environmental_focus: ['건조함 주의', '환기 자주 하기', '가습기 활용'],
+        explanation: '가을철에 에너지가 낮은 날입니다. 편안한 실내에서 독서와 차 한 잔으로 가을의 깊이를 느껴보세요.',
+      }
     }
   } else {
-    return {
-      weather_adaptation: ['방한복 준비', '보온 철저'],
-      seasonal_activities: ['따뜻한 차', '실내 활동', '겨울 운동'],
-      environmental_focus: ['실내 습도 유지', '체온 관리'],
-      explanation: '겨울철입니다. 따뜻하게 지내고, 실내 습도를 유지하세요.',
+    if (energy >= 4) {
+      return {
+        weather_adaptation: ['보온 방한복', '핫팩 활용', '방풍 소재 외투'],
+        seasonal_activities: ['겨울 등산', '스키/스노보드', '겨울 러닝', '온천 여행'],
+        environmental_focus: ['실내 습도 유지', '체온 관리', '운동 전후 보온'],
+        explanation: '겨울철에 에너지가 높은 날입니다. 겨울 스포츠나 야외 활동으로 추위를 이기며 활력을 발산하세요.',
+      }
+    } else {
+      return {
+        weather_adaptation: ['따뜻한 방한복', '보온 철저', '핫팩 준비'],
+        seasonal_activities: ['따뜻한 차', '실내 요가', '영화 감상', '뜨끈한 국물 요리'],
+        environmental_focus: ['실내 습도 유지', '체온 관리', '따뜻한 수면 환경'],
+        explanation: '겨울철에 에너지가 낮은 날입니다. 따뜻하게 실내에서 보내며 몸과 마음을 녹여주세요.',
+      }
     }
   }
 }
@@ -1061,7 +1434,15 @@ export function assembleYearlyContent(
 ): YearlyContent {
   const theme = yearlyRhythm.주제 || '안정과 성장의 해'
   const flow = yearlyRhythm.전체_흐름 || ''
-  const monthlySignals = yearlyRhythm.월별_신호 || {}
+  const rawMonthlySignals = yearlyRhythm.월별_신호 || {}
+  const monthlySignals: Record<number, { 월: number; 테마: string; 에너지: number }> = rawMonthlySignals
+  // Transform to English-keyed MonthlySignal for YearlyContent output
+  const monthlySignalsOut: Record<number, import('./types').MonthlySignal> = Object.fromEntries(
+    Object.entries(rawMonthlySignals).map(([k, v]) => [
+      Number(k),
+      { month: v.월, theme: v.테마, energy: v.에너지 },
+    ])
+  )
   const coreTasks = yearlyRhythm.핵심_과제 || []
 
   // summary (500+ chars)
@@ -1129,7 +1510,7 @@ export function assembleYearlyContent(
     year,
     theme,
     flow_summary: flow,
-    monthly_signals: monthlySignals,
+    monthly_signals: monthlySignalsOut,
     core_tasks: coreTasks,
     summary,
     keywords,

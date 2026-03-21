@@ -44,7 +44,7 @@ export default function LoginPage() {
         // 프로필이 없으면 프로필 생성 페이지로
         router.push('/profile')
       }
-    } catch (err: any) {
+    } catch (err: any) { // TODO: type this — use unknown with type guard
       setError(err.message || '로그인에 실패했습니다')
     } finally {
       setIsLoading(false)

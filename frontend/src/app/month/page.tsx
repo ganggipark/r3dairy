@@ -64,7 +64,7 @@ export default function MonthPage() {
         // 월간 콘텐츠 로드
         const content = await api.content.getMonthly(token, currentYear, currentMonth, role)
         setMonthlyContent(content)
-      } catch (err: any) {
+      } catch (err: any) { // TODO: type this — use unknown with type guard
         setError(err.message || '데이터를 불러오는 데 실패했습니다')
       } finally {
         setIsLoading(false)
@@ -83,7 +83,7 @@ export default function MonthPage() {
     try {
       const content = await api.content.getMonthly(token, currentYear, currentMonth, newRole)
       setMonthlyContent(content)
-    } catch (err: any) {
+    } catch (err: any) { // TODO: type this — use unknown with type guard
       setError('콘텐츠를 불러오는 데 실패했습니다')
     }
   }
@@ -331,9 +331,11 @@ export default function MonthPage() {
         {/* Print CSS */}
         <style jsx global>{`
           @media print {
+            @page { size: 210mm 297mm; margin: 8mm; }
             .no-print { display: none !important; }
             body { background: white; }
             .print-compact { padding: 8px !important; }
+            main > div { page-break-inside: avoid; break-inside: avoid; }
           }
         `}</style>
       </main>

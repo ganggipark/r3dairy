@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(data)
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof AuthError) {
       return NextResponse.json({ detail: error.message }, { status: error.status })
     }
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(data, { status: 201 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof AuthError) {
       return NextResponse.json({ detail: error.message }, { status: error.status })
     }
@@ -101,7 +101,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
 
     // Build update data (only non-null fields)
-    const updateData: Record<string, any> = {}
+    const updateData: Record<string, string | string[] | boolean | number> = {}
     const fields = ['name', 'birth_date', 'birth_time', 'gender', 'birth_place', 'roles', 'preferences']
     for (const field of fields) {
       if (body[field] !== undefined && body[field] !== null) {
@@ -124,7 +124,7 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json(data)
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof AuthError) {
       return NextResponse.json({ detail: error.message }, { status: error.status })
     }
@@ -156,7 +156,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, message: '프로필이 삭제되었습니다.' })
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof AuthError) {
       return NextResponse.json({ detail: error.message }, { status: error.status })
     }

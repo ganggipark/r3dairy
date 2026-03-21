@@ -12,7 +12,27 @@
 import type { BirthInfo, SajuData, DailyRhythm, MonthlyRhythm, YearlyRhythm } from './types'
 
 // saju-calculator 패키지 import (빌드 시점에 해결)
-let calculateCompleteSajuData: any = null
+// Raw output shape from the saju-calculator package
+interface SajuRawOutput {
+  fourPillars: {
+    year: { gan: string; ji: string; ganJi: string }
+    month: { gan: string; ji: string; ganJi: string }
+    day: { gan: string; ji: string; ganJi: string }
+    time: { gan: string; ji: string; ganJi: string }
+  }
+  ohHaeng: { balance: Record<string, number> }
+  sipSung: { detail: Record<string, number> }
+  gyeokGuk: { dayMaster: string; dayMasterOhHaeng: string; strength: string; season: string }
+  yongSin: { yongSin: string[]; giSin: string[] }
+  daewoon: SajuData['대운']
+  sinsal: SajuData['신살']
+  personality: SajuData['성격']
+  currentYearSewoon: SajuData['세운']
+  nextYearSewoon: SajuData['세운']
+  [key: string]: unknown
+}
+
+let calculateCompleteSajuData: ((...args: unknown[]) => SajuRawOutput) | null = null
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const mod = require('saju-calculator')
@@ -95,7 +115,7 @@ const OHAENG_TO_FRIENDLY: Record<string, Record<string, string>> = {
 // 캐시
 // ============================================================
 
-const _sajuCache: Map<string, any> = new Map()
+const _sajuCache: Map<string, SajuData> = new Map()
 const SAJU_CACHE_MAX = 200
 
 // ============================================================
@@ -166,13 +186,15 @@ export function calculateSaju(birthInfo: BirthInfo, targetDate: string): SajuDat
     const targetYear = parseInt(targetDate.split('-')[0], 10)
 
     // 세운 정보만 target_date에 맞게 재매핑
-    let targetYearSewoon = null
+    let targetYearSewoon: SajuData['세운'] = null
     if (sajuData.원본데이터) {
       const raw = sajuData.원본데이터
-      if (raw.currentYearSewoon?.year === targetYear) {
-        targetYearSewoon = raw.currentYearSewoon
-      } else if (raw.nextYearSewoon?.year === targetYear) {
-        targetYearSewoon = raw.nextYearSewoon
+      const curSewoon = raw.currentYearSewoon as SajuData['세운']
+      const nextSewoon = raw.nextYearSewoon as SajuData['세운']
+      if (curSewoon?.year === targetYear) {
+        targetYearSewoon = curSewoon
+      } else if (nextSewoon?.year === targetYear) {
+        targetYearSewoon = nextSewoon
       }
     }
     sajuData.세운 = targetYearSewoon
@@ -392,14 +414,14 @@ export function analyzeDailyFortune(
 
 /** 유리한 시간대 계산 (천을귀인 기반 + 일진 시간대) */
 function getFavorableTimes(sajuData: SajuData, targetDate: string): string[] {
-  const sinsal = sajuData.신살 || {}
+  const sinsal = sajuData.신살
 
   const target = parseDate(targetDate)
   const delta = daysBetween(JIAZI_DATE, target)
   const todayBranch = EARTHLY_BRANCHES[((delta % 12) + 12) % 12]
   const todayBranchTime = BRANCH_TIMES[todayBranch] || '09-11시'
 
-  if (sinsal.hasCheonEulGuiIn) {
+  if (sinsal?.hasCheonEulGuiIn) {
     return [`오전 9-11시 (사시)`, `오늘 ${todayBranchTime} (${todayBranch}시)`]
   }
 
@@ -408,7 +430,7 @@ function getFavorableTimes(sajuData: SajuData, targetDate: string): string[] {
 
 /** 주의 시간대 계산 (일진 기반) */
 function getCautionTimes(sajuData: SajuData, targetDate: string): string[] {
-  const sinsal = sajuData.신살 || {}
+  const sinsal = sajuData.신살
 
   const target = parseDate(targetDate)
   const delta = daysBetween(JIAZI_DATE, target)
@@ -417,7 +439,7 @@ function getCautionTimes(sajuData: SajuData, targetDate: string): string[] {
   const chungBranch = EARTHLY_BRANCHES[chungBranchIdx]
   const chungTime = BRANCH_TIMES[chungBranch] || '자정 전후'
 
-  if (sinsal.hasGongMang) {
+  if (sinsal?.hasGongMang) {
     return ['오후 5-7시 (유시)', `오늘 ${chungTime} (${chungBranch}시, 충 시간대)`]
   }
 
@@ -599,8 +621,7 @@ export function analyzeYearlyRhythm(
   sajuData: SajuData,
 ): YearlyRhythm {
   // 대운 정보
-  const daewoon = sajuData.대운 || {}
-  const currentDaewoon = daewoon.current || null
+  const currentDaewoon = sajuData.대운?.current ?? null
 
   // 세운 정보
   const sewoon = sajuData.세운

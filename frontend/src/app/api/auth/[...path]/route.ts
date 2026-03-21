@@ -1,16 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAnonClient, createUserClient, AuthError } from '@/lib/supabase-server'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 /**
  * Auth API Routes - Direct Supabase Auth calls
  * Handles: signup, login, logout, refresh, change-password
  */
 
+// Rate limit configs per endpoint
+const AUTH_RATE_LIMITS = {
+  login:  { windowMs: 60_000, max: 10 },  // 10 attempts per minute
+  signup: { windowMs: 60_000, max: 5 },   // 5 signups per minute
+} as const
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { path: string[] } }
 ) {
   const path = params.path.join('/')
+
+  // Apply rate limiting to login and signup
+  if (path === 'login' || path === 'signup') {
+    const ip = getClientIp(request.headers)
+    const config = AUTH_RATE_LIMITS[path]
+    const result = checkRateLimit(`${path}:${ip}`, config)
+    if (!result.success) {
+      return NextResponse.json(
+        { detail: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil(result.resetMs / 1000)),
+            'X-RateLimit-Remaining': '0',
+          },
+        }
+      )
+    }
+  }
 
   try {
     const supabase = createAnonClient()
@@ -118,7 +144,7 @@ export async function POST(
     }
 
     return NextResponse.json({ detail: 'Not found' }, { status: 404 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Auth API error:', error)
     return NextResponse.json(
       { detail: '인증 처리 중 오류가 발생했습니다.' },
@@ -190,7 +216,7 @@ export async function PUT(
     }
 
     return NextResponse.json({ detail: 'Not found' }, { status: 404 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Auth API error:', error)
     return NextResponse.json(
       { detail: '인증 처리 중 오류가 발생했습니다.' },
@@ -234,7 +260,7 @@ export async function GET(
     }
 
     return NextResponse.json({ detail: 'Not found' }, { status: 404 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       { detail: '인증 처리 중 오류가 발생했습니다.' },
       { status: 500 }

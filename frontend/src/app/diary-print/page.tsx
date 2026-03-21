@@ -6,14 +6,15 @@
  * 프로필의 diary_period 기반으로 다중 날짜 콘텐츠를 로드하여 인쇄 레이아웃으로 표시
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
-import type { DailyContentResponse, Profile } from '@/types'
+import type { DailyContentResponse, MonthlyContentResponse, YearlyContentResponse, Profile } from '@/types'
 import PaperSizeSelector, { PAPER_SIZES, PaperSize } from '@/components/PaperSizeSelector'
 import { getQimenSlotForHour, QIMEN_QUALITY_COLORS, QIMEN_QUALITY_INDICATORS, renderEnergyBar } from '@/lib/qimen-print'
-
-const MM_TO_PX = 3.7795
+import { createScaler, MM_TO_PX } from '@/lib/print-utils'
+import MonthSummaryPage from '@/components/print/MonthSummaryPage'
+import YearSummaryPage from '@/components/print/YearSummaryPage'
 
 /** 날짜 범위를 31일 단위 청크로 분할 */
 function chunkDateRange(startDate: string, endDate: string): Array<{ start: string; end: string }> {
@@ -76,6 +77,15 @@ function formatYearMonth(yearMonth: string): string {
   return `${y}년 ${parseInt(m)}월`
 }
 
+/** Page entry types for flat page array */
+type PageEntry =
+  | { type: 'cover' }
+  | { type: 'blank' }
+  | { type: 'year-summary'; year: number }
+  | { type: 'month-summary'; yearMonth: string }
+  | { type: 'guidance'; dayIndex: number; date: string }
+  | { type: 'recording'; dayIndex: number; date: string }
+
 export default function DiaryPrintPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
@@ -92,13 +102,73 @@ export default function DiaryPrintPage() {
   const profileRef = useRef<Profile | null>(null)
   const [viewMode, setViewMode] = useState<'preview' | 'scroll'>('preview')
   const [currentPage, setCurrentPage] = useState(0)
+  const [monthlyContents, setMonthlyContents] = useState<Record<string, MonthlyContentResponse>>({})
+  const [yearlyContent, setYearlyContent] = useState<YearlyContentResponse | null>(null)
+  const [isSpreadView, setIsSpreadView] = useState(false) // SSR-safe default
 
-  // Total pages: cover(1) + blank(1) + days * 2 (left + right)
-  const totalPages = 2 + days.length * 2
+  // Detect wide viewport for spread (side-by-side) display
+  useEffect(() => {
+    const SPREAD_MIN_WIDTH = 1200
+    const check = () => setIsSpreadView(window.innerWidth >= SPREAD_MIN_WIDTH)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
-  const goToPage = useCallback((page: number) => {
-    setCurrentPage(Math.max(0, Math.min(page, totalPages - 1)))
-  }, [totalPages])
+  // Build flat page array
+  const pages: PageEntry[] = useMemo(() => {
+    const result: PageEntry[] = [{ type: 'cover' }, { type: 'blank' }]
+
+    // Determine years covered
+    const years = new Set<number>()
+    days.forEach(d => years.add(parseInt(d.date.slice(0, 4))))
+
+    // Add year summary if available
+    if (yearlyContent) {
+      result.push({ type: 'year-summary', year: yearlyContent.year })
+    }
+
+    // Group days by month
+    const daysByMonth = new Map<string, DailyContentResponse[]>()
+    days.forEach(d => {
+      const ym = d.date.slice(0, 7)
+      if (!daysByMonth.has(ym)) daysByMonth.set(ym, [])
+      daysByMonth.get(ym)!.push(d)
+    })
+
+    // For each month, add month summary + daily pages
+    const sortedMonths = Array.from(daysByMonth.keys()).sort()
+    for (const ym of sortedMonths) {
+      if (monthlyContents[ym]) {
+        result.push({ type: 'month-summary', yearMonth: ym })
+      }
+      const monthDays = daysByMonth.get(ym)!
+      monthDays.forEach(d => {
+        const dayIndex = days.indexOf(d)
+        result.push({ type: 'guidance', dayIndex, date: d.date })
+        result.push({ type: 'recording', dayIndex, date: d.date })
+      })
+    }
+
+    // If no months found (empty days), still return cover+blank
+    return result
+  }, [days, monthlyContents, yearlyContent])
+
+  const totalPages = pages.length
+
+  const goToPage = useCallback((target: number) => {
+    let page = Math.max(0, Math.min(target, totalPages - 1))
+    // In spread view, skip recording pages absorbed into spreads
+    if (isSpreadView && pages[page]?.type === 'recording') {
+      const prevPage = pages[page - 1]
+      if (prevPage?.type === 'guidance' && (prevPage as { date: string }).date === (pages[page] as { date: string }).date) {
+        // This recording is part of a spread — skip it
+        page = target > currentPage ? page + 1 : page - 1
+        page = Math.max(0, Math.min(page, totalPages - 1))
+      }
+    }
+    setCurrentPage(page)
+  }, [totalPages, isSpreadView, pages, currentPage])
 
   // Keyboard navigation
   useEffect(() => {
@@ -124,13 +194,56 @@ export default function DiaryPrintPage() {
 
   // Get page label for current page
   const getPageLabel = (pageIndex: number): string => {
-    if (pageIndex === 0) return '표지'
-    if (pageIndex === 1) return '(빈 페이지)'
-    const dayIndex = Math.floor((pageIndex - 2) / 2)
-    const isLeft = (pageIndex - 2) % 2 === 0
-    const day = days[dayIndex]
-    if (!day) return ''
-    return `${day.date} ${isLeft ? '안내' : '기록'}`
+    const page = pages[pageIndex]
+    if (!page) return ''
+    switch (page.type) {
+      case 'cover': return '표지'
+      case 'blank': return '(빈 페이지)'
+      case 'year-summary': return `${page.year}년 연간 요약`
+      case 'month-summary': {
+        const [y, m] = page.yearMonth.split('-')
+        return `${y}년 ${parseInt(m)}월 요약`
+      }
+      case 'guidance': {
+        const nextPage = pages[pageIndex + 1]
+        if (isSpreadView && nextPage?.type === 'recording' && (nextPage as { date: string }).date === page.date) {
+          return `${page.date} 안내 | 기록`
+        }
+        return `${page.date} 안내`
+      }
+      case 'recording': return `${page.date} 기록`
+    }
+  }
+
+  /** Load monthly/yearly summary content for the given date range */
+  const loadSummaryData = async (startDate: string, endDate: string, profile: Profile, token: string) => {
+    const role = profile.roles?.[0]
+    const months = getMonthsInRange(startDate, endDate)
+    const years = new Set(months.map(ym => parseInt(ym.split('-')[0])))
+
+    // Load monthly contents in parallel
+    const monthlyResults: Record<string, MonthlyContentResponse> = {}
+    await Promise.all(
+      months.map(async ym => {
+        try {
+          const [y, m] = ym.split('-').map(Number)
+          const res = await api.content.getMonthly(token, y, m, role)
+          monthlyResults[ym] = res
+        } catch {
+          // skip failed months
+        }
+      })
+    )
+    setMonthlyContents(monthlyResults)
+
+    // Load yearly content (use first year in range)
+    const firstYear = Math.min(...Array.from(years))
+    try {
+      const yearRes = await api.content.getYearly(token, firstYear, role)
+      setYearlyContent(yearRes)
+    } catch {
+      setYearlyContent(null)
+    }
   }
 
   /** Reusable data loading: fetch content for a date range */
@@ -159,7 +272,10 @@ export default function DiaryPrintPage() {
       }
 
       setDays(allDays)
-    } catch (err: any) {
+
+      // Load summary data in background (don't block main loading)
+      loadSummaryData(startDate, endDate, profile, token).catch(() => {})
+    } catch (err: any) { // TODO: type this — use unknown with type guard
       if (err?.status === 401) { router.push('/login'); return }
       setError(err?.message || '데이터 로드에 실패했습니다')
     } finally {
@@ -178,9 +294,9 @@ export default function DiaryPrintPage() {
         profileRef.current = profile
 
         const today = new Date().toISOString().split('T')[0]
-        const period = profile.preferences?.diary_period || ''
-        const startDate = profile.preferences?.diary_start_date || today
-        const endDate = calcEndDate(startDate, period, profile.preferences?.diary_end_date)
+        const period = String(profile.preferences?.diary_period || '')
+        const startDate = String(profile.preferences?.diary_start_date || today)
+        const endDate = calcEndDate(startDate, period, profile.preferences?.diary_end_date != null ? String(profile.preferences.diary_end_date) : undefined)
 
         setDiaryPeriod(period)
         setDateRange({ start: startDate, end: endDate })
@@ -201,7 +317,7 @@ export default function DiaryPrintPage() {
         }
 
         await loadData(startDate, endDate, profile, token)
-      } catch (err: any) {
+      } catch (err: any) { // TODO: type this — use unknown with type guard
         if (err?.status === 401) { router.push('/login'); return }
         setError(err?.message || '데이터 로드에 실패했습니다')
         setIsLoading(false)
@@ -219,24 +335,27 @@ export default function DiaryPrintPage() {
 
     try {
       const today = new Date().toISOString().split('T')[0]
-      const periodStart = profile.preferences?.diary_start_date || today
+      const periodStart = String(profile.preferences?.diary_start_date || today)
       const periodEnd = calcEndDate(
         periodStart,
-        profile.preferences?.diary_period || '3months',
-        profile.preferences?.diary_end_date
+        String(profile.preferences?.diary_period || '3months'),
+        profile.preferences?.diary_end_date != null ? String(profile.preferences.diary_end_date) : undefined
       )
       const range = getMonthDateRange(yearMonth, periodStart, periodEnd)
       setDateRange(range)
       await loadData(range.start, range.end, profile, token)
-    } catch (err: any) {
+    } catch (err: any) { // TODO: type this — use unknown with type guard
       setError(err?.message || '월별 데이터 로드에 실패했습니다')
       setIsLoading(false)
     }
   }
 
   const paper = PAPER_SIZES[paperSize]
+  const { factor: scaleFactor, s, si } = createScaler(paper.heightMm)
   const pageWidthPx = paper.widthMm * MM_TO_PX
   const pageHeightPx = paper.heightMm * MM_TO_PX
+  // A5 이하(factor < 0.8)에서 확장 블록 숨김 (판독성 우선)
+  const showExtendedBlocks = scaleFactor >= 0.8
 
   if (isLoading) {
     return (
@@ -290,17 +409,18 @@ export default function DiaryPrintPage() {
             width: ${paper.widthMm - 16}mm !important;
             height: ${paper.heightMm - 16}mm !important;
             max-height: ${paper.heightMm - 16}mm !important;
-            overflow: hidden !important;
+            overflow: clip !important;
             page-break-after: always;
             break-after: page;
             page-break-inside: avoid;
             break-inside: avoid;
             margin: 0 !important;
-            padding: 10px 12px !important;
+            padding: ${Math.round(3 * scaleFactor)}mm ${Math.round(3.5 * scaleFactor)}mm !important;
             box-shadow: none !important;
             box-sizing: border-box;
+            font-size: ${Math.max(6, Math.round(7.5 * scaleFactor))}pt !important;
           }
-          .diary-day-spread { display: block !important; }
+          .diary-spread { display: block !important; transform: none !important; width: auto !important; }
           .diary-page-nav { display: none !important; }
         }
         @media screen {
@@ -324,8 +444,8 @@ export default function DiaryPrintPage() {
                 const profile = profileRef.current
                 const token = localStorage.getItem('access_token')
                 if (profile && token) {
-                  const start = profile.preferences?.diary_start_date || new Date().toISOString().split('T')[0]
-                  const end = calcEndDate(start, profile.preferences?.diary_period || '3months', profile.preferences?.diary_end_date)
+                  const start = String(profile.preferences?.diary_start_date || new Date().toISOString().split('T')[0])
+                  const end = calcEndDate(start, String(profile.preferences?.diary_period || '3months'), profile.preferences?.diary_end_date != null ? String(profile.preferences.diary_end_date) : undefined)
                   setDateRange({ start, end })
                   loadData(start, end, profile, token)
                 }
@@ -404,103 +524,167 @@ export default function DiaryPrintPage() {
 
       {/* Content area */}
       <div className="diary-content-area" style={{ paddingTop: '60px', fontFamily: 'serif' }}>
-        {/* Cover Page */}
-        <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', display: viewMode === 'preview' && currentPage !== 0 ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
-          <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1f2937', letterSpacing: '0.05em' }}>나의 리듬 다이어리</div>
-          <div style={{ fontSize: '20px', color: '#374151' }}>{profileName}</div>
-          <div style={{ fontSize: '16px', color: '#6b7280', borderTop: '1px solid #e5e7eb', paddingTop: '16px', textAlign: 'center' }}>
-            <div>
-              {printMode === 'monthly' && selectedMonth
-                ? formatYearMonth(selectedMonth)
-                : `${dateRange.start} ~ ${dateRange.end}`}
-            </div>
-            <div style={{ marginTop: '8px', fontSize: '14px' }}>총 {days.length}일</div>
-          </div>
-          <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '32px' }}>생성일: {new Date().toISOString().split('T')[0]}</div>
-        </div>
-
-        {/* Blank page after cover for duplex printing alignment */}
-        <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: viewMode === 'preview' && currentPage !== 1 ? 'none' : 'block' }}>
-          {viewMode === 'preview' && currentPage === 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#d1d5db', fontSize: '14px', fontFamily: 'sans-serif' }}>(양면 인쇄용 빈 페이지)</div>
-          )}
-        </div>
-
         {/* Empty state for monthly mode */}
-        {days.length === 0 && (
+        {days.length === 0 && pages.length <= 2 && (
           <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>선택한 달에 데이터가 없습니다.</div>
         )}
 
-        {/* Each day spread */}
-        {days.map((day, dayIndex) => {
-          const content = day.content
-          const qimenSlots = day.qimen_slots
+        {pages.map((page, pageIndex) => {
+          // Spread detection: is this guidance page paired with next recording?
+          const canSpread = isSpreadView
+            && page.type === 'guidance'
+            && pages[pageIndex + 1]?.type === 'recording'
+            && (pages[pageIndex + 1] as { date: string }).date === page.date
 
-          // Helper: render a compact lifestyle line (icon + title + items in one line)
-          const renderCompactLifestyleCard = (title: string, icon: string, block: { explanation?: string; [key: string]: any } | undefined, listKeys: string[]) => {
-            if (!block) return null
-            const items = listKeys.flatMap(k => {
-              const arr = block[k]
-              return Array.isArray(arr) ? arr.slice(0, 2) : []
-            })
-            if (items.length === 0) return null
+          // Visibility: in preview mode, show current page (and its spread partner)
+          const show = viewMode === 'scroll'
+            || currentPage === pageIndex
+            || (canSpread && currentPage === pageIndex) // guidance shows as spread
+            || (isSpreadView && page.type === 'recording' // recording shown via guidance spread
+                && pages[pageIndex - 1]?.type === 'guidance'
+                && (pages[pageIndex - 1] as { date: string }).date === (page as { date: string }).date
+                && currentPage === pageIndex - 1)
+
+          if (viewMode === 'preview' && !show) return null
+
+          // Skip recording pages already rendered inside spread
+          if (page.type === 'recording') {
+            const prevPage = pages[pageIndex - 1]
+            const alreadyInSpread = isSpreadView
+              && prevPage?.type === 'guidance'
+              && (prevPage as { date: string }).date === (page as { date: string }).date
+            if (alreadyInSpread) return null
+          }
+
+          // Cover page
+          if (page.type === 'cover') {
             return (
-              <div style={{ fontSize: '7.5px', color: '#4b5563', lineHeight: '1.4', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                <span style={{ fontWeight: 'bold', color: '#374151' }}>{icon} {title}:</span>{' '}
-                {items.join(' · ')}
+              <div key="cover" className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1f2937', letterSpacing: '0.05em' }}>나의 리듬 다이어리</div>
+                <div style={{ fontSize: '20px', color: '#374151' }}>{profileName}</div>
+                <div style={{ fontSize: '16px', color: '#6b7280', borderTop: '1px solid #e5e7eb', paddingTop: '16px', textAlign: 'center' }}>
+                  <div>
+                    {printMode === 'monthly' && selectedMonth
+                      ? formatYearMonth(selectedMonth)
+                      : `${dateRange.start} ~ ${dateRange.end}`}
+                  </div>
+                  <div style={{ marginTop: '8px', fontSize: '14px' }}>총 {days.length}일</div>
+                </div>
+                <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '32px' }}>생성일: {new Date().toISOString().split('T')[0]}</div>
               </div>
             )
           }
 
-          // Helper: render inline chip for small paper
-          const renderLifestyleChip = (title: string, icon: string, block: { [key: string]: any } | undefined, listKeys: string[]) => {
-            if (!block) return null
-            const items = listKeys.flatMap(k => {
-              const arr = block[k]
-              return Array.isArray(arr) ? arr.slice(0, 1) : []
-            })
-            if (items.length === 0) return null
+          // Blank page
+          if (page.type === 'blank') {
             return (
-              <span style={{ fontSize: '7px', color: '#374151', background: '#f3f4f6', borderRadius: '6px', padding: '1px 4px', whiteSpace: 'nowrap' }}>
-                {icon} {items[0]}
-              </span>
+              <div key="blank" className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                {viewMode === 'preview' && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#d1d5db', fontSize: '14px', fontFamily: 'sans-serif' }}>(양면 인쇄용 빈 페이지)</div>
+                )}
+              </div>
             )
           }
 
-          const isSmallPaper = paper.heightMm <= 220
-          const timeSlotHeight = isSmallPaper ? 14 : 16
-          const leftPageIndex = 2 + dayIndex * 2
-          const rightPageIndex = 2 + dayIndex * 2 + 1
-          const showLeft = viewMode === 'scroll' || currentPage === leftPageIndex
-          const showRight = viewMode === 'scroll' || currentPage === rightPageIndex
+          // Year summary page
+          if (page.type === 'year-summary') {
+            const yc = yearlyContent?.content
+            if (!yc) return null
+            return (
+              <YearSummaryPage
+                key={`year-${page.year}`}
+                yearlyContent={yc}
+                year={page.year}
+                scaler={{ s, si }}
+                pageWidth={pageWidthPx}
+                pageHeight={pageHeightPx}
+                style={{ display: show ? 'flex' : 'none' }}
+              />
+            )
+          }
 
-          if (viewMode === 'preview' && !showLeft && !showRight) return null
+          // Month summary page
+          if (page.type === 'month-summary') {
+            const mc = monthlyContents[page.yearMonth]?.content
+            if (!mc) return null
+            return (
+              <MonthSummaryPage
+                key={`month-${page.yearMonth}`}
+                monthlyContent={mc}
+                yearMonth={page.yearMonth}
+                scaler={{ s, si }}
+                pageWidth={pageWidthPx}
+                pageHeight={pageHeightPx}
+                style={{ display: show ? 'flex' : 'none' }}
+              />
+            )
+          }
 
-          return (
-            <div key={day.date} className="diary-day-spread">
-              {/* Left page: 오늘의 안내 (표준 10개 블록 + 압축 라이프스타일) */}
-              <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', padding: '16px 18px', boxSizing: 'border-box', overflow: 'hidden', fontSize: '10px', fontFamily: 'serif', display: showLeft ? 'flex' : 'none', flexDirection: 'column', gap: '5px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+          // Daily guidance (left) page
+          if (page.type === 'guidance') {
+            const day = days[page.dayIndex]
+            if (!day) return null
+            const content = day.content
+
+            // Helper: render a compact lifestyle line
+            const renderCompactLifestyleCard = (title: string, icon: string, block: object | undefined, listKeys: string[]) => {
+              if (!block) return null
+              const b = block as Record<string, unknown>
+              const items = listKeys.flatMap(k => {
+                const arr = b[k]
+                return Array.isArray(arr) ? arr.slice(0, 3) : []
+              })
+              if (items.length === 0) return null
+              return (
+                <div style={{ fontSize: `${s(7.5)}px`, color: '#4b5563', lineHeight: '1.4', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                  <span style={{ fontWeight: 'bold', color: '#374151' }}>{icon} {title}:</span>{' '}
+                  {items.join(' · ')}
+                </div>
+              )
+            }
+
+            // Helper: render inline chip for small paper
+            const renderLifestyleChip = (title: string, icon: string, block: object | undefined, listKeys: string[]) => {
+              if (!block) return null
+              const b = block as Record<string, unknown>
+              const items = listKeys.flatMap(k => {
+                const arr = b[k]
+                return Array.isArray(arr) ? arr.slice(0, 1) : []
+              })
+              if (items.length === 0) return null
+              return (
+                <span style={{ fontSize: `${s(7)}px`, color: '#374141', background: '#f3f4f6', borderRadius: `${si(6)}px`, padding: `1px ${si(4)}px`, whiteSpace: 'nowrap' }}>
+                  {icon} {items[0]}
+                </span>
+              )
+            }
+
+            // Guidance page inner content (reused for spread and standalone)
+            const guidancePageStyle: React.CSSProperties = { width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, background: 'white', padding: `${si(20)}px ${si(22)}px`, boxSizing: 'border-box' as const, overflow: 'clip' as const, fontSize: `${s(10)}px`, fontFamily: 'serif', display: 'flex', flexDirection: 'column' as const, gap: `${si(7)}px`, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
+
+            const guidanceInner = (
+              <>
                 {/* Header */}
-                <div style={{ borderBottom: '2px solid #1f2937', paddingBottom: '4px' }}>
+                <div style={{ borderBottom: '2px solid #1f2937', paddingBottom: `${si(4)}px` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1f2937' }}>{day.date}</span>
-                    <span style={{ fontSize: '9px', color: '#6b7280' }}>Day {dayIndex + 1} / {days.length}</span>
+                    <span style={{ fontSize: `${s(13)}px`, fontWeight: 'bold', color: '#1f2937' }}>{day.date}</span>
+                    <span style={{ fontSize: `${s(9)}px`, color: '#6b7280' }}>Day {page.dayIndex + 1} / {days.length}</span>
                   </div>
                 </div>
 
                 {/* 1. 요약 */}
                 {content?.summary && (
                   <div>
-                    <div style={{ fontWeight: 'bold', fontSize: '9px', color: '#1f2937', marginBottom: '1px' }}>오늘의 요약</div>
-                    <div style={{ color: '#4b5563', lineHeight: '1.5', fontSize: '9.5px' }}>{content.summary}</div>
+                    <div style={{ fontWeight: 'bold', fontSize: `${s(10)}px`, color: '#1f2937', marginBottom: '1px' }}>오늘의 요약</div>
+                    <div style={{ color: '#4b5563', lineHeight: '1.5', fontSize: `${s(10.5)}px` }}>{content.summary}</div>
                   </div>
                 )}
 
                 {/* 2. 키워드 */}
                 {content?.keywords && content.keywords.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: `${si(3)}px` }}>
                     {content.keywords.map((kw: string, i: number) => (
-                      <span key={i} style={{ padding: '1px 5px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '8px', color: '#374151', background: '#f9fafb' }}>{kw}</span>
+                      <span key={i} style={{ padding: `1px ${si(5)}px`, border: '1px solid #d1d5db', borderRadius: `${si(8)}px`, fontSize: `${s(8)}px`, color: '#374151', background: '#f9fafb' }}>{kw}</span>
                     ))}
                   </div>
                 )}
@@ -508,42 +692,42 @@ export default function DiaryPrintPage() {
                 {/* 3. 리듬 해설 */}
                 {content?.rhythm_description && (
                   <div>
-                    <div style={{ fontWeight: 'bold', fontSize: '9px', color: '#1f2937', marginBottom: '1px' }}>리듬 해설</div>
-                    <div style={{ color: '#4b5563', lineHeight: '1.5', fontSize: '9px' }}>{content.rhythm_description}</div>
+                    <div style={{ fontWeight: 'bold', fontSize: `${s(10)}px`, color: '#1f2937', marginBottom: '1px' }}>리듬 해설</div>
+                    <div style={{ color: '#4b5563', lineHeight: '1.5', fontSize: `${s(10.5)}px` }}>{content.rhythm_description}</div>
                   </div>
                 )}
 
                 {/* 4. 집중/주의 포인트 */}
                 {content?.focus_caution && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                    <div style={{ background: '#f0fdf4', borderRadius: '3px', padding: '3px 5px' }}>
-                      <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#16a34a', marginBottom: '1px' }}>집중 포인트</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: `${si(6)}px` }}>
+                    <div style={{ background: '#f0fdf4', borderRadius: `${si(3)}px`, padding: `${si(3)}px ${si(5)}px` }}>
+                      <div style={{ fontWeight: 'bold', fontSize: `${s(8)}px`, color: '#16a34a', marginBottom: '1px' }}>집중 포인트</div>
                       {content.focus_caution.focus?.map((item: string, i: number) => (
-                        <div key={i} style={{ fontSize: '8px', color: '#374151', lineHeight: '1.4' }}>&#10003; {item}</div>
+                        <div key={i} style={{ fontSize: `${s(8)}px`, color: '#374151', lineHeight: '1.4' }}>&#10003; {item}</div>
                       ))}
                     </div>
-                    <div style={{ background: '#fef2f2', borderRadius: '3px', padding: '3px 5px' }}>
-                      <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#dc2626', marginBottom: '1px' }}>주의 포인트</div>
+                    <div style={{ background: '#fef2f2', borderRadius: `${si(3)}px`, padding: `${si(3)}px ${si(5)}px` }}>
+                      <div style={{ fontWeight: 'bold', fontSize: `${s(8)}px`, color: '#dc2626', marginBottom: '1px' }}>주의 포인트</div>
                       {content.focus_caution.caution?.map((item: string, i: number) => (
-                        <div key={i} style={{ fontSize: '8px', color: '#374151', lineHeight: '1.4' }}>&#9888; {item}</div>
+                        <div key={i} style={{ fontSize: `${s(8)}px`, color: '#374151', lineHeight: '1.4' }}>&#9888; {item}</div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* 5. 행동 가이드 */}
+                {/* 5. 행동 가이드 — show all items */}
                 {content?.action_guide && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: `${si(6)}px` }}>
                     <div>
-                      <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#16a34a', marginBottom: '1px' }}>오늘 할 일</div>
-                      {content.action_guide.do?.slice(0, 4).map((item: string, i: number) => (
-                        <div key={i} style={{ fontSize: '8px', color: '#374151', paddingLeft: '6px', lineHeight: '1.4' }}>&#8226; {item}</div>
+                      <div style={{ fontWeight: 'bold', fontSize: `${s(8)}px`, color: '#16a34a', marginBottom: '1px' }}>오늘 할 일</div>
+                      {content.action_guide.do?.map((item: string, i: number) => (
+                        <div key={i} style={{ fontSize: `${s(8)}px`, color: '#374151', paddingLeft: `${si(6)}px`, lineHeight: '1.4' }}>&#8226; {item}</div>
                       ))}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#dc2626', marginBottom: '1px' }}>피할 것</div>
-                      {content.action_guide.avoid?.slice(0, 4).map((item: string, i: number) => (
-                        <div key={i} style={{ fontSize: '8px', color: '#374151', paddingLeft: '6px', lineHeight: '1.4' }}>&#8226; {item}</div>
+                      <div style={{ fontWeight: 'bold', fontSize: `${s(8)}px`, color: '#dc2626', marginBottom: '1px' }}>피할 것</div>
+                      {content.action_guide.avoid?.map((item: string, i: number) => (
+                        <div key={i} style={{ fontSize: `${s(8)}px`, color: '#374151', paddingLeft: `${si(6)}px`, lineHeight: '1.4' }}>&#8226; {item}</div>
                       ))}
                     </div>
                   </div>
@@ -551,56 +735,55 @@ export default function DiaryPrintPage() {
 
                 {/* 6. 시간/방향 */}
                 {content?.time_direction && (
-                  <div style={{ background: '#eff6ff', borderRadius: '3px', padding: '4px 6px' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#1d4ed8', marginBottom: '2px' }}>시간 · 방향 안내</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '8px', color: '#374151' }}>
+                  <div style={{ background: '#eff6ff', borderRadius: `${si(3)}px`, padding: `${si(4)}px ${si(6)}px` }}>
+                    <div style={{ fontWeight: 'bold', fontSize: `${s(8)}px`, color: '#1d4ed8', marginBottom: '2px' }}>시간 · 방향 안내</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: `${si(4)}px`, fontSize: `${s(8)}px`, color: '#374151' }}>
                       {content.time_direction.good_time && <div>집중 시간: {content.time_direction.good_time}</div>}
                       {content.time_direction.avoid_time && <div>주의 시간: {content.time_direction.avoid_time}</div>}
                       {(content.time_direction.good_direction || day.best_direction) && <div>좋은 방향: {content.time_direction.good_direction || day.best_direction}</div>}
                       {(content.time_direction.avoid_direction || day.avoid_direction) && <div>피할 방향: {content.time_direction.avoid_direction || day.avoid_direction}</div>}
                     </div>
                     {content.time_direction.notes && (
-                      <div style={{ fontSize: '7.5px', color: '#6b7280', marginTop: '2px' }}>{content.time_direction.notes}</div>
+                      <div style={{ fontSize: `${s(7.5)}px`, color: '#6b7280', marginTop: '2px' }}>{content.time_direction.notes}</div>
                     )}
                     {day.peak_hours && (
-                      <div style={{ fontSize: '7.5px', color: '#1d4ed8', marginTop: '1px' }}>에너지 최고 시간대: {day.peak_hours}</div>
+                      <div style={{ fontSize: `${s(7.5)}px`, color: '#1d4ed8', marginTop: '1px' }}>에너지 최고 시간대: {day.peak_hours}</div>
                     )}
                   </div>
                 )}
 
-                {/* 7. 상태 트리거 */}
-                {content?.state_trigger && (content.state_trigger.gesture || content.state_trigger.phrase) && (
-                  <div style={{ background: '#faf5ff', borderRadius: '3px', padding: '3px 5px' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#7c3aed', marginBottom: '1px' }}>상태 전환 트리거</div>
-                    <div style={{ fontSize: '8px', color: '#374151', lineHeight: '1.5' }}>
+                {/* 7. 상태 트리거 (A5 이하에서 숨김) */}
+                {showExtendedBlocks && content?.state_trigger && (content.state_trigger.gesture || content.state_trigger.phrase) && (
+                  <div style={{ background: '#faf5ff', borderRadius: `${si(3)}px`, padding: `${si(3)}px ${si(5)}px` }}>
+                    <div style={{ fontWeight: 'bold', fontSize: `${s(8)}px`, color: '#7c3aed', marginBottom: '1px' }}>상태 전환 트리거</div>
+                    <div style={{ fontSize: `${s(8)}px`, color: '#374151', lineHeight: '1.5' }}>
                       {content.state_trigger.gesture && <div>동작: {content.state_trigger.gesture}</div>}
                       {content.state_trigger.phrase && <div>문구: &ldquo;{content.state_trigger.phrase}&rdquo;</div>}
-                      {content.state_trigger.how_to && <div style={{ fontSize: '7.5px', color: '#6b7280' }}>방법: {content.state_trigger.how_to}</div>}
+                      {content.state_trigger.how_to && <div style={{ fontSize: `${s(7.5)}px`, color: '#6b7280' }}>방법: {content.state_trigger.how_to}</div>}
                     </div>
                   </div>
                 )}
 
                 {/* 8. 의미 전환 */}
                 {content?.meaning_shift && (
-                  <div style={{ borderLeft: '3px solid #f59e0b', paddingLeft: '6px' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#b45309', marginBottom: '1px' }}>오늘의 의미 전환</div>
-                    <div style={{ fontSize: '8.5px', color: '#4b5563', lineHeight: '1.5' }}>{content.meaning_shift}</div>
+                  <div style={{ borderLeft: '3px solid #f59e0b', paddingLeft: `${si(6)}px` }}>
+                    <div style={{ fontWeight: 'bold', fontSize: `${s(8)}px`, color: '#b45309', marginBottom: '1px' }}>오늘의 의미 전환</div>
+                    <div style={{ fontSize: `${s(8.5)}px`, color: '#4b5563', lineHeight: '1.5' }}>{content.meaning_shift}</div>
                   </div>
                 )}
 
                 {/* 9. 리듬 질문 */}
                 {content?.rhythm_question && (
-                  <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '4px', fontStyle: 'italic', fontSize: '9px', color: '#6b7280' }}>
+                  <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: `${si(4)}px`, fontStyle: 'italic', fontSize: `${s(9)}px`, color: '#6b7280' }}>
                     &ldquo;{content.rhythm_question}&rdquo;
                   </div>
                 )}
 
                 {/* 10. 압축 라이프스타일 가이드 */}
-                <div style={{ borderTop: '1px solid #d1d5db', paddingTop: '3px', marginTop: 'auto' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '8px', color: '#1f2937', marginBottom: '2px' }}>라이프스타일 가이드</div>
-                  {isSmallPaper ? (
-                    /* Small paper (A5/B5): inline chips, 5 categories only */
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+                <div style={{ borderTop: '1px solid #d1d5db', paddingTop: `${si(3)}px`, marginTop: 'auto' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: `${s(8)}px`, color: '#1f2937', marginBottom: '2px' }}>라이프스타일 가이드</div>
+                  {!showExtendedBlocks ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: `${si(3)}px` }}>
                       {renderLifestyleChip('건강', '💪', content?.daily_health_sports, ['recommended_activities', 'health_tips'])}
                       {renderLifestyleChip('식사', '🍽', content?.daily_meal_nutrition, ['recommended_foods'])}
                       {renderLifestyleChip('패션', '👔', content?.daily_fashion_beauty, ['color_suggestions', 'clothing_style'])}
@@ -608,8 +791,7 @@ export default function DiaryPrintPage() {
                       {renderLifestyleChip('관계', '🤝', content?.relationships_social, ['communication_style', 'relationship_tips'])}
                     </div>
                   ) : (
-                    /* Large paper (A4/B4/Letter): 2-column compact cards */
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px 12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: `1px ${si(12)}px` }}>
                       {renderCompactLifestyleCard('건강·운동', '💪', content?.daily_health_sports, ['recommended_activities', 'health_tips'])}
                       {renderCompactLifestyleCard('식사·영양', '🍽', content?.daily_meal_nutrition, ['recommended_foods', 'flavor_profile'])}
                       {renderCompactLifestyleCard('패션·뷰티', '👔', content?.daily_fashion_beauty, ['clothing_style', 'color_suggestions'])}
@@ -623,18 +805,126 @@ export default function DiaryPrintPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </>
+            )
 
-              {/* Right page: User recording area with qimen time grid */}
-              <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', padding: '16px 18px', boxSizing: 'border-box', overflow: 'hidden', display: showRight ? 'flex' : 'none', flexDirection: 'column', gap: '6px', fontSize: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+            // Spread: render guidance + recording side by side
+            if (canSpread) {
+              const recDay = days[(pages[pageIndex + 1] as { dayIndex: number }).dayIndex]
+              const recQimenSlots = recDay?.qimen_slots
+              const recTimeSlotHeight = si(20)
+              const spreadWidth = pageWidthPx * 2 + 2
+              const viewportPadding = 64
+              const availableWidth = typeof window !== 'undefined' ? window.innerWidth - viewportPadding : spreadWidth
+              const spreadScale = Math.min(1, availableWidth / spreadWidth)
+
+              return (
+                <div key={`spread-${day.date}`} className="diary-spread" style={{
+                  display: 'flex',
+                  gap: '2px',
+                  margin: '16px auto',
+                  width: `${spreadWidth}px`,
+                  transform: spreadScale < 1 ? `scale(${spreadScale})` : undefined,
+                  transformOrigin: 'top center',
+                }}>
+                  <div className="diary-page" style={guidancePageStyle}>
+                    {guidanceInner}
+                  </div>
+                  <div className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, background: 'white', padding: `${si(20)}px ${si(22)}px`, boxSizing: 'border-box', overflow: 'clip', display: 'flex', flexDirection: 'column', gap: `${si(6)}px`, fontSize: `${s(10)}px`, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                    {/* === Recording page content (inline for spread) === */}
+                    <div style={{ borderBottom: '2px solid #1f2937', paddingBottom: `${si(4)}px`, fontWeight: 'bold', fontSize: `${s(12)}px` }}>
+                      오늘의 기록
+                    </div>
+                    {(recDay?.best_direction || recDay?.peak_hours) && (
+                      <div style={{ display: 'flex', gap: `${si(8)}px`, fontSize: `${s(8)}px`, color: '#1d4ed8', background: '#eff6ff', padding: `${si(3)}px ${si(6)}px`, borderRadius: `${si(3)}px` }}>
+                        {recDay.best_direction && <span>최적 방향: {recDay.best_direction}</span>}
+                        {recDay.avoid_direction && <span>주의 방향: {recDay.avoid_direction}</span>}
+                        {recDay.peak_hours && <span>에너지 피크: {recDay.peak_hours}</span>}
+                      </div>
+                    )}
+                    <div style={{ border: '1px solid #d1d5db', borderRadius: `${si(4)}px`, padding: `${si(4)}px ${si(6)}px` }}>
+                      <div style={{ fontWeight: 'bold', fontSize: `${s(9)}px`, marginBottom: `${si(3)}px`, color: '#374151' }}>시간대별 흐름</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        {['05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23'].map(h => {
+                          const hourNum = parseInt(h, 10)
+                          const slot = getQimenSlotForHour(recQimenSlots, hourNum)
+                          const indicator = slot ? QIMEN_QUALITY_INDICATORS[slot.quality] : null
+                          const energyBar = slot ? renderEnergyBar(slot.energy_level, scaleFactor) : null
+                          return (
+                            <div key={h} style={{ display: 'flex', alignItems: 'center', height: `${recTimeSlotHeight}px`, minHeight: `${recTimeSlotHeight}px`, backgroundColor: slot ? QIMEN_QUALITY_COLORS[slot.quality] : 'transparent' }}>
+                              <span style={{ fontSize: `${s(8)}px`, fontWeight: 'bold', color: '#374151', width: `${si(28)}px`, flexShrink: 0 }}>{h}:00</span>
+                              {slot ? (
+                                <>
+                                  <span style={{ fontSize: `${s(8)}px`, fontWeight: 'bold', color: indicator!.color, width: `${si(10)}px`, flexShrink: 0 }}>{indicator!.symbol}</span>
+                                  {energyBar && (
+                                    <span style={{ ...energyBar.containerStyle, flexShrink: 0, marginRight: `${si(3)}px` }}>
+                                      <span style={energyBar.fillStyle} />
+                                    </span>
+                                  )}
+                                  <span style={{ fontSize: `${s(7)}px`, color: '#6b7280', width: `${si(22)}px`, flexShrink: 0 }}>{slot.direction}</span>
+                                  <div style={{ flex: 1, borderBottom: '1px dashed #d1d5db', height: '100%' }} />
+                                </>
+                              ) : (
+                                <div style={{ flex: 1, borderBottom: '1px dashed #d1d5db', height: '100%' }} />
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                    <div style={{ border: '1px solid #d1d5db', borderRadius: `${si(4)}px`, padding: `${si(4)}px ${si(6)}px`, flex: '0 0 auto' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: `${s(9)}px`, marginBottom: `${si(3)}px` }}>오늘의 할 일</div>
+                      {[1,2,3,4,5,6].map(i => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: `${si(4)}px`, borderBottom: '1px dashed #e5e7eb', padding: `${si(2)}px 0` }}>
+                          <div style={{ width: `${si(9)}px`, height: `${si(9)}px`, border: '1px solid #9ca3af', borderRadius: '2px', flexShrink: 0 }} />
+                          <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ flex: '0 0 auto' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: `${s(9)}px`, marginBottom: '2px' }}>감사한 일</div>
+                      {[1,2,3].map(i => <div key={i} style={{ borderBottom: '1px dashed #e5e7eb', height: `${si(18)}px` }} />)}
+                    </div>
+                    <div style={{ flex: '0 0 auto' }}>
+                      <span style={{ fontWeight: 'bold', fontSize: `${s(9)}px` }}>오늘의 한 줄: </span>
+                      <span style={{ color: '#d1d5db' }}>_________________________</span>
+                    </div>
+                    <div style={{ flex: 1, borderTop: '1px solid #d1d5db', paddingTop: `${si(3)}px`, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: `${s(9)}px`, marginBottom: `${si(3)}px`, color: '#374151' }}>메모</div>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        {[1,2,3,4,5,6,7,8,9,10].map(i => <div key={i} style={{ borderBottom: '1px dashed #e5e7eb', flex: 1 }} />)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            // Non-spread: render guidance standalone
+            return (
+              <div key={`guidance-${day.date}`} className="diary-page" style={{ ...guidancePageStyle, margin: '16px auto' }}>
+                {guidanceInner}
+              </div>
+            )
+          }
+
+          // Daily recording (right) page (standalone — only reached when not in spread)
+          if (page.type === 'recording') {
+            const day = days[page.dayIndex]
+            if (!day) return null
+            const qimenSlots = day.qimen_slots
+            const timeSlotHeight = si(20)
+
+            return (
+              <div key={`recording-${day.date}`} className="diary-page" style={{ width: `${pageWidthPx}px`, height: `${pageHeightPx}px`, margin: '16px auto', background: 'white', padding: `${si(20)}px ${si(22)}px`, boxSizing: 'border-box', overflow: 'clip', display: 'flex', flexDirection: 'column', gap: `${si(6)}px`, fontSize: `${s(10)}px`, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
                 {/* Header */}
-                <div style={{ borderBottom: '2px solid #1f2937', paddingBottom: '4px', fontWeight: 'bold', fontSize: '12px' }}>
+                <div style={{ borderBottom: '2px solid #1f2937', paddingBottom: `${si(4)}px`, fontWeight: 'bold', fontSize: `${s(12)}px` }}>
                   오늘의 기록
                 </div>
 
                 {/* Qimen summary bar */}
                 {(day.best_direction || day.peak_hours) && (
-                  <div style={{ display: 'flex', gap: '8px', fontSize: '8px', color: '#1d4ed8', background: '#eff6ff', padding: '3px 6px', borderRadius: '3px' }}>
+                  <div style={{ display: 'flex', gap: `${si(8)}px`, fontSize: `${s(8)}px`, color: '#1d4ed8', background: '#eff6ff', padding: `${si(3)}px ${si(6)}px`, borderRadius: `${si(3)}px` }}>
                     {day.best_direction && <span>최적 방향: {day.best_direction}</span>}
                     {day.avoid_direction && <span>주의 방향: {day.avoid_direction}</span>}
                     {day.peak_hours && <span>에너지 피크: {day.peak_hours}</span>}
@@ -642,26 +932,26 @@ export default function DiaryPrintPage() {
                 )}
 
                 {/* Qimen Time Grid */}
-                <div style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '4px 6px' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '9px', marginBottom: '3px', color: '#374151' }}>시간대별 흐름</div>
+                <div style={{ border: '1px solid #d1d5db', borderRadius: `${si(4)}px`, padding: `${si(4)}px ${si(6)}px` }}>
+                  <div style={{ fontWeight: 'bold', fontSize: `${s(9)}px`, marginBottom: `${si(3)}px`, color: '#374151' }}>시간대별 흐름</div>
                   <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                     {['05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23'].map(h => {
                       const hourNum = parseInt(h, 10)
                       const slot = getQimenSlotForHour(qimenSlots, hourNum)
                       const indicator = slot ? QIMEN_QUALITY_INDICATORS[slot.quality] : null
-                      const energyBar = slot ? renderEnergyBar(slot.energy_level) : null
+                      const energyBar = slot ? renderEnergyBar(slot.energy_level, scaleFactor) : null
                       return (
                         <div key={h} style={{ display: 'flex', alignItems: 'center', height: `${timeSlotHeight}px`, minHeight: `${timeSlotHeight}px`, backgroundColor: slot ? QIMEN_QUALITY_COLORS[slot.quality] : 'transparent' }}>
-                          <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#374151', width: '28px', flexShrink: 0 }}>{h}:00</span>
+                          <span style={{ fontSize: `${s(8)}px`, fontWeight: 'bold', color: '#374141', width: `${si(28)}px`, flexShrink: 0 }}>{h}:00</span>
                           {slot ? (
                             <>
-                              <span style={{ fontSize: '8px', fontWeight: 'bold', color: indicator!.color, width: '10px', flexShrink: 0 }}>{indicator!.symbol}</span>
+                              <span style={{ fontSize: `${s(8)}px`, fontWeight: 'bold', color: indicator!.color, width: `${si(10)}px`, flexShrink: 0 }}>{indicator!.symbol}</span>
                               {energyBar && (
-                                <span style={{ ...energyBar.containerStyle, flexShrink: 0, marginRight: '3px' }}>
+                                <span style={{ ...energyBar.containerStyle, flexShrink: 0, marginRight: `${si(3)}px` }}>
                                   <span style={energyBar.fillStyle} />
                                 </span>
                               )}
-                              <span style={{ fontSize: '7px', color: '#6b7280', width: '22px', flexShrink: 0 }}>{slot.direction}</span>
+                              <span style={{ fontSize: `${s(7)}px`, color: '#6b7280', width: `${si(22)}px`, flexShrink: 0 }}>{slot.direction}</span>
                               <div style={{ flex: 1, borderBottom: '1px dashed #d1d5db', height: '100%' }} />
                             </>
                           ) : (
@@ -673,12 +963,12 @@ export default function DiaryPrintPage() {
                   </div>
                 </div>
 
-                {/* Todos */}
-                <div style={{ border: '1px solid #d1d5db', borderRadius: '4px', padding: '4px 6px', flex: '0 0 auto' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '9px', marginBottom: '3px' }}>오늘의 할 일</div>
-                  {[1,2,3,4].map(i => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', borderBottom: '1px dashed #e5e7eb', padding: '2px 0' }}>
-                      <div style={{ width: '9px', height: '9px', border: '1px solid #9ca3af', borderRadius: '2px', flexShrink: 0 }} />
+                {/* Todos — 6 items */}
+                <div style={{ border: '1px solid #d1d5db', borderRadius: `${si(4)}px`, padding: `${si(4)}px ${si(6)}px`, flex: '0 0 auto' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: `${s(9)}px`, marginBottom: `${si(3)}px` }}>오늘의 할 일</div>
+                  {[1,2,3,4,5,6].map(i => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: `${si(4)}px`, borderBottom: '1px dashed #e5e7eb', padding: `${si(2)}px 0` }}>
+                      <div style={{ width: `${si(9)}px`, height: `${si(9)}px`, border: '1px solid #9ca3af', borderRadius: '2px', flexShrink: 0 }} />
                       <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
                     </div>
                   ))}
@@ -686,26 +976,28 @@ export default function DiaryPrintPage() {
 
                 {/* Gratitude */}
                 <div style={{ flex: '0 0 auto' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '9px', marginBottom: '2px' }}>감사한 일</div>
-                  {[1,2,3].map(i => <div key={i} style={{ borderBottom: '1px dashed #e5e7eb', height: '14px' }} />)}
+                  <div style={{ fontWeight: 'bold', fontSize: `${s(9)}px`, marginBottom: '2px' }}>감사한 일</div>
+                  {[1,2,3].map(i => <div key={i} style={{ borderBottom: '1px dashed #e5e7eb', height: `${si(18)}px` }} />)}
                 </div>
 
                 {/* One-liner */}
                 <div style={{ flex: '0 0 auto' }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '9px' }}>오늘의 한 줄: </span>
+                  <span style={{ fontWeight: 'bold', fontSize: `${s(9)}px` }}>오늘의 한 줄: </span>
                   <span style={{ color: '#d1d5db' }}>_________________________</span>
                 </div>
 
-                {/* Memo - fills remaining space */}
-                <div style={{ flex: 1, borderTop: '1px solid #d1d5db', paddingTop: '3px', display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '9px', marginBottom: '3px', color: '#374151' }}>메모</div>
+                {/* Memo - fills remaining space, 10 lines */}
+                <div style={{ flex: 1, borderTop: '1px solid #d1d5db', paddingTop: `${si(3)}px`, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: `${s(9)}px`, marginBottom: `${si(3)}px`, color: '#374151' }}>메모</div>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    {[1,2,3,4,5,6,7,8].map(i => <div key={i} style={{ borderBottom: '1px dashed #e5e7eb', flex: 1 }} />)}
+                    {[1,2,3,4,5,6,7,8,9,10].map(i => <div key={i} style={{ borderBottom: '1px dashed #e5e7eb', flex: 1 }} />)}
                   </div>
                 </div>
               </div>
-            </div>
-          )
+            )
+          }
+
+          return null
         })}
       </div>
     </>
