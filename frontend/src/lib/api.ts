@@ -120,15 +120,9 @@ async function fetchAPI<T>(
     if (refreshed) {
       // 갱신된 토큰으로 원래 요청 재시도
       const newToken = localStorage.getItem('access_token')
-      const retryHeaders = { ...options.headers } as Record<string, string>
-      if (newToken && retryHeaders['Authorization']) {
+      const retryHeaders = { ...(options.headers as Record<string, string>) }
+      if (newToken) {
         retryHeaders['Authorization'] = `Bearer ${newToken}`
-      } else if (newToken) {
-        // Authorization 헤더가 원래 options.headers에 있었는지 확인
-        const origAuth = (options.headers as Record<string, string>)?.['Authorization']
-        if (origAuth) {
-          retryHeaders['Authorization'] = `Bearer ${newToken}`
-        }
       }
       return fetchAPI<T>(endpoint, { ...options, headers: retryHeaders }, true)
     } else {
