@@ -20,6 +20,7 @@ import type {
   SuccessResponse,
   Role
 } from '@/types'
+import type { Recipient, RecipientCreate, RecipientUpdate } from '@/types/recipient'
 
 // Use empty string to make same-origin requests through Next.js API Route proxy
 // This solves CORS issues by routing all requests through /api/* routes
@@ -286,10 +287,12 @@ export const daily = {
   getContent: async (
     token: string,
     date: string,
-    role?: Role
+    role?: Role,
+    recipientId?: string | null
   ): Promise<DailyContentResponse> => {
     const params = new URLSearchParams()
     if (role) params.append('role', role)
+    if (recipientId) params.append('recipient_id', recipientId)
 
     return fetchAPI<DailyContentResponse>(
       `/api/daily/${date}${params.toString() ? `?${params.toString()}` : ''}`,
@@ -329,10 +332,12 @@ export const daily = {
     token: string,
     startDate: string,
     endDate: string,
-    role?: Role
+    role?: Role,
+    recipientId?: string | null
   ): Promise<DailyContentResponse[]> => {
     const params = new URLSearchParams()
     if (role) params.append('role', role)
+    if (recipientId) params.append('recipient_id', recipientId)
 
     return fetchAPI<DailyContentResponse[]>(
       `/api/daily/range/${startDate}/${endDate}${params.toString() ? `?${params.toString()}` : ''}`,
@@ -458,6 +463,54 @@ export const logs = {
 }
 
 // ============================================================================
+// Recipients API
+// ============================================================================
+
+export const recipients = {
+  async list(token: string): Promise<Recipient[]> {
+    return fetchAPI<Recipient[]>('/api/recipients', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  },
+
+  async get(token: string, id: string): Promise<Recipient> {
+    return fetchAPI<Recipient>(`/api/recipients/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  },
+
+  async create(token: string, data: RecipientCreate): Promise<Recipient> {
+    return fetchAPI<Recipient>('/api/recipients', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    })
+  },
+
+  async update(token: string, id: string, data: RecipientUpdate): Promise<Recipient> {
+    return fetchAPI<Recipient>(`/api/recipients/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    })
+  },
+
+  async delete(token: string, id: string): Promise<void> {
+    return fetchAPI<void>(`/api/recipients/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  },
+
+  async setDefault(token: string, id: string): Promise<Recipient> {
+    return fetchAPI<Recipient>(`/api/recipients/${id}/default`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  },
+}
+
+// ============================================================================
 // Export
 // ============================================================================
 
@@ -466,7 +519,8 @@ export const api = {
   profile,
   daily,
   content,
-  logs
+  logs,
+  recipients,
 }
 
 export { APIError }

@@ -23,6 +23,7 @@ from src.rhythm.models import BirthInfo, Gender
 from src.rhythm.saju import calculate_saju, analyze_daily_fortune, analyze_monthly_rhythm
 from src.content.assembly import assemble_daily_content, assemble_monthly_content
 from src.translation import translate_daily_content, Role
+from src.api.helpers import get_birth_data
 
 router = APIRouter(prefix="/api/pdf", tags=["PDF"])
 
@@ -48,6 +49,7 @@ async def generate_daily_pdf(
     target_date: datetime.date,
     role: Optional[Role] = Query(None, description="역할 (학생/직장인/프리랜서)"),
     use_markdown: bool = Query(False, description="Markdown 파일 사용 여부"),
+    recipient_id: Optional[str] = Query(None),
     authorization: str = Header(...),
     supabase: Client = Depends(get_supabase)
 ):
@@ -114,7 +116,7 @@ async def generate_daily_pdf(
         else:
             # Existing logic: Generate from DB
             # 2. 프로필 조회
-            profile = _get_profile_data(user_id, supabase_db)
+            profile = get_birth_data(user_id, recipient_id, supabase_db)
 
             # 3. BirthInfo 생성
             birth_info = BirthInfo(
@@ -181,6 +183,7 @@ async def generate_monthly_pdf(
     year: int,
     month: int,
     role: Optional[Role] = Query(None, description="역할 (학생/직장인/프리랜서)"),
+    recipient_id: Optional[str] = Query(None),
     authorization: str = Header(...),
     supabase: Client = Depends(get_supabase)
 ):
@@ -222,7 +225,7 @@ async def generate_monthly_pdf(
         supabase_db = SupabaseClient.create_user_db_client(token)
 
         # 3. 프로필 조회
-        profile = _get_profile_data(user_id, supabase_db)
+        profile = get_birth_data(user_id, recipient_id, supabase_db)
 
         # 4. BirthInfo 생성
         birth_info = BirthInfo(

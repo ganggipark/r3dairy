@@ -17,6 +17,7 @@ from src.rhythm.saju import calculate_saju, analyze_daily_fortune
 from src.rhythm.qimen import calculate_daily_qimen, get_daily_summary, HourlyQimenResult
 from src.content.assembly import assemble_daily_content
 from src.translation import translate_daily_content, Role
+from src.api.helpers import get_birth_data
 
 # Import markdown library (install with: pip install markdown)
 try:
@@ -265,6 +266,7 @@ async def get_daily_markdown_html(
 async def get_daily_content(
     target_date: datetime.date,
     role: Optional[Role] = Query(None, description="역할 (student, office_worker, freelancer)"),
+    recipient_id: Optional[str] = Query(None, description="대상자 ID (없으면 본인 프로필 사용)"),
     authorization: Optional[str] = Header(None),
     supabase_auth: Client = Depends(get_supabase),
 ):
@@ -303,7 +305,7 @@ async def get_daily_content(
 
     try:
         # 1. 프로필 데이터 조회 (RLS 적용)
-        profile = _get_profile_data(user_id, supabase_db)
+        profile = get_birth_data(user_id, recipient_id, supabase_db)
 
         import logging
         logger = logging.getLogger(__name__)
@@ -422,6 +424,7 @@ async def get_daily_content_range(
     start_date: datetime.date,
     end_date: datetime.date,
     role: Optional[Role] = Query(None),
+    recipient_id: Optional[str] = Query(None),
     authorization: Optional[str] = Header(None),
     supabase_auth: Client = Depends(get_supabase),
 ):
@@ -468,7 +471,7 @@ async def get_daily_content_range(
             )
 
         # 프로필 데이터 조회 (RLS 적용)
-        profile = _get_profile_data(user_id, supabase_db)
+        profile = get_birth_data(user_id, recipient_id, supabase_db)
 
         # BirthInfo 생성
         birth_info = BirthInfo(

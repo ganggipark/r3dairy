@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import TimeGrid from '@/components/TimeGrid'
 import DailyMarkdown from '@/components/DailyMarkdown'
+import RecipientSelector from '@/components/RecipientSelector'
 
 export default function TodayPage() {
   const router = useRouter()
@@ -28,6 +29,7 @@ export default function TodayPage() {
   const [dailyContent, setDailyContent] = useState<DailyContentResponse | null>(null)
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [userRoles, setUserRoles] = useState<Role[]>([])
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'standard' | 'markdown'>('standard')
   const [hasDiaryPeriod, setHasDiaryPeriod] = useState(false)
 
@@ -141,7 +143,7 @@ export default function TodayPage() {
         let content
         try {
           console.log('[DEBUG] Fetching daily content for:', today, 'role:', roles[0])
-          content = await api.daily.getContent(token, today, roles[0])
+          content = await api.daily.getContent(token, today, roles[0], selectedRecipientId)
           console.log('[DEBUG] Daily content response:', {
             date: content.date,
             role: content.role,
@@ -157,7 +159,7 @@ export default function TodayPage() {
             if (!newToken) return
             token = newToken
             try {
-              content = await api.daily.getContent(token, today, roles[0])
+              content = await api.daily.getContent(token, today, roles[0], selectedRecipientId)
               console.log('[DEBUG] Daily content loaded after refresh')
             } catch (retryErr) {
               console.error('[ERROR] Daily content failed after refresh:', retryErr)
@@ -210,7 +212,7 @@ export default function TodayPage() {
 
     loadData()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, today])
+  }, [router, today, selectedRecipientId])
 
   // 역할 변경 시 콘텐츠 다시 로드
   const handleRoleChange = async (newRole: Role) => {
@@ -219,7 +221,7 @@ export default function TodayPage() {
 
     setSelectedRole(newRole)
     try {
-      const content = await api.daily.getContent(token, today, newRole)
+      const content = await api.daily.getContent(token, today, newRole, selectedRecipientId)
       setDailyContent(content)
     } catch (err: any) { // TODO: type this — use unknown with type guard
       setError('콘텐츠를 불러오는 데 실패했습니다')
@@ -344,6 +346,13 @@ export default function TodayPage() {
                   </Button>
                 </div>
               )}
+
+              {/* 수신자 선택 */}
+              <RecipientSelector
+                value={selectedRecipientId}
+                onChange={setSelectedRecipientId}
+                className="w-48"
+              />
 
               {/* 역할 선택 */}
               {userRoles.length > 1 && (

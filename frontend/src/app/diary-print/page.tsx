@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import type { DailyContentResponse, MonthlyContentResponse, YearlyContentResponse, Profile } from '@/types'
 import PaperSizeSelector, { PAPER_SIZES, PaperSize } from '@/components/PaperSizeSelector'
+import RecipientSelector from '@/components/RecipientSelector'
 import { getQimenSlotForHour, QIMEN_QUALITY_COLORS, QIMEN_QUALITY_INDICATORS, renderEnergyBar } from '@/lib/qimen-print'
 import { createScaler, MM_TO_PX } from '@/lib/print-utils'
 import MonthSummaryPage from '@/components/print/MonthSummaryPage'
@@ -98,6 +99,7 @@ export default function DiaryPrintPage() {
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
   const [printMode, setPrintMode] = useState<'full' | 'monthly'>('full')
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null)
   const [availableMonths, setAvailableMonths] = useState<string[]>([])
   const profileRef = useRef<Profile | null>(null)
   const [viewMode, setViewMode] = useState<'preview' | 'scroll'>('preview')
@@ -247,7 +249,7 @@ export default function DiaryPrintPage() {
   }
 
   /** Reusable data loading: fetch content for a date range */
-  const loadData = async (startDate: string, endDate: string, profile: Profile, token: string) => {
+  const loadData = async (startDate: string, endDate: string, profile: Profile, token: string, recipientId?: string | null) => {
     setIsLoading(true)
     setError('')
 
@@ -259,7 +261,7 @@ export default function DiaryPrintPage() {
       for (let i = 0; i < chunks.length; i++) {
         const { start, end } = chunks[i]
         try {
-          const rangeData = await api.daily.getContentRange(token, start, end, profile.roles?.[0])
+          const rangeData = await api.daily.getContentRange(token, start, end, profile.roles?.[0], recipientId)
           if (Array.isArray(rangeData)) {
             allDays.push(...rangeData)
           }
@@ -316,7 +318,7 @@ export default function DiaryPrintPage() {
           return
         }
 
-        await loadData(startDate, endDate, profile, token)
+        await loadData(startDate, endDate, profile, token, selectedRecipientId)
       } catch (err: any) { // TODO: type this — use unknown with type guard
         if (err?.status === 401) { router.push('/login'); return }
         setError(err?.message || '데이터 로드에 실패했습니다')
@@ -326,7 +328,7 @@ export default function DiaryPrintPage() {
 
     loadAll()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router])
+  }, [router, selectedRecipientId])
 
   const loadMonthData = async (yearMonth: string) => {
     const profile = profileRef.current
@@ -343,7 +345,7 @@ export default function DiaryPrintPage() {
       )
       const range = getMonthDateRange(yearMonth, periodStart, periodEnd)
       setDateRange(range)
-      await loadData(range.start, range.end, profile, token)
+      await loadData(range.start, range.end, profile, token, selectedRecipientId)
     } catch (err: any) { // TODO: type this — use unknown with type guard
       setError(err?.message || '월별 데이터 로드에 실패했습니다')
       setIsLoading(false)
@@ -447,7 +449,7 @@ export default function DiaryPrintPage() {
                   const start = String(profile.preferences?.diary_start_date || new Date().toISOString().split('T')[0])
                   const end = calcEndDate(start, String(profile.preferences?.diary_period || '3months'), profile.preferences?.diary_end_date != null ? String(profile.preferences.diary_end_date) : undefined)
                   setDateRange({ start, end })
-                  loadData(start, end, profile, token)
+                  loadData(start, end, profile, token, selectedRecipientId)
                 }
               }
             }}
@@ -514,6 +516,10 @@ export default function DiaryPrintPage() {
 
         <span style={{ fontSize: '13px', color: '#6b7280', marginLeft: viewMode === 'preview' ? '0' : '8px' }}>{days.length}일</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+          <RecipientSelector
+            value={selectedRecipientId}
+            onChange={setSelectedRecipientId}
+          />
           <span style={{ fontSize: '13px', color: '#6b7280' }}>용지:</span>
           <PaperSizeSelector paperSize={paperSize} onChange={setPaperSize} />
         </div>

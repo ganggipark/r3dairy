@@ -13,6 +13,7 @@ from src.rhythm.models import BirthInfo, Gender
 from src.rhythm.saju import calculate_saju, analyze_monthly_rhythm, analyze_yearly_rhythm
 from src.content.assembly import assemble_monthly_content, assemble_yearly_content
 from src.translation.models import Role
+from src.api.helpers import get_birth_data
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ async def get_monthly_content(
     year: int,
     month: int,
     role: Optional[Role] = Query(None),
+    recipient_id: Optional[str] = Query(None),
     authorization: Optional[str] = Header(None),
     supabase_auth: Client = Depends(get_supabase),
 ):
@@ -87,7 +89,7 @@ async def get_monthly_content(
             )
 
         # 프로필 조회 (RLS 적용)
-        profile = _get_profile_data(user_id, supabase_db)
+        profile = get_birth_data(user_id, recipient_id, supabase_db)
 
         # BirthInfo 생성
         birth_info = BirthInfo(
@@ -134,6 +136,7 @@ async def get_monthly_content(
 async def get_yearly_content(
     year: int,
     role: Optional[Role] = Query(None),
+    recipient_id: Optional[str] = Query(None),
     authorization: Optional[str] = Header(None),
     supabase_auth: Client = Depends(get_supabase),
 ):
@@ -173,7 +176,7 @@ async def get_yearly_content(
             )
 
         # 프로필 조회 (RLS 적용)
-        profile = _get_profile_data(user_id, supabase_db)
+        profile = get_birth_data(user_id, recipient_id, supabase_db)
 
         # BirthInfo 생성
         birth_info = BirthInfo(

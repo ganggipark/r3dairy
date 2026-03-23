@@ -93,7 +93,7 @@ async def root():
     }
 
 # Import API routers
-from src.api import auth, profile, daily, monthly, logs, profiles, surveys, webhook, forms
+from src.api import auth, profile, daily, monthly, logs, profiles, surveys, webhook, forms, recipients
 # PDF router disabled on Windows (WeasyPrint requires GTK+)
 # from src.api import pdf
 
@@ -107,6 +107,7 @@ app.include_router(profiles.router)
 app.include_router(surveys.router)
 app.include_router(webhook.router)
 app.include_router(forms.router)
+app.include_router(recipients.router)
 # app.include_router(pdf.router)
 
 if __name__ == "__main__":
