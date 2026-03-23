@@ -14,22 +14,42 @@ export async function GET(
     const { date } = params
     const searchParams = request.nextUrl.searchParams
     const role = searchParams.get('role')
+    const recipientId = searchParams.get('recipient_id')
     const { user, token } = await getAuthUser(request)
 
     const supabase = createUserClient(token)
 
-    // 1. Get user profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+    // 1. Get birth data (from recipient or own profile)
+    let profileData: { name: string; birth_date: string; birth_time: string; gender: string; birth_place: string | null }
 
-    if (profileError || !profile) {
-      return NextResponse.json(
-        { detail: '프로필이 존재하지 않습니다. 먼저 프로필을 생성해주세요.' },
-        { status: 404 }
-      )
+    if (recipientId) {
+      const { data: recipient, error: recipientError } = await supabase
+        .from('diary_recipients')
+        .select('*')
+        .eq('id', recipientId)
+        .single()
+
+      if (recipientError || !recipient) {
+        return NextResponse.json({ detail: '대상자를 찾을 수 없습니다.' }, { status: 404 })
+      }
+      if (recipient.owner_id !== user.id) {
+        return NextResponse.json({ detail: '접근 권한이 없습니다.' }, { status: 403 })
+      }
+      profileData = recipient
+    } else {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError || !profile) {
+        return NextResponse.json(
+          { detail: '프로필이 존재하지 않습니다. 먼저 프로필을 생성해주세요.' },
+          { status: 404 }
+        )
+      }
+      profileData = profile
     }
 
     // 2. Run saju calculation pipeline
@@ -41,11 +61,11 @@ export async function GET(
       const { calculateDailyQimen, getDailySummary } = await import('@/lib/content/qimen-engine')
 
       const birthInfo = {
-        name: profile.name,
-        birthDate: profile.birth_date,
-        birthTime: profile.birth_time,
-        gender: profile.gender as 'male' | 'female',
-        birthPlace: profile.birth_place || '서울',
+        name: profileData.name,
+        birthDate: profileData.birth_date,
+        birthTime: profileData.birth_time,
+        gender: profileData.gender as 'male' | 'female',
+        birthPlace: profileData.birth_place || '서울',
       }
 
       // Saju calculation
@@ -64,9 +84,9 @@ export async function GET(
       let qimenSlots = null
       let qimenSummary: Record<string, unknown> = {}
       try {
-        const qimenResults = calculateDailyQimen(profile.birth_date, date)
+        const qimenResults = calculateDailyQimen(profileData.birth_date, date)
         qimenSlots = qimenResults
-        const summary = getDailySummary(profile.birth_date, date)
+        const summary = getDailySummary(profileData.birth_date, date)
         qimenSummary = {
           best_direction: summary.best_direction,
           avoid_direction: summary.avoid_direction,
