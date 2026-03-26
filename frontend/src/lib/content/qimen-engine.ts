@@ -46,10 +46,11 @@ const GATE_LABELS = [
 ]
 
 function dateToDayIndex(dateStr: string): number {
-  const JIAZI = new Date(1900, 0, 31)
-  const target = new Date(dateStr)
-  const diff = Math.floor((target.getTime() - JIAZI.getTime()) / (1000 * 60 * 60 * 24))
-  return ((diff % 60) + 60) % 60
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const baseDate = Date.UTC(1900, 0, 1)
+  const targetDate = Date.UTC(year, month - 1, day)
+  const dayDiff = Math.floor((targetDate - baseDate) / (1000 * 60 * 60 * 24))
+  return ((10 + dayDiff) % 60 + 60) % 60
 }
 
 export function calculateDailyQimen(birthDate: string, targetDate: string): QimenTimeSlot[] {

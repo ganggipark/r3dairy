@@ -69,8 +69,26 @@ const SHENG_MAP: Record<number, number> = { 0: 1, 1: 2, 2: 3, 3: 4, 4: 0 }
 /** 상극: 木克土, 火克金, 土克水, 金克木, 水克火 */
 const KE_MAP: Record<number, number> = { 0: 2, 1: 3, 2: 4, 3: 0, 4: 1 }
 
-/** 甲子日 기준점 (1900-01-31) */
-const JIAZI_DATE = new Date(1900, 0, 31)
+/**
+ * 일주(日柱) 인덱스 계산 — sajuCalculator.ts와 동일한 기준
+ * 기준: 1900-01-01 = 甲戌(index 10)
+ * dayDiff로부터 60갑자 인덱스를 직접 계산 (JIAZI_DATE 불필요)
+ */
+function getDayPillarIndex(dateStr: string): number {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const baseDate = Date.UTC(1900, 0, 1)
+  const targetDate = Date.UTC(year, month - 1, day)
+  const dayDiff = Math.floor((targetDate - baseDate) / (1000 * 60 * 60 * 24))
+  return ((10 + dayDiff) % 60 + 60) % 60
+}
+
+/** 날짜 객체로부터 일주 인덱스 계산 (내부 월간 루프용) */
+function getDayPillarIndexFromDate(d: Date): number {
+  const baseDate = Date.UTC(1900, 0, 1)
+  const targetDate = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
+  const dayDiff = Math.floor((targetDate - baseDate) / (1000 * 60 * 60 * 24))
+  return ((10 + dayDiff) % 60 + 60) % 60
+}
 
 /** 12지지별 시간대 */
 const BRANCH_TIMES: Record<string, string> = {
@@ -318,11 +336,10 @@ export function analyzeDailyFortune(
   const strength = gyeokguk.강약 || '중화'
   const season = gyeokguk.계절 || '봄'
 
-  // 일진(日辰) 계산 - 60간지 순환으로 당일 천간/지지 계산
-  const target = parseDate(targetDate)
-  const delta = daysBetween(JIAZI_DATE, target)
-  const todayStemIdx = ((delta % 10) + 10) % 10
-  const todayBranchIdx = ((delta % 12) + 12) % 12
+  // 일진(日辰) 계산 - 60간지 순환으로 당일 천간/지지 계산 (sajuCalculator.ts 기준)
+  const cycleIdx = getDayPillarIndex(targetDate)
+  const todayStemIdx = cycleIdx % 10
+  const todayBranchIdx = cycleIdx % 12
   const todayStem = HEAVENLY_STEMS[todayStemIdx]
   const todayBranch = EARTHLY_BRANCHES[todayBranchIdx]
 
@@ -416,9 +433,8 @@ export function analyzeDailyFortune(
 function getFavorableTimes(sajuData: SajuData, targetDate: string): string[] {
   const sinsal = sajuData.신살
 
-  const target = parseDate(targetDate)
-  const delta = daysBetween(JIAZI_DATE, target)
-  const todayBranch = EARTHLY_BRANCHES[((delta % 12) + 12) % 12]
+  const cycleIdxFav = getDayPillarIndex(targetDate)
+  const todayBranch = EARTHLY_BRANCHES[cycleIdxFav % 12]
   const todayBranchTime = BRANCH_TIMES[todayBranch] || '09-11시'
 
   if (sinsal?.hasCheonEulGuiIn) {
@@ -432,9 +448,8 @@ function getFavorableTimes(sajuData: SajuData, targetDate: string): string[] {
 function getCautionTimes(sajuData: SajuData, targetDate: string): string[] {
   const sinsal = sajuData.신살
 
-  const target = parseDate(targetDate)
-  const delta = daysBetween(JIAZI_DATE, target)
-  const todayBranchIdx = ((delta % 12) + 12) % 12
+  const cycleIdxCaut = getDayPillarIndex(targetDate)
+  const todayBranchIdx = cycleIdxCaut % 12
   const chungBranchIdx = CHUNG_MAP[todayBranchIdx]
   const chungBranch = EARTHLY_BRANCHES[chungBranchIdx]
   const chungTime = BRANCH_TIMES[chungBranch] || '자정 전후'
@@ -534,8 +549,8 @@ export function analyzeMonthlyRhythm(
 
   for (let day = 1; day <= daysInMonth; day++) {
     const targetDay = new Date(year, month - 1, day)
-    const delta = daysBetween(JIAZI_DATE, targetDay)
-    const todayStem = HEAVENLY_STEMS[((delta % 10) + 10) % 10]
+    const cycleIdxDay = getDayPillarIndexFromDate(targetDay)
+    const todayStem = HEAVENLY_STEMS[cycleIdxDay % 10]
 
     let baseEnergyDay = 3
     if (dayjugan && STEM_WUXING[dayjugan] !== undefined && STEM_WUXING[todayStem] !== undefined) {
