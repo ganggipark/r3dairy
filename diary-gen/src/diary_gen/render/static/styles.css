@@ -1,0 +1,515 @@
+/**
+ * PDF Print Styles
+ * R³ 다이어리 인쇄물 최적화 스타일
+ */
+
+/* 페이지 설정 */
+@page {
+  size: A4;
+  margin: 20mm 15mm;
+
+  @top-center {
+    content: "R³ 다이어리";
+    font-size: 9pt;
+    color: #666;
+  }
+
+  @bottom-center {
+    content: counter(page);
+    font-size: 9pt;
+    color: #666;
+  }
+}
+
+/* 첫 페이지는 헤더/푸터 제거 */
+@page :first {
+  @top-center {
+    content: none;
+  }
+}
+
+/* 기본 타이포그래피 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
+  font-size: 10pt;
+  line-height: 1.6;
+  color: #333;
+  background: white;
+}
+
+/* 페이지 브레이크 제어 */
+.page-break {
+  page-break-after: always;
+}
+
+.page-break-avoid {
+  page-break-inside: avoid;
+}
+
+/* 제목 스타일 */
+h1 {
+  font-size: 20pt;
+  font-weight: bold;
+  color: #1a1a1a;
+  margin-bottom: 8mm;
+  padding-bottom: 3mm;
+  border-bottom: 2pt solid #2563eb;
+  page-break-after: avoid;
+}
+
+h2 {
+  font-size: 14pt;
+  font-weight: bold;
+  color: #1a1a1a;
+  margin-top: 6mm;
+  margin-bottom: 3mm;
+  page-break-after: avoid;
+}
+
+h3 {
+  font-size: 12pt;
+  font-weight: bold;
+  color: #374151;
+  margin-top: 4mm;
+  margin-bottom: 2mm;
+  page-break-after: avoid;
+}
+
+h4 {
+  font-size: 10pt;
+  font-weight: bold;
+  color: #4b5563;
+  margin-top: 3mm;
+  margin-bottom: 1.5mm;
+  page-break-after: avoid;
+}
+
+/* 문단 스타일 */
+p {
+  margin-bottom: 3mm;
+  text-align: justify;
+  word-break: keep-all;
+}
+
+/* 헤더 영역 */
+.header {
+  margin-bottom: 8mm;
+  padding-bottom: 5mm;
+  border-bottom: 1pt solid #e5e7eb;
+}
+
+.header-title {
+  font-size: 24pt;
+  font-weight: bold;
+  color: #2563eb;
+  margin-bottom: 2mm;
+}
+
+.header-date {
+  font-size: 12pt;
+  color: #6b7280;
+  margin-bottom: 2mm;
+}
+
+.header-role {
+  display: inline-block;
+  padding: 1mm 3mm;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 2mm;
+  font-size: 9pt;
+  font-weight: bold;
+}
+
+/* 요약 카드 */
+.summary-card {
+  background: #f3f4f6;
+  border-left: 3pt solid #2563eb;
+  padding: 4mm;
+  margin-bottom: 6mm;
+  page-break-inside: avoid;
+}
+
+.summary-card p {
+  font-size: 11pt;
+  line-height: 1.7;
+  margin-bottom: 0;
+}
+
+/* 키워드 태그 */
+.keywords {
+  margin-bottom: 6mm;
+  page-break-inside: avoid;
+}
+
+.keyword-tag {
+  display: inline-block;
+  padding: 1mm 2.5mm;
+  margin-right: 2mm;
+  margin-bottom: 2mm;
+  background: #dbeafe;
+  color: #1e3a8a;
+  border-radius: 1.5mm;
+  font-size: 9pt;
+  font-weight: 500;
+}
+
+/* 콘텐츠 블록 */
+.content-block {
+  margin-bottom: 6mm;
+  page-break-inside: avoid;
+}
+
+.content-block-title {
+  font-size: 12pt;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 2mm;
+  padding-bottom: 1mm;
+  border-bottom: 1pt solid #e5e7eb;
+}
+
+.content-block-body {
+  padding-left: 2mm;
+}
+
+.content-block-body p {
+  font-size: 10pt;
+  line-height: 1.7;
+}
+
+/* 2열 레이아웃 */
+.two-column {
+  display: table;
+  width: 100%;
+  margin-bottom: 4mm;
+  page-break-inside: avoid;
+}
+
+.column {
+  display: table-cell;
+  width: 50%;
+  padding: 3mm;
+  vertical-align: top;
+}
+
+.column:first-child {
+  padding-left: 0;
+}
+
+.column:last-child {
+  padding-right: 0;
+}
+
+.column-left {
+  border-right: 1pt solid #e5e7eb;
+  padding-right: 4mm;
+}
+
+.column-right {
+  padding-left: 4mm;
+}
+
+/* 집중/주의 포인트 */
+.focus-section {
+  background: #ecfdf5;
+  border-left: 3pt solid #10b981;
+  padding: 3mm;
+  margin-bottom: 3mm;
+}
+
+.caution-section {
+  background: #fef2f2;
+  border-left: 3pt solid #ef4444;
+  padding: 3mm;
+  margin-bottom: 3mm;
+}
+
+.focus-section h4 {
+  color: #047857;
+  margin-top: 0;
+}
+
+.caution-section h4 {
+  color: #dc2626;
+  margin-top: 0;
+}
+
+/* Do/Avoid 스타일 */
+.do-section {
+  background: #ecfdf5;
+  border-left: 3pt solid #10b981;
+  padding: 3mm;
+  margin-bottom: 3mm;
+}
+
+.avoid-section {
+  background: #fef2f2;
+  border-left: 3pt solid #ef4444;
+  padding: 3mm;
+  margin-bottom: 3mm;
+}
+
+.do-section h4 {
+  color: #047857;
+  margin-top: 0;
+}
+
+.avoid-section h4 {
+  color: #dc2626;
+  margin-top: 0;
+}
+
+/* 리스트 스타일 */
+ul {
+  margin-left: 5mm;
+  margin-bottom: 3mm;
+}
+
+li {
+  margin-bottom: 1.5mm;
+  line-height: 1.6;
+}
+
+/* 시간/방향 정보 */
+.info-grid {
+  display: table;
+  width: 100%;
+  border: 1pt solid #e5e7eb;
+  border-radius: 2mm;
+  overflow: hidden;
+  margin-bottom: 4mm;
+  page-break-inside: avoid;
+}
+
+.info-row {
+  display: table-row;
+}
+
+.info-row:nth-child(even) {
+  background: #f9fafb;
+}
+
+.info-label {
+  display: table-cell;
+  width: 30%;
+  padding: 2mm 3mm;
+  font-weight: bold;
+  color: #374151;
+  border-bottom: 1pt solid #e5e7eb;
+  border-right: 1pt solid #e5e7eb;
+}
+
+.info-value {
+  display: table-cell;
+  padding: 2mm 3mm;
+  color: #1f2937;
+  border-bottom: 1pt solid #e5e7eb;
+}
+
+.info-row:last-child .info-label,
+.info-row:last-child .info-value {
+  border-bottom: none;
+}
+
+/* 트리거 박스 */
+.trigger-box {
+  background: #fefce8;
+  border: 1pt solid #fde047;
+  border-radius: 2mm;
+  padding: 4mm;
+  margin-bottom: 4mm;
+  page-break-inside: avoid;
+}
+
+.trigger-item {
+  margin-bottom: 2mm;
+}
+
+.trigger-item:last-child {
+  margin-bottom: 0;
+}
+
+.trigger-label {
+  display: inline-block;
+  font-weight: bold;
+  color: #854d0e;
+  width: 20mm;
+}
+
+.trigger-value {
+  color: #422006;
+}
+
+/* 의미 전환 블록 */
+.meaning-shift-block {
+  background: #ede9fe;
+  border-left: 3pt solid #7c3aed;
+  padding: 4mm;
+  margin-bottom: 6mm;
+  page-break-inside: avoid;
+}
+
+.meaning-shift-block p {
+  color: #4c1d95;
+  font-size: 10pt;
+  line-height: 1.7;
+  font-style: italic;
+}
+
+/* 질문 블록 */
+.question-block {
+  background: #fff7ed;
+  border: 2pt solid #fb923c;
+  border-radius: 2mm;
+  padding: 4mm;
+  margin-bottom: 6mm;
+  page-break-inside: avoid;
+}
+
+.question-block p {
+  color: #7c2d12;
+  font-size: 11pt;
+  font-weight: 500;
+  line-height: 1.7;
+  text-align: center;
+  font-style: italic;
+}
+
+/* 푸터 */
+.footer {
+  margin-top: 10mm;
+  padding-top: 5mm;
+  border-top: 1pt solid #e5e7eb;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 8pt;
+}
+
+/* 월간 캘린더 (예정) */
+.calendar-grid {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 6mm;
+  page-break-inside: avoid;
+}
+
+.calendar-row {
+  display: table-row;
+}
+
+.calendar-cell {
+  display: table-cell;
+  width: 14.28%;
+  height: 15mm;
+  border: 1pt solid #e5e7eb;
+  padding: 2mm;
+  vertical-align: top;
+}
+
+.calendar-header {
+  background: #f3f4f6;
+  font-weight: bold;
+  text-align: center;
+  color: #374151;
+}
+
+.calendar-date {
+  font-size: 9pt;
+  color: #6b7280;
+  margin-bottom: 1mm;
+}
+
+.calendar-content {
+  font-size: 8pt;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+/* 인쇄 최적화 */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* 리듬 설명 블록 */
+.rhythm-description {
+  background: #f9fafb;
+  border-radius: 2mm;
+  padding: 4mm;
+  margin-bottom: 6mm;
+  page-break-inside: avoid;
+}
+
+.rhythm-description p {
+  font-size: 10pt;
+  line-height: 1.8;
+  color: #374151;
+}
+
+/* 강조 텍스트 */
+.highlight {
+  background: #fef3c7;
+  padding: 0 1mm;
+  border-radius: 1mm;
+}
+
+.bold {
+  font-weight: bold;
+  color: #1f2937;
+}
+
+/* 구분선 */
+hr {
+  border: none;
+  border-top: 1pt solid #e5e7eb;
+  margin: 6mm 0;
+}
+
+/* 텍스트 정렬 */
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-justify {
+  text-align: justify;
+}
+
+/* 여백 유틸리티 */
+.mt-sm { margin-top: 2mm; }
+.mt-md { margin-top: 4mm; }
+.mt-lg { margin-top: 6mm; }
+
+.mb-sm { margin-bottom: 2mm; }
+.mb-md { margin-bottom: 4mm; }
+.mb-lg { margin-bottom: 6mm; }
+
+.pt-sm { padding-top: 2mm; }
+.pt-md { padding-top: 4mm; }
+.pt-lg { padding-top: 6mm; }
+
+.pb-sm { padding-bottom: 2mm; }
+.pb-md { padding-bottom: 4mm; }
+.pb-lg { padding-bottom: 6mm; }

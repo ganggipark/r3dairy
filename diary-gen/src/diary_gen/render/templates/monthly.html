@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>R³ 다이어리 - {{ year }}년 {{ month }}월</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+    <!-- 헤더 -->
+    <div class="header">
+        <div class="header-title">R³ 다이어리</div>
+        <div class="header-date">{{ year }}년 {{ month }}월</div>
+        {% if role %}
+        <span class="header-role">{{ role_display }}</span>
+        {% endif %}
+    </div>
+
+    <!-- 월간 콘텐츠 -->
+    <div class="content-block">
+        <h2>이번 달 콘텐츠</h2>
+        <p class="text-center" style="color: #6b7280; padding: 40mm 0;">
+            월간 콘텐츠 구조는 Phase 3에서 정의될 예정입니다.<br/>
+            <small>MonthlyContent 타입 정의 후 상세 템플릿이 구현됩니다.</small>
+        </p>
+
+        <!-- TODO: Phase 3에서 MonthlyContent 구조 정의 후 구현 -->
+        <!--
+        예상 구조:
+        - 이번 달 테마
+        - 월간 우선순위
+        - 주별 요약
+        - 월간 캘린더 (일자별 간단 요약)
+        -->
+    </div>
+
+    <!-- 푸터 -->
+    <div class="footer">
+        <p>R³ Diary - Rhythm, Response, Recode</p>
+        <p>{{ generated_at }}</p>
+    </div>
+</body>
+</html>
