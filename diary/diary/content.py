@@ -1,4 +1,4 @@
-"""Daily diary content via OpenAI or Anthropic. Default: openai."""
+"""Daily diary content via OpenAI/Anthropic/DeepInfra. Default: deepinfra."""
 from __future__ import annotations
 import json
 import os
@@ -11,7 +11,15 @@ from .models import CompleteSajuData, DailyContent
 
 _PROMPTS_DIR = Path(__file__).parent / "prompts"
 
-Provider = Literal["openai", "anthropic"]
+Provider = Literal["openai", "anthropic", "deepinfra"]
+
+_DEFAULT_MODELS = {
+    "openai": "gpt-4o-mini",
+    "anthropic": "claude-sonnet-4-6",
+    "deepinfra": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+}
+
+DEEPINFRA_BASE_URL = "https://api.deepinfra.com/v1/openai"
 
 
 class ContentGenerationError(RuntimeError):
@@ -27,13 +35,16 @@ def _strip_code_fence(text: str) -> str:
     return m.group(1) if m else text.strip()
 
 
-def _call_openai(client, model: str, prompt: str) -> str:
-    response = client.chat.completions.create(
-        model=model,
-        max_tokens=2048,
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
-    )
+def _call_openai_compat(client, model: str, prompt: str, *, json_mode: bool) -> str:
+    """OpenAI Chat Completions (works for openai + deepinfra)."""
+    kwargs = {
+        "model": model,
+        "max_tokens": 2048,
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    if json_mode:
+        kwargs["response_format"] = {"type": "json_object"}
+    response = client.chat.completions.create(**kwargs)
     return response.choices[0].message.content
 
 
@@ -46,32 +57,35 @@ def _call_anthropic(client, model: str, prompt: str) -> str:
     return response.content[0].text
 
 
-def _default_model(provider: Provider) -> str:
-    env = os.environ.get("DIARY_LLM_MODEL")
-    if env:
-        return env
-    return "gpt-4o-mini" if provider == "openai" else "claude-sonnet-4-6"
-
-
 def _default_client(provider: Provider):
     if provider == "openai":
         from openai import OpenAI
         return OpenAI()
-    elif provider == "anthropic":
+    if provider == "anthropic":
         from anthropic import Anthropic
         return Anthropic()
+    if provider == "deepinfra":
+        from openai import OpenAI
+        key = os.environ.get("DEEPINFRA_API_KEY")
+        if not key:
+            raise ContentGenerationError("DEEPINFRA_API_KEY required")
+        return OpenAI(api_key=key, base_url=DEEPINFRA_BASE_URL)
     raise ValueError(f"Unknown provider: {provider}")
+
+
+def _default_model(provider: Provider) -> str:
+    return os.environ.get("DIARY_LLM_MODEL") or _DEFAULT_MODELS[provider]
 
 
 def generate_daily_content(
     saju: CompleteSajuData,
     target_date: _date,
     *,
-    provider: Provider = "openai",
+    provider: Provider = "deepinfra",
     client=None,
     model: Optional[str] = None,
 ) -> DailyContent:
-    """Generate one day's content. Provider configurable (default: openai)."""
+    """Generate one day's content. Default provider: deepinfra (Qwen)."""
     if client is None:
         client = _default_client(provider)
     model = model or _default_model(provider)
@@ -84,7 +98,9 @@ def generate_daily_content(
 
     try:
         if provider == "openai":
-            text = _call_openai(client, model, prompt)
+            text = _call_openai_compat(client, model, prompt, json_mode=True)
+        elif provider == "deepinfra":
+            text = _call_openai_compat(client, model, prompt, json_mode=False)
         elif provider == "anthropic":
             text = _call_anthropic(client, model, prompt)
         else:

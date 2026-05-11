@@ -31,42 +31,38 @@ VALID_JSON = """```json
 ```"""
 
 
-def _openai_mock(text):
-    client = MagicMock()
+def _oai_mock(text):
+    """Mock for openai/deepinfra (both use OpenAI SDK shape)."""
+    c = MagicMock()
     msg = MagicMock()
     msg.message.content = text
-    client.chat.completions.create.return_value = MagicMock(choices=[msg])
-    return client
+    c.chat.completions.create.return_value = MagicMock(choices=[msg])
+    return c
 
 
-def _anthropic_mock(text):
-    client = MagicMock()
-    client.messages.create.return_value = MagicMock(
-        content=[MagicMock(text=text)]
-    )
-    return client
+def _ant_mock(text):
+    c = MagicMock()
+    c.messages.create.return_value = MagicMock(content=[MagicMock(text=text)])
+    return c
 
 
-def test_openai_happy_path(sample_saju):
+@pytest.mark.parametrize(
+    "provider,mock_fn,model",
+    [
+        ("openai", _oai_mock, "gpt-4o-mini"),
+        ("deepinfra", _oai_mock, "Qwen/Qwen3-235B-A22B-Instruct-2507"),
+        ("anthropic", _ant_mock, "claude-sonnet-4-6"),
+    ],
+)
+def test_happy_path_all_providers(sample_saju, provider, mock_fn, model):
     result = generate_daily_content(
         saju=sample_saju,
         target_date=date(2026, 5, 15),
-        provider="openai",
-        client=_openai_mock(VALID_JSON),
-        model="gpt-4o-mini",
+        provider=provider,
+        client=mock_fn(VALID_JSON),
+        model=model,
     )
     assert isinstance(result, DailyContent)
-    assert result.lucky_color == "청록색"
-
-
-def test_anthropic_happy_path(sample_saju):
-    result = generate_daily_content(
-        saju=sample_saju,
-        target_date=date(2026, 5, 15),
-        provider="anthropic",
-        client=_anthropic_mock(VALID_JSON),
-        model="claude-sonnet-4-6",
-    )
     assert result.lucky_color == "청록색"
 
 
@@ -75,8 +71,8 @@ def test_rejects_non_json(sample_saju):
         generate_daily_content(
             sample_saju,
             date(2026, 5, 15),
-            provider="openai",
-            client=_openai_mock("죄송합니다, 생성 불가."),
+            provider="deepinfra",
+            client=_oai_mock("죄송합니다, 생성 불가."),
         )
 
 
@@ -86,6 +82,6 @@ def test_rejects_schema_violation(sample_saju):
         generate_daily_content(
             sample_saju,
             date(2026, 5, 15),
-            provider="openai",
-            client=_openai_mock(bad),
+            provider="deepinfra",
+            client=_oai_mock(bad),
         )
