@@ -9,6 +9,11 @@ from .models import (
     QimenResult,
     SajuInput,
 )
+from .pipeline import (
+    PipelineProgress,
+    PipelineResult,
+    generate_diary,
+)
 from .qimen import QimenEngineError, calculate_qimen
 from .render import color_to_hex, render_diary
 from .saju import SajuEngineError, calculate_saju
@@ -18,6 +23,7 @@ __all__ = [
     "calculate_qimen",
     "generate_daily_content",
     "render_diary",
+    "generate_diary",
     "color_to_hex",
     "CompleteSajuData",
     "DailyContent",
@@ -26,6 +32,8 @@ __all__ = [
     "QimenPalace",
     "QimenResult",
     "SajuInput",
+    "PipelineProgress",
+    "PipelineResult",
     "SajuEngineError",
     "QimenEngineError",
     "ContentGenerationError",
