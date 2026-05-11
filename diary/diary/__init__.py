@@ -10,12 +10,15 @@ from .models import (
     SajuInput,
 )
 from .qimen import QimenEngineError, calculate_qimen
+from .render import color_to_hex, render_diary
 from .saju import SajuEngineError, calculate_saju
 
 __all__ = [
     "calculate_saju",
     "calculate_qimen",
     "generate_daily_content",
+    "render_diary",
+    "color_to_hex",
     "CompleteSajuData",
     "DailyContent",
     "FourPillars",

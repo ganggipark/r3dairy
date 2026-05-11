@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>{{ title }}</title>
+</head>
+<body>
+{% for day in days %}
+<section class="day-spread">
+
+    <article class="page left-page">
+        <header class="date-header">{{ day.date }}</header>
+
+        <section class="summary">
+            <p>{{ day.daily_summary }}</p>
+        </section>
+
+        <div class="lucky-box">
+            <div class="lucky-row">
+                <span class="swatch" style="background: {{ day.lucky_color | color_hex }}"></span>
+                <span class="lucky-label">색</span><span>{{ day.lucky_color }}</span>
+            </div>
+            <div class="lucky-row">
+                <span class="lucky-label">방향</span><span>{{ day.lucky_direction }}</span>
+            </div>
+            <div class="lucky-row">
+                <span class="lucky-label">시간</span><span>{{ day.lucky_time }}</span>
+            </div>
+        </div>
+
+        <section class="focus">
+            <h3>오늘의 집중</h3>
+            <p>{{ day.daily_focus }}</p>
+        </section>
+
+        <section class="caution">
+            <h3>오늘의 주의</h3>
+            <p>{{ day.daily_caution }}</p>
+        </section>
+
+        <section class="actions">
+            <h3>추천 행동</h3>
+            <ul>
+                {% for action in day.recommended_actions %}
+                <li>{{ action }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="avoid">
+            <h3>피할 일</h3>
+            <ul>
+                {% for item in day.things_to_avoid %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="mindfulness">
+            <h3>마음챙김</h3>
+            <p>{{ day.mindfulness }}</p>
+        </section>
+    </article>
+
+    <article class="page right-page">
+        <header class="date-mini">{{ day.date }}</header>
+        <div class="hint-top">{{ day.right_page_hint }}</div>
+
+        <div class="writing-space">
+            {% for _ in range(28) %}<div class="line"></div>{% endfor %}
+        </div>
+
+        <footer class="hint-bottom">
+            <span class="swatch small" style="background: {{ day.lucky_color | color_hex }}"></span>
+            <span>{{ day.lucky_color }} · {{ day.lucky_direction }} · {{ day.lucky_time }}</span>
+        </footer>
+    </article>
+
+</section>
+{% endfor %}
+</body>
+</html>
