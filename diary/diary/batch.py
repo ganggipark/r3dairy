@@ -6,6 +6,7 @@ CSV optional columns: minute, lunar, leap_month, birth_place
 from __future__ import annotations
 import argparse
 import csv
+import json
 import re
 import sys
 from datetime import date
@@ -76,6 +77,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--target-hour", type=int, default=12)
     p.add_argument("--continue-on-error", action="store_true",
                    help="1명 실패해도 다음 고객 진행")
+    p.add_argument("--summary-output", type=Path, default=None,
+                   help="실행 결과 JSON 요약 저장 경로")
     p.add_argument("--quiet", action="store_true")
     return p
 
@@ -161,6 +164,23 @@ def main(argv: list[str] | None = None) -> int:
             if s["status"] != "ok":
                 msg = s.get("error", s["status"])[:80]
                 print(f"  - {s['id']} {s['name']}: {msg}")
+
+    if args.summary_output:
+        args.summary_output.parent.mkdir(parents=True, exist_ok=True)
+        report = {
+            "start_date": args.start,
+            "days": args.days,
+            "provider": args.provider,
+            "total": len(summary),
+            "ok": ok,
+            "failed": err,
+            "customers": summary,
+        }
+        args.summary_output.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        print(f"\n요약 JSON: {args.summary_output.resolve()}")
 
     return 0 if err == 0 else 1
 

@@ -174,3 +174,83 @@ def test_main_invalid_csv_path(tmp_path):
         "--output-dir", str(tmp_path / "out"),
     ])
     assert rc == 2
+
+
+def test_main_writes_summary_json(tmp_path):
+    """--summary-output: 실행 후 JSON 요약 저장됨."""
+    from diary.pipeline import PipelineResult
+    import json as _json
+
+    csv_path = _write_csv(tmp_path, VALID_CSV)
+    output_dir = tmp_path / "out"
+    summary_path = tmp_path / "summary.json"
+
+    def fake_generate(**kwargs):
+        out = kwargs["output_path"]
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(b"%PDF-1.4\n" + b"x" * 500)
+        return PipelineResult(
+            output_path=out, total_days=kwargs["days"],
+            succeeded=kwargs["days"], failed=0, errors=[], cache_hits=0,
+        )
+
+    with patch("diary.batch.generate_diary", side_effect=fake_generate):
+        rc = main([
+            "--customers", str(csv_path),
+            "--start", "2026-05-15", "--days", "3",
+            "--output-dir", str(output_dir),
+            "--summary-output", str(summary_path),
+            "--quiet",
+        ])
+
+    assert rc == 0
+    assert summary_path.exists()
+
+    report = _json.loads(summary_path.read_text(encoding="utf-8"))
+    assert report["total"] == 2
+    assert report["ok"] == 2
+    assert report["failed"] == 0
+    assert report["start_date"] == "2026-05-15"
+    assert report["days"] == 3
+    assert len(report["customers"]) == 2
+    assert report["customers"][0]["id"] == "A001"
+    assert report["customers"][0]["status"] == "ok"
+
+
+def test_main_summary_json_captures_failures(tmp_path):
+    """실패 고객도 JSON에 status=error로 기록됨."""
+    from diary.pipeline import PipelineResult
+    import json as _json
+
+    csv_path = _write_csv(tmp_path, VALID_CSV)
+    output_dir = tmp_path / "out"
+    summary_path = tmp_path / "summary.json"
+    call_count = [0]
+
+    def flaky(**kwargs):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            raise RuntimeError("boom")
+        out = kwargs["output_path"]
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(b"%PDF-1.4\n" + b"x" * 500)
+        return PipelineResult(
+            output_path=out, total_days=kwargs["days"],
+            succeeded=kwargs["days"], failed=0, errors=[], cache_hits=0,
+        )
+
+    with patch("diary.batch.generate_diary", side_effect=flaky):
+        rc = main([
+            "--customers", str(csv_path),
+            "--start", "2026-05-15", "--days", "3",
+            "--output-dir", str(output_dir),
+            "--summary-output", str(summary_path),
+            "--continue-on-error", "--quiet",
+        ])
+
+    assert rc == 1
+    report = _json.loads(summary_path.read_text(encoding="utf-8"))
+    assert report["ok"] == 1
+    assert report["failed"] == 1
+    error_row = next(c for c in report["customers"] if c["status"] != "ok")
+    assert "boom" in error_row["error"]
