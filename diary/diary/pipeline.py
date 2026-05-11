@@ -16,6 +16,7 @@ from .content import generate_daily_content
 from .models import DailyContent, SajuInput
 from .qimen import calculate_qimen
 from .render import render_diary
+from .retry import with_retry
 from .saju import calculate_saju
 
 Stage = Literal["saju", "qimen", "content", "render", "cache_hit"]
@@ -82,6 +83,7 @@ def generate_diary(
     skip_failed: bool = True,
     progress: Optional[Callable[[PipelineProgress], None]] = None,
     title: str = "내 다이어리",
+    max_retries: int = 3,
 ) -> PipelineResult:
     """End-to-end: 1 customer + N days → 1 PDF.
 
@@ -130,9 +132,12 @@ def generate_diary(
         try:
             _emit("qimen", target)
             qimen = calculate_qimen(birth_dt, target, target_hour=target_hour)
-            content = generate_daily_content(
-                saju=saju, qimen=qimen, target_date=target,
-                provider=provider, model=model,
+            content = with_retry(
+                lambda: generate_daily_content(
+                    saju=saju, qimen=qimen, target_date=target,
+                    provider=provider, model=model,
+                ),
+                max_attempts=max_retries,
             )
             if cache_dir:
                 _cache_put(cache_dir, cust_id, target, content)

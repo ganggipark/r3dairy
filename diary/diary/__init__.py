@@ -16,6 +16,7 @@ from .pipeline import (
 )
 from .qimen import QimenEngineError, calculate_qimen
 from .render import color_to_hex, render_diary
+from .retry import is_retryable, with_retry
 from .saju import SajuEngineError, calculate_saju
 
 __all__ = [
@@ -25,6 +26,8 @@ __all__ = [
     "render_diary",
     "generate_diary",
     "color_to_hex",
+    "with_retry",
+    "is_retryable",
     "CompleteSajuData",
     "DailyContent",
     "FourPillars",
