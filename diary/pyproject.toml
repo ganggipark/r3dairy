@@ -20,6 +20,9 @@ dev = [
     "pytest>=7",
 ]
 
+[project.scripts]
+diary = "diary.cli:main"
+
 [tool.setuptools.packages.find]
 include = ["diary*"]
 exclude = ["tests*"]
