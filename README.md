@@ -1,7 +1,8 @@
 # diary-PJ
 
-사주 기반 1인 1책 인쇄용 다이어리 생성 파이프라인.
+사주 기반 1인 1책 인쇄용 다이어리 생성기.
 
-- 활성 개발: [`diary-gen/`](./diary-gen/)
-- 사주 엔진: [`backend/saju-calculator/`](./backend/saju-calculator/)
-- 자세한 내용: [diary-gen/README.md](./diary-gen/README.md)
+**상태:** 재구축 중 (nuclear clean restart 완료).
+**유일 보존 자산:** [`saju-engine/`](./saju-engine/) (TS 사주 계산 엔진)
+
+자세한 내용: [CLAUDE.md](./CLAUDE.md)
