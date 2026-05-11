@@ -1,0 +1,3 @@
+
+# runtime LLM content cache (per-customer, regeneratable)
+.cache/
