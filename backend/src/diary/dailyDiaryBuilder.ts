@@ -31,8 +31,8 @@ import {
 } from './types';
 
 // Import real engines - using absolute paths for reliability
-const sajuCalculator = require('C:/Users/USER/dev/diary-PJ/backend/saju-calculator/dist/calculators/completeSajuCalculator');
-const lunarCalc = require('C:/Users/USER/dev/diary-PJ/backend/saju-calculator/dist/calculators/lunarCalendar');
+const sajuCalculator = require('../../saju-calculator/dist/calculators/completeSajuCalculator');
+const lunarCalc = require('../../saju-calculator/dist/calculators/lunarCalendar');
 const { calculateCompleteSajuData } = sajuCalculator;
 const { solarToLunar } = lunarCalc;
 
