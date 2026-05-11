@@ -42,6 +42,10 @@ def build_parser() -> argparse.ArgumentParser:
     g_out = p.add_argument_group("출력")
     g_out.add_argument("--output", "-o", default="output/diary.pdf")
     g_out.add_argument("--title", default="내 다이어리")
+    g_out.add_argument("--subtitle", default=None)
+    g_out.add_argument("--customer-name", default=None, help="표지에 표시할 이름")
+    g_out.add_argument("--no-cover", action="store_true", help="표지 페이지 제외")
+    g_out.add_argument("--no-month-dividers", action="store_true", help="월 구분 페이지 제외")
 
     g_llm = p.add_argument_group("LLM")
     g_llm.add_argument(
@@ -100,6 +104,10 @@ def main(argv: list[str] | None = None) -> int:
             target_hour=args.target_hour,
             concurrency=args.concurrency,
             max_retries=args.max_retries,
+            include_cover=not args.no_cover,
+            include_month_dividers=not args.no_month_dividers,
+            customer_name=args.customer_name,
+            subtitle=args.subtitle,
             cache_dir=cache,
             skip_failed=not args.fail_fast,
             progress=on_progress,

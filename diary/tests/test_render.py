@@ -56,3 +56,61 @@ def test_color_to_hex_known():
 
 def test_color_to_hex_unknown_returns_fallback():
     assert color_to_hex("미지의색") == "#999999"
+
+
+def _multi_month_days() -> list:
+    """5/30, 5/31, 6/1, 6/2 — 2 months."""
+    return [
+        _mock_day(date_str="2026-05-30", color="청록색"),
+        _mock_day(date_str="2026-05-31", color="주황색"),
+        _mock_day(date_str="2026-06-01", color="황금색"),
+        _mock_day(date_str="2026-06-02", color="감청색"),
+    ]
+
+
+def test_render_with_cover(tmp_path):
+    output = tmp_path / "cover.pdf"
+    result = render_diary(
+        [_mock_day()],
+        output,
+        include_cover=True,
+        customer_name="홍길동",
+        period="2026-05-15 — 2027-05-14",
+    )
+    assert result.exists()
+    assert result.stat().st_size > 5000
+
+
+def test_render_with_month_dividers(tmp_path):
+    output = tmp_path / "dividers.pdf"
+    result = render_diary(
+        _multi_month_days(),
+        output,
+        include_month_dividers=True,
+    )
+    assert result.exists()
+    assert result.stat().st_size > 8000
+
+
+def test_render_full_book(tmp_path):
+    """cover + dividers + days 모두."""
+    output = tmp_path / "book.pdf"
+    result = render_diary(
+        _multi_month_days(),
+        output,
+        title="내 다이어리",
+        customer_name="홍길동",
+        period="2026-05-30 — 2026-06-02",
+        include_cover=True,
+        include_month_dividers=True,
+    )
+    assert result.exists()
+    with open(result, "rb") as f:
+        assert f.read(4) == b"%PDF"
+
+
+def test_render_default_no_cover_back_compat(tmp_path):
+    """Default render_diary call should still work (no cover/dividers)."""
+    output = tmp_path / "plain.pdf"
+    result = render_diary([_mock_day()], output)
+    assert result.exists()

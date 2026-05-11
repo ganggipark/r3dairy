@@ -5,9 +5,49 @@
     <title>{{ title }}</title>
 </head>
 <body>
-{% for day in days %}
-<section class="day-spread">
 
+{% if include_cover %}
+<article class="cover-front">
+    <div class="cover-content">
+        <h1 class="cover-title">{{ title }}</h1>
+        {% if subtitle %}<div class="cover-subtitle">{{ subtitle }}</div>{% endif %}
+        {% if period %}<div class="cover-period">{{ period }}</div>{% endif %}
+        {% if customer_name %}<div class="cover-name">{{ customer_name }}</div>{% endif %}
+    </div>
+</article>
+<article class="cover-back">
+    <div class="cover-back-content">
+        <p class="cover-intro">
+            사주와 기문의 흐름을 따라<br>
+            매일의 안내를 받아보세요.
+        </p>
+        <p class="cover-note">
+            왼쪽 페이지는 그날의 안내,<br>
+            오른쪽 페이지는 당신의 기록입니다.
+        </p>
+    </div>
+</article>
+{% endif %}
+
+{% for entry in entries %}
+
+    {% if entry.starts_new_month %}
+    <article class="month-divider-left">
+        <div class="month-spacer-top"></div>
+        <div class="month-number">{{ entry.month_label }}</div>
+        <div class="month-year">{{ entry.year_label }}</div>
+        <div class="month-decoration">— · — · —</div>
+    </article>
+    <article class="month-divider-right">
+        <header class="month-mini">{{ entry.month_label }}</header>
+        <h3 class="month-goals-title">이번 달의 다짐</h3>
+        <div class="month-goals-space">
+            {% for _ in range(18) %}<div class="line"></div>{% endfor %}
+        </div>
+    </article>
+    {% endif %}
+
+    {% set day = entry.day %}
     <article class="page left-page">
         <header class="date-header">{{ day.date }}</header>
 
@@ -40,20 +80,12 @@
 
         <section class="actions">
             <h3>추천 행동</h3>
-            <ul>
-                {% for action in day.recommended_actions %}
-                <li>{{ action }}</li>
-                {% endfor %}
-            </ul>
+            <ul>{% for a in day.recommended_actions %}<li>{{ a }}</li>{% endfor %}</ul>
         </section>
 
         <section class="avoid">
             <h3>피할 일</h3>
-            <ul>
-                {% for item in day.things_to_avoid %}
-                <li>{{ item }}</li>
-                {% endfor %}
-            </ul>
+            <ul>{% for a in day.things_to_avoid %}<li>{{ a }}</li>{% endfor %}</ul>
         </section>
 
         <section class="mindfulness">
@@ -65,18 +97,15 @@
     <article class="page right-page">
         <header class="date-mini">{{ day.date }}</header>
         <div class="hint-top">{{ day.right_page_hint }}</div>
-
         <div class="writing-space">
             {% for _ in range(28) %}<div class="line"></div>{% endfor %}
         </div>
-
         <footer class="hint-bottom">
             <span class="swatch small" style="background: {{ day.lucky_color | color_hex }}"></span>
             <span>{{ day.lucky_color }} · {{ day.lucky_direction }} · {{ day.lucky_time }}</span>
         </footer>
     </article>
 
-</section>
 {% endfor %}
 </body>
 </html>

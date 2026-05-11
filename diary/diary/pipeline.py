@@ -84,6 +84,10 @@ def generate_diary(
     progress: Optional[Callable[[PipelineProgress], None]] = None,
     title: str = "내 다이어리",
     max_retries: int = 3,
+    include_cover: bool = True,
+    include_month_dividers: bool = True,
+    customer_name: str | None = None,
+    subtitle: str | None = None,
 ) -> PipelineResult:
     """End-to-end: 1 customer + N days → 1 PDF.
 
@@ -170,7 +174,16 @@ def generate_diary(
     if progress:
         progress(PipelineProgress(days, days, start_date, "render"))
     contents = [results[d] for d in dates if d in results]
-    render_diary(contents, output_path, title=title)
+    period = f"{contents[0].date} — {contents[-1].date}" if contents else None
+    render_diary(
+        contents, output_path,
+        title=title,
+        subtitle=subtitle,
+        customer_name=customer_name,
+        period=period,
+        include_cover=include_cover,
+        include_month_dividers=include_month_dividers,
+    )
 
     return PipelineResult(
         output_path=output_path,

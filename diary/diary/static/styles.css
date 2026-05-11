@@ -143,3 +143,132 @@ li {
     padding-top: 3mm;
     border-top: 0.3pt solid #eee;
 }
+
+/* ===== COVER ===== */
+
+.cover-front, .cover-back {
+    page-break-after: always;
+    position: relative;
+    height: 100%;
+    page: cover;
+}
+
+.cover-front .cover-content {
+    text-align: center;
+    padding-top: 50mm;
+}
+
+.cover-title {
+    font-size: 28pt;
+    font-weight: 700;
+    letter-spacing: 2pt;
+    margin-bottom: 8mm;
+    color: #1a1a1a;
+}
+
+.cover-subtitle {
+    font-size: 11pt;
+    color: #666;
+    letter-spacing: 1pt;
+    margin-bottom: 35mm;
+}
+
+.cover-period {
+    font-size: 13pt;
+    color: #444;
+    margin-bottom: 25mm;
+    letter-spacing: 0.5pt;
+}
+
+.cover-name {
+    font-size: 14pt;
+    color: #2a2a2a;
+    margin-top: 60mm;
+    letter-spacing: 1pt;
+}
+
+.cover-back .cover-back-content {
+    padding-top: 70mm;
+    text-align: center;
+    line-height: 2;
+    color: #666;
+}
+
+.cover-intro {
+    font-size: 12pt;
+    margin-bottom: 30mm;
+    letter-spacing: 0.5pt;
+}
+
+.cover-note {
+    font-size: 9pt;
+    color: #999;
+    line-height: 1.8;
+}
+
+/* ===== MONTH DIVIDER ===== */
+
+.month-divider-left, .month-divider-right {
+    page-break-after: always;
+    position: relative;
+    height: 100%;
+    page: divider;
+    text-align: center;
+}
+
+.month-spacer-top {
+    height: 60mm;
+}
+
+.month-number {
+    font-size: 64pt;
+    font-weight: 300;
+    color: #2a2a2a;
+    letter-spacing: 2pt;
+    line-height: 1;
+    margin-bottom: 8mm;
+}
+
+.month-year {
+    font-size: 11pt;
+    color: #888;
+    letter-spacing: 3pt;
+    margin-bottom: 30mm;
+}
+
+.month-decoration {
+    color: #c0c0c0;
+    font-size: 10pt;
+    letter-spacing: 4pt;
+}
+
+.month-divider-right {
+    text-align: left;
+}
+
+.month-mini {
+    font-size: 9pt;
+    color: #b0b0b0;
+    text-align: right;
+    margin-bottom: 8mm;
+}
+
+.month-goals-title {
+    font-size: 12pt;
+    color: #555;
+    margin-bottom: 6mm;
+    border-bottom: 0.5pt solid #ccc;
+    padding-bottom: 2mm;
+}
+
+.month-goals-space .line {
+    height: 7mm;
+    border-bottom: 0.3pt solid #e0e0e0;
+}
+
+@page cover {
+    @bottom-center { content: none; }
+}
+@page divider {
+    @bottom-center { content: none; }
+}
