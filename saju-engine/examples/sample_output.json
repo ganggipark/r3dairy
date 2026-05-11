@@ -1,0 +1,446 @@
+{
+  "version": "1.0.0",
+  "calculatedAt": "2026-05-11T09:33:07.739Z",
+  "isComplete": true,
+  "birthInfo": {
+    "year": 1990,
+    "month": 5,
+    "day": 15,
+    "hour": 14,
+    "minute": 0,
+    "gender": "male",
+    "isLunar": false,
+    "birthDateString": "1990-05-15",
+    "birthTimeString": "14:00"
+  },
+  "fourPillars": {
+    "year": {
+      "gan": "경",
+      "ji": "오",
+      "ganJi": "경오",
+      "ganOhHaeng": "금",
+      "jiOhHaeng": "화"
+    },
+    "month": {
+      "gan": "신",
+      "ji": "사",
+      "ganJi": "신사",
+      "ganOhHaeng": "금",
+      "jiOhHaeng": "화"
+    },
+    "day": {
+      "gan": "경",
+      "ji": "진",
+      "ganJi": "경진",
+      "ganOhHaeng": "금",
+      "jiOhHaeng": "토"
+    },
+    "time": {
+      "gan": "계",
+      "ji": "미",
+      "ganJi": "계미",
+      "ganOhHaeng": "수",
+      "jiOhHaeng": "토"
+    }
+  },
+  "fullSajuString": "경오 신사 경진 계미",
+  "ohHaeng": {
+    "balance": {
+      "목": 6,
+      "화": 21,
+      "토": 27,
+      "금": 33,
+      "수": 12
+    },
+    "dominant": "금",
+    "weak": "목",
+    "dominantScore": 33,
+    "weakScore": 6,
+    "isBalanced": false
+  },
+  "sipSung": {
+    "balance": {
+      "비겁": 40,
+      "식상": 15,
+      "재성": 10,
+      "관성": 15,
+      "인성": 20
+    },
+    "detail": {
+      "비견": 30,
+      "겁재": 10,
+      "식신": 0,
+      "상관": 15,
+      "정재": 10,
+      "편재": 0,
+      "정관": 10,
+      "편관": 5,
+      "정인": 10,
+      "편인": 10
+    },
+    "dominant": "비겁",
+    "weak": "재성"
+  },
+  "gyeokGuk": {
+    "dayMaster": "경",
+    "dayMasterOhHaeng": "금",
+    "strength": "신강",
+    "monthBranch": "사",
+    "season": "여름",
+    "gyeokGukType": "편관격",
+    "description": "일간이 강하므로 경일간이 사월에 태어나 편관격입니다.",
+    "strengthDetail": "신강",
+    "strengthScore": 50,
+    "strengthGrade": "신강"
+  },
+  "yongSin": {
+    "yongSin": [
+      "목",
+      "수"
+    ],
+    "giSin": [
+      "토",
+      "금"
+    ],
+    "huiSin": [
+      "수"
+    ],
+    "yongSinReason": "용신은 목, 수입니다. 열기가 강한 여름생으로 시원한 수기(水氣)가 필요 화와 금의 충돌을 토가 중재",
+    "giSinReason": "기신은 토, 금이므로 주의가 필요합니다.",
+    "yongSinScore": {
+      "목": 80,
+      "화": 50,
+      "토": 30,
+      "금": 30,
+      "수": 80
+    }
+  },
+  "daewoon": {
+    "startAge": 7,
+    "direction": "순행",
+    "list": [
+      {
+        "cycle": 1,
+        "startAge": 7,
+        "endAge": 16,
+        "gan": "임",
+        "ji": "오",
+        "ganJi": "임오",
+        "ohHaeng": "수",
+        "jiOhHaeng": "화",
+        "score": 95,
+        "description": "용신 대운! 수 기운이 도와줍니다.",
+        "isYongSin": true,
+        "isGiSin": false
+      },
+      {
+        "cycle": 2,
+        "startAge": 17,
+        "endAge": 26,
+        "gan": "계",
+        "ji": "미",
+        "ganJi": "계미",
+        "ohHaeng": "수",
+        "jiOhHaeng": "토",
+        "score": 95,
+        "description": "용신 대운! 수 기운이 도와줍니다.",
+        "isYongSin": true,
+        "isGiSin": false
+      },
+      {
+        "cycle": 3,
+        "startAge": 27,
+        "endAge": 36,
+        "gan": "갑",
+        "ji": "신",
+        "ganJi": "갑신",
+        "ohHaeng": "목",
+        "jiOhHaeng": "금",
+        "score": 80,
+        "description": "용신 대운! 목 기운이 도와줍니다.",
+        "isYongSin": true,
+        "isGiSin": false
+      },
+      {
+        "cycle": 4,
+        "startAge": 37,
+        "endAge": 46,
+        "gan": "을",
+        "ji": "유",
+        "ganJi": "을유",
+        "ohHaeng": "목",
+        "jiOhHaeng": "금",
+        "score": 80,
+        "description": "용신 대운! 목 기운이 도와줍니다.",
+        "isYongSin": true,
+        "isGiSin": false
+      },
+      {
+        "cycle": 5,
+        "startAge": 47,
+        "endAge": 56,
+        "gan": "병",
+        "ji": "술",
+        "ganJi": "병술",
+        "ohHaeng": "화",
+        "jiOhHaeng": "토",
+        "score": 50,
+        "description": "화 기운의 평범한 대운입니다.",
+        "isYongSin": false,
+        "isGiSin": false
+      },
+      {
+        "cycle": 6,
+        "startAge": 57,
+        "endAge": 66,
+        "gan": "정",
+        "ji": "해",
+        "ganJi": "정해",
+        "ohHaeng": "화",
+        "jiOhHaeng": "수",
+        "score": 50,
+        "description": "화 기운의 평범한 대운입니다.",
+        "isYongSin": false,
+        "isGiSin": false
+      },
+      {
+        "cycle": 7,
+        "startAge": 67,
+        "endAge": 76,
+        "gan": "무",
+        "ji": "자",
+        "ganJi": "무자",
+        "ohHaeng": "토",
+        "jiOhHaeng": "수",
+        "score": 30,
+        "description": "기신 대운. 토 기운에 주의하세요.",
+        "isYongSin": false,
+        "isGiSin": true
+      },
+      {
+        "cycle": 8,
+        "startAge": 77,
+        "endAge": 86,
+        "gan": "기",
+        "ji": "축",
+        "ganJi": "기축",
+        "ohHaeng": "토",
+        "jiOhHaeng": "토",
+        "score": 30,
+        "description": "기신 대운. 토 기운에 주의하세요.",
+        "isYongSin": false,
+        "isGiSin": true
+      },
+      {
+        "cycle": 9,
+        "startAge": 87,
+        "endAge": 96,
+        "gan": "경",
+        "ji": "인",
+        "ganJi": "경인",
+        "ohHaeng": "금",
+        "jiOhHaeng": "목",
+        "score": 30,
+        "description": "기신 대운. 금 기운에 주의하세요.",
+        "isYongSin": false,
+        "isGiSin": true
+      },
+      {
+        "cycle": 10,
+        "startAge": 97,
+        "endAge": 106,
+        "gan": "신",
+        "ji": "묘",
+        "ganJi": "신묘",
+        "ohHaeng": "금",
+        "jiOhHaeng": "목",
+        "score": 30,
+        "description": "기신 대운. 금 기운에 주의하세요.",
+        "isYongSin": false,
+        "isGiSin": true
+      }
+    ],
+    "current": {
+      "cycle": 3,
+      "startAge": 27,
+      "endAge": 36,
+      "gan": "갑",
+      "ji": "신",
+      "ganJi": "갑신",
+      "ohHaeng": "목",
+      "jiOhHaeng": "금",
+      "score": 80,
+      "description": "용신 대운! 목 기운이 도와줍니다.",
+      "isYongSin": true,
+      "isGiSin": false
+    },
+    "currentAge": 36,
+    "bestPeriod": {
+      "cycle": 1,
+      "startAge": 7,
+      "endAge": 16,
+      "gan": "임",
+      "ji": "오",
+      "ganJi": "임오",
+      "ohHaeng": "수",
+      "jiOhHaeng": "화",
+      "score": 95,
+      "description": "용신 대운! 수 기운이 도와줍니다.",
+      "isYongSin": true,
+      "isGiSin": false
+    },
+    "worstPeriod": {
+      "cycle": 10,
+      "startAge": 97,
+      "endAge": 106,
+      "gan": "신",
+      "ji": "묘",
+      "ganJi": "신묘",
+      "ohHaeng": "금",
+      "jiOhHaeng": "목",
+      "score": 30,
+      "description": "기신 대운. 금 기운에 주의하세요.",
+      "isYongSin": false,
+      "isGiSin": true
+    }
+  },
+  "currentYearSewoon": {
+    "year": 2026,
+    "age": 36,
+    "gan": "병",
+    "ji": "오",
+    "ganJi": "병오",
+    "ohHaeng": "화",
+    "animal": "말",
+    "score": 50,
+    "description": "2026년은 병오년(말띠 해)입니다. 화 기운이 작용하는 평범한 해입니다.",
+    "isYongSin": false,
+    "daewoonInteraction": 0
+  },
+  "nextYearSewoon": {
+    "year": 2027,
+    "age": 37,
+    "gan": "정",
+    "ji": "미",
+    "ganJi": "정미",
+    "ohHaeng": "화",
+    "animal": "양",
+    "score": 50,
+    "description": "2027년은 정미년(양띠 해)입니다. 화 기운이 작용하는 평범한 해입니다.",
+    "isYongSin": false,
+    "daewoonInteraction": 0
+  },
+  "sinsal": {
+    "gilSin": [
+      "장성살(將星煞)",
+      "반안살(攀鞍煞)",
+      "천을귀인(天乙貴人)"
+    ],
+    "hyungSin": [
+      "월살(月煞)",
+      "망신살(亡身煞)"
+    ],
+    "hasCheonEulGuiIn": true,
+    "hasMunChangGuiIn": false,
+    "hasYeokMaSal": false,
+    "hasDoHwaSal": false,
+    "hasYangInSal": false,
+    "hasGeopSal": false,
+    "hasGongMang": false,
+    "hasGoeGangSal": false,
+    "summary": "【신살 분석 결과】\n\n▶ 길한 신살: 장성살(將星煞), 반안살(攀鞍煞), 천을귀인(天乙貴人)\n  - 리더십, 권위, 출세운\n  - 안정, 기회 포착, 행운\n  - 천을귀인: 귀인의 도움을 받는 길성 (미)\n\n▶ 주의 신살: 월살(月煞), 망신살(亡身煞)\n  - 육친 문제, 가정불화\n  - 명예 실추, 체면 손상\n"
+  },
+  "relations": {
+    "cheonganHap": [],
+    "cheonganChung": [],
+    "jijiYukHap": [
+      "년시 오미합"
+    ],
+    "jijiSamHap": [],
+    "jijiChung": [],
+    "jijiHyung": [],
+    "jijiBan": [],
+    "jijiPa": [],
+    "jijiHae": [],
+    "summary": "지지육합: 1개"
+  },
+  "personality": {
+    "dayMasterTraits": {
+      "keyword": "강철, 결단력",
+      "strengths": [
+        "결단력",
+        "정직함",
+        "실행력"
+      ],
+      "weaknesses": [
+        "무뚝뚝함",
+        "융통성 부족"
+      ],
+      "advice": "부드러움을 기르세요"
+    },
+    "dominantSipsung": {
+      "type": "비겁",
+      "traits": [
+        "독립심",
+        "경쟁심",
+        "자존심"
+      ]
+    },
+    "careerAptitude": [
+      "개인사업",
+      "스포츠",
+      "영업"
+    ],
+    "relationshipStyle": "독립적이고 주도적인 관계를 선호합니다."
+  },
+  "year": {
+    "gan": "경",
+    "ji": "오"
+  },
+  "month": {
+    "gan": "신",
+    "ji": "사"
+  },
+  "day": {
+    "gan": "경",
+    "ji": "진"
+  },
+  "time": {
+    "gan": "계",
+    "ji": "미"
+  },
+  "ohHaengBalance": {
+    "목": 6,
+    "화": 21,
+    "토": 27,
+    "금": 33,
+    "수": 12
+  },
+  "sipSungBalance": {
+    "비겁": 40,
+    "식상": 15,
+    "재성": 10,
+    "관성": 15,
+    "인성": 20
+  },
+  "fullSaju": "경오 신사 경진 계미",
+  "tenGods": {
+    "비견": 30,
+    "겁재": 10,
+    "식신": 0,
+    "상관": 15,
+    "정재": 10,
+    "편재": 0,
+    "정관": 10,
+    "편관": 5,
+    "정인": 10,
+    "편인": 10
+  },
+  "fiveElements": {
+    "wood": 6,
+    "fire": 21,
+    "earth": 27,
+    "metal": 33,
+    "water": 12
+  }
+}
