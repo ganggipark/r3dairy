@@ -1,10 +1,12 @@
-"""End-to-end pipeline: birth + date range → PDF.
+"""End-to-end pipeline with concurrent per-day processing.
 
-Stages: saju (1x) → qimen (Nx) → LLM content (Nx) → render (1x).
-Features: file-based caching, failure isolation, progress callback.
+Stages: saju (1x) → qimen + LLM content (Nx in parallel) → render (1x).
+Concurrency: ThreadPoolExecutor (I/O bound: subprocess + HTTP).
 """
 from __future__ import annotations
 import hashlib
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -38,7 +40,6 @@ class PipelineResult:
 
 
 def _customer_id(birth: SajuInput) -> str:
-    """Stable 12-char ID for cache namespacing."""
     s = (
         f"{birth.year}-{birth.month}-{birth.day}T{birth.hour}:{birth.minute}_"
         f"{birth.gender}_lunar{birth.isLunar}_leap{birth.isLeapMonth}_"
@@ -73,6 +74,7 @@ def generate_diary(
     days: int,
     output_path: Path | str,
     *,
+    concurrency: int = 5,
     provider: str = "deepinfra",
     model: Optional[str] = None,
     target_hour: int = 12,
@@ -81,7 +83,11 @@ def generate_diary(
     progress: Optional[Callable[[PipelineProgress], None]] = None,
     title: str = "내 다이어리",
 ) -> PipelineResult:
-    """End-to-end: 1 customer + N days → 1 PDF."""
+    """End-to-end: 1 customer + N days → 1 PDF.
+
+    Per-day work (qimen + LLM) runs in a ThreadPoolExecutor with `concurrency`
+    workers. Render is sequential after all days complete.
+    """
     output_path = Path(output_path)
     cache_dir = Path(cache_dir) if cache_dir else None
     cust_id = _customer_id(birth)
@@ -89,54 +95,76 @@ def generate_diary(
     if progress:
         progress(PipelineProgress(0, days, start_date, "saju"))
     saju = calculate_saju(birth)
-
     birth_dt = datetime(birth.year, birth.month, birth.day, birth.hour, birth.minute)
 
-    contents: list[DailyContent] = []
-    errors: list[dict] = []
+    dates = [start_date + timedelta(days=i) for i in range(days)]
+
+    progress_lock = threading.Lock()
+    completed = [0]
+
+    def _emit(stage: Stage, target: date) -> None:
+        if not progress:
+            return
+        with progress_lock:
+            completed[0] += 1
+            n = completed[0]
+        progress(PipelineProgress(n, days, target, stage))
+
+    results: dict[date, DailyContent] = {}
+    missing: list[date] = []
     cache_hits = 0
 
-    for i in range(days):
-        target = start_date + timedelta(days=i)
-        idx = i + 1
+    if cache_dir:
+        for target in dates:
+            cached = _cache_get(cache_dir, cust_id, target)
+            if cached is not None:
+                results[target] = cached
+                cache_hits += 1
+                _emit("cache_hit", target)
+            else:
+                missing.append(target)
+    else:
+        missing = list(dates)
 
+    def _work_day(target: date) -> tuple[date, DailyContent | BaseException]:
         try:
-            if cache_dir:
-                cached = _cache_get(cache_dir, cust_id, target)
-                if cached:
-                    if progress:
-                        progress(PipelineProgress(idx, days, target, "cache_hit"))
-                    contents.append(cached)
-                    cache_hits += 1
-                    continue
-
-            if progress:
-                progress(PipelineProgress(idx, days, target, "qimen"))
+            _emit("qimen", target)
             qimen = calculate_qimen(birth_dt, target, target_hour=target_hour)
-
-            if progress:
-                progress(PipelineProgress(idx, days, target, "content"))
             content = generate_daily_content(
                 saju=saju, qimen=qimen, target_date=target,
                 provider=provider, model=model,
             )
-
             if cache_dir:
                 _cache_put(cache_dir, cust_id, target, content)
+            _emit("content", target)
+            return target, content
+        except BaseException as e:
+            return target, e
 
-            contents.append(content)
-        except Exception as e:
-            errors.append({"date": target.isoformat(), "error": str(e)})
-            if not skip_failed:
-                raise
+    errors: list[dict] = []
 
-    if not contents:
+    if missing:
+        with ThreadPoolExecutor(max_workers=concurrency) as ex:
+            futures = {ex.submit(_work_day, d): d for d in missing}
+            for fut in as_completed(futures):
+                target, outcome = fut.result()
+                if isinstance(outcome, BaseException):
+                    errors.append({"date": target.isoformat(), "error": str(outcome)})
+                    if not skip_failed:
+                        for other in futures:
+                            other.cancel()
+                        raise outcome
+                else:
+                    results[target] = outcome
+
+    if not results:
         raise RuntimeError(
             f"All {days} days failed. First error: {errors[0] if errors else 'unknown'}"
         )
 
     if progress:
         progress(PipelineProgress(days, days, start_date, "render"))
+    contents = [results[d] for d in dates if d in results]
     render_diary(contents, output_path, title=title)
 
     return PipelineResult(

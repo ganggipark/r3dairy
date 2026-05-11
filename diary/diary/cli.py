@@ -54,6 +54,7 @@ def build_parser() -> argparse.ArgumentParser:
     g_pipe.add_argument("--cache-dir", default=".cache/content")
     g_pipe.add_argument("--no-cache", action="store_true")
     g_pipe.add_argument("--target-hour", type=int, default=12, help="일간 기문 기준 시")
+    g_pipe.add_argument("--concurrency", type=int, default=5, help="병렬 워커 수")
     g_pipe.add_argument("--fail-fast", action="store_true", help="첫 실패 시 즉시 종료")
     g_pipe.add_argument("--quiet", action="store_true", help="진행률 숨김")
 
@@ -96,6 +97,7 @@ def main(argv: list[str] | None = None) -> int:
             provider=args.provider,
             model=args.model,
             target_hour=args.target_hour,
+            concurrency=args.concurrency,
             cache_dir=cache,
             skip_failed=not args.fail_fast,
             progress=on_progress,
