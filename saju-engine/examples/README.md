@@ -1,73 +1,46 @@
 # saju-engine examples
 
-`cli.js`의 입출력 계약(contract) 문서.
+`cli.js` (사주) + `qimen-cli.js` (기문) 입출력 계약 문서.
 
 ## 파일
 
-- `sample_input.json` — `SajuCalculationInput` 입력 예시
-- `sample_output.json` — `CompleteSajuData` 출력 (cli.js를 위 입력으로 호출한 결과)
+- `sample_input.json` / `sample_output.json` — 사주 (cli.js)
+- `sample_qimen_input.json` / `sample_qimen_output.json` — 기문 (qimen-cli.js)
 
 ## 재생성
 
 ```bash
 cd saju-engine
 cat examples/sample_input.json | node cli.js > examples/sample_output.json
+cat examples/sample_qimen_input.json | node qimen-cli.js > examples/sample_qimen_output.json
 ```
 
-## 입력 스펙
+## 사주 입력 스펙
 
-| 필드 | 타입 | 필수 | 기본 | 설명 |
-|---|---|---|---|---|
-| year | number | ✓ | — | 출생연도 (4자리) |
-| month | number | ✓ | — | 출생월 (1-12) |
-| day | number | ✓ | — | 출생일 (1-31) |
-| hour | number | ✓ | — | 출생시 (0-23) |
-| minute | number | | 0 | 출생분 (0-59) |
-| gender | "male" \| "female" | ✓ | — | 성별 |
-| isLunar | boolean | | false | 음력 여부 |
-| isLeapMonth | boolean | | false | 윤월 여부 |
-| useTrueSolarTime | boolean | | true | 진태양시 보정 |
-| birthPlace | string | | "서울" | 출생지 |
+`{year, month, day, hour, minute?, gender, isLunar?, isLeapMonth?, useTrueSolarTime?, birthPlace?}`
 
-## 출력 스키마 (요약)
+자세한 출력 스키마는 `sample_output.json`을 단일 진실 소스로 사용.
+주요 루트 키: `version`, `calculatedAt`, `isComplete`, `birthInfo`, `fourPillars`,
+`fullSajuString`, `ohHaeng`, `sipSung`, `gyeokGuk`, `yongSin`, `daewoon`,
+`currentYearSewoon`, `nextYearSewoon`, `sinsal`, `relations`, `personality` (+ 별칭).
 
-`sample_output.json`이 단일 진실 소스(SoT). 주요 섹션 키만 발췌:
+## 기문 입력 스펙
 
-| 섹션 | 주요 키 |
-|---|---|
-| `fourPillars.{year,month,day,time}` | `gan`, `ji`, `ganJi`, `ganOhHaeng`, `jiOhHaeng` |
-| `fullSajuString` | `"경오 신사 경진 계미"` 형식 |
-| `ohHaeng` | `dominant`, `weak`, `balance` |
-| `sipSung` | `dominant`, `weak`, `balance`, `detail` |
-| `gyeokGuk` | `dayMaster`, `dayMasterOhHaeng`, `strength`, `gyeokGukType`, `description`, `season`, `monthBranch`, `strengthDetail` |
-| `yongSin` | `yongSin`, `giSin`, `huiSin`, `yongSinReason`, `giSinReason`, `yongSinScore` |
-| `daewoon` | `startAge`, `direction`, `list[]`, `current`, `currentAge`, `bestPeriod`, `worstPeriod` |
-| `currentYearSewoon` / `nextYearSewoon` | `year`, `age`, `gan`, `ji`, `ganJi`, `ohHaeng`, `animal`, `score` |
-| `sinsal` | `gilSin`, `hyungSin`, `hasCheonEulGuiIn`, `hasMunChangGuiIn`, `hasYeokMaSal`, `hasDoHwaSal`, `hasYangInSal`, `hasGeopSal` |
-| `personality` | `dayMasterTraits`, `dominantSipsung`, `careerAptitude`, `relationshipStyle` |
-| `relations` | (객체) |
+`{birthDate: ISO8601, targetDate: ISO8601, targetHour?: 0-23}`
 
-루트 메타: `version`, `calculatedAt`, `isComplete`, `birthInfo`.
-루트 별칭(alias) 키: `year`, `month`, `day`, `time`, `ohHaengBalance`, `sipSungBalance`, `fullSaju`, `tenGods`, `fiveElements` — `fourPillars`/`ohHaeng`/`sipSung` 등의 평탄화 복제. M2에서는 **구조화된 키(`fourPillars`, `ohHaeng`)를 우선 사용**.
+기본 `targetHour=12` (오시) — 그날의 대표 기문 스냅샷.
 
-총 루트 키: 25.
+기문 출력 키: `hourStart`, `hourEnd`, `hourBranch`, `palaces[9]`,
+`bestPalace`, `avoidPalace`, `overallQuality` ('excellent'|'good'|'neutral'|'bad'),
+`userGuidance`. 각 palace: `palaceNum`, `directionKo`/`directionEn`,
+`gate`, `star`, `deity`, `earthlyPlateGan`, `heavenlyPlateGan`, `qualityScore`.
 
-## Python subprocess 호출 (M2 reference)
+## Python subprocess 패턴
 
 ```python
-import json, subprocess
-from pathlib import Path
+from diary import SajuInput, calculate_saju, calculate_qimen
+from datetime import datetime, date
 
-SAJU_ENGINE = Path(__file__).parent.parent / "saju-engine"
-
-def calculate_saju(birth_info: dict) -> dict:
-    result = subprocess.run(
-        ["node", "cli.js"],
-        cwd=str(SAJU_ENGINE),
-        input=json.dumps(birth_info),
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return json.loads(result.stdout)
+saju = calculate_saju(SajuInput(year=1990, month=5, day=15, hour=14, gender="male"))
+qimen = calculate_qimen(datetime(1990, 5, 15, 14, 0), date(2026, 5, 15), target_hour=12)
 ```

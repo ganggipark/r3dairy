@@ -1,4 +1,4 @@
-"""Saju I/O + DailyContent models."""
+"""Saju + Qimen I/O models. Minimal typing; rest via extra='allow'."""
 from __future__ import annotations
 from typing import Literal
 
@@ -39,6 +39,38 @@ class CompleteSajuData(BaseModel):
     isComplete: bool
     fourPillars: FourPillars
     fullSajuString: str
+
+
+OverallQuality = Literal["excellent", "good", "neutral", "bad"]
+
+
+class QimenPalace(BaseModel):
+    """9궁 중 한 궁의 기문 정보."""
+    model_config = ConfigDict(extra="allow")
+
+    palaceNum: int
+    directionKo: str
+    directionEn: str
+    gate: str
+    star: str
+    deity: str
+    earthlyPlateGan: str
+    heavenlyPlateGan: str
+    qualityScore: float
+
+
+class QimenResult(BaseModel):
+    """기문둔갑 1시진 계산 결과 (9궁 + best/avoid)."""
+    model_config = ConfigDict(extra="allow")
+
+    hourStart: int
+    hourEnd: int
+    hourBranch: str
+    palaces: list[QimenPalace] = Field(..., min_length=9, max_length=9)
+    bestPalace: QimenPalace
+    avoidPalace: QimenPalace
+    overallQuality: OverallQuality
+    userGuidance: str
 
 
 class DailyContent(BaseModel):
