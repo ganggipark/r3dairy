@@ -4,9 +4,8 @@ import json
 import os
 import subprocess
 from pathlib import Path
-from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from .models import CompleteSajuData, SajuInput
 
 _DEFAULT_SAJU_ENGINE_DIR = (
     Path(__file__).resolve().parent.parent.parent / "saju-engine"
@@ -19,49 +18,6 @@ def _resolve_saju_engine_dir() -> Path:
 
 
 SAJU_ENGINE_DIR = _resolve_saju_engine_dir()
-
-
-class SajuInput(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    year: int
-    month: int
-    day: int
-    hour: int
-    minute: int = 0
-    gender: Literal["male", "female"]
-    isLunar: bool = False
-    isLeapMonth: bool = False
-    useTrueSolarTime: bool = True
-    birthPlace: str = "서울"
-
-
-class Pillar(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
-    gan: str
-    ji: str
-    ganJi: str
-    ganOhHaeng: str
-    jiOhHaeng: str
-
-
-class FourPillars(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
-    year: Pillar
-    month: Pillar
-    day: Pillar
-    time: Pillar
-
-
-class CompleteSajuData(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
-    version: str
-    isComplete: bool
-    fullSajuString: str
-    fourPillars: FourPillars
 
 
 class SajuEngineError(RuntimeError):

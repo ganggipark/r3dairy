@@ -9,6 +9,7 @@ description = "Saju-driven print diary generator (Python pipeline)"
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.5",
+    "anthropic>=0.40.0",
 ]
 
 [project.optional-dependencies]
