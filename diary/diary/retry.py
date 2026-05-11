@@ -46,6 +46,16 @@ def is_retryable(exc: BaseException) -> bool:
         if 400 <= status < 500:
             return False
 
+    # 메시지에 auth/permission 키워드 — wrapped ContentGenerationError(401)도 잡힘
+    msg_lower = str(exc).lower()
+    if any(kw in msg_lower for kw in (
+        "401", "403",
+        "unauthorized", "forbidden",
+        "authentication", "not authorized",
+        "invalid api key", "invalid_api_key",
+    )):
+        return False
+
     if name in _RETRYABLE_NAMES:
         return True
 

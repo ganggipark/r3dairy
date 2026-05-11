@@ -118,3 +118,28 @@ def test_content_error_actually_retries():
         return "ok"
     assert with_retry(fn, max_attempts=3) == "ok"
     assert calls[0] == 3
+
+
+def test_wrapped_auth_error_not_retried():
+    """ContentGenerationError wrapping 401 should NOT retry."""
+    e = ContentGenerationError(
+        "deepinfra API failed: Error code: 401 - "
+        "{'detail': 'User is not authorized to access this resource'}"
+    )
+    assert not is_retryable(e)
+
+
+def test_wrapped_forbidden_not_retried():
+    e = ContentGenerationError("API failed: 403 forbidden")
+    assert not is_retryable(e)
+
+
+def test_wrapped_invalid_api_key_not_retried():
+    e = ContentGenerationError("openai API failed: Invalid API key provided")
+    assert not is_retryable(e)
+
+
+def test_genuine_json_error_still_retried():
+    """JSON parse error에는 401/403 keyword 없으므로 정상 retry."""
+    e = ContentGenerationError("LLM output not JSON: Expecting comma at line 15")
+    assert is_retryable(e)
