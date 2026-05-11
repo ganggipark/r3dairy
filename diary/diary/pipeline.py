@@ -109,7 +109,13 @@ def generate_diary(
     completed = [0]
 
     def _emit(stage: Stage, target: date) -> None:
+        """Emit progress. qimen is stage-transition (no count); others = day done."""
         if not progress:
+            return
+        if stage == "qimen":
+            with progress_lock:
+                n = completed[0]
+            progress(PipelineProgress(n, days, target, stage))
             return
         with progress_lock:
             completed[0] += 1

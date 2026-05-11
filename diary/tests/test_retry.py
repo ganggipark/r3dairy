@@ -89,3 +89,32 @@ def test_exhausts_retries_then_raises():
     with pytest.raises(APIConnectionError):
         with_retry(fn, max_attempts=3)
     assert calls[0] == 3
+
+
+class ContentGenerationError(Exception): pass
+class JSONDecodeError(Exception): pass
+class ValidationError(Exception): pass
+
+
+def test_content_generation_error_retryable():
+    assert is_retryable(ContentGenerationError("LLM output not JSON"))
+
+
+def test_json_decode_error_retryable():
+    assert is_retryable(JSONDecodeError("Expecting comma"))
+
+
+def test_pydantic_validation_error_retryable():
+    assert is_retryable(ValidationError("min_length violation"))
+
+
+def test_content_error_actually_retries():
+    """End-to-end: ContentGenerationError → retry → success."""
+    calls = [0]
+    def fn():
+        calls[0] += 1
+        if calls[0] < 3:
+            raise ContentGenerationError("LLM output not JSON")
+        return "ok"
+    assert with_retry(fn, max_attempts=3) == "ok"
+    assert calls[0] == 3

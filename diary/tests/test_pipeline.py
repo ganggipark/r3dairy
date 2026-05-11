@@ -146,6 +146,27 @@ def test_concurrent_preserves_date_order_in_pdf(birth, tmp_path, monkeypatch):
     ]
 
 
+def test_progress_counter_never_exceeds_total(birth, tmp_path, monkeypatch):
+    """M11: qimen emit는 stage 표시일 뿐 카운터를 올리면 안 됨."""
+    _patch_llm(monkeypatch)
+    output = tmp_path / "counted.pdf"
+
+    max_observed = [0]
+    def track(p):
+        max_observed[0] = max(max_observed[0], p.day)
+
+    generate_diary(
+        birth=birth, start_date=date(2026, 5, 15), days=5,
+        output_path=output, cache_dir=None,
+        concurrency=2,
+        progress=track,
+    )
+
+    assert max_observed[0] <= 5, (
+        f"progress counter exceeded total: {max_observed[0]} > 5"
+    )
+
+
 def test_concurrent_with_partial_failure(birth, tmp_path, monkeypatch):
     """일부 날짜만 실패해도 나머지는 성공 + 렌더."""
     from diary import content as content_module
@@ -176,6 +197,7 @@ def test_concurrent_with_partial_failure(birth, tmp_path, monkeypatch):
         birth=birth, start_date=date(2026, 5, 15), days=3,
         output_path=output, cache_dir=None,
         concurrency=2, skip_failed=True,
+        max_retries=1,  # disable retry to test failure isolation in pool
     )
 
     assert result.succeeded >= 1

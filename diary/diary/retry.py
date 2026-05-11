@@ -9,12 +9,17 @@ from typing import Callable, TypeVar
 T = TypeVar("T")
 
 _RETRYABLE_NAMES = frozenset([
+    # HTTP / network transient
     "RateLimitError",
     "APITimeoutError",
     "APIConnectionError",
     "InternalServerError",
     "ServiceUnavailableError",
     "APIStatusError",
+    # LLM output quality (often self-resolves on retry)
+    "ContentGenerationError",
+    "JSONDecodeError",
+    "ValidationError",
 ])
 
 _NON_RETRYABLE_NAMES = frozenset([
