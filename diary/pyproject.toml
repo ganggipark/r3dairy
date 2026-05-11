@@ -23,6 +23,7 @@ dev = [
 
 [project.scripts]
 diary = "diary.cli:main"
+diary-batch = "diary.batch:main"
 
 [tool.setuptools.packages.find]
 include = ["diary*"]

@@ -1,0 +1,4 @@
+customer_id,name,year,month,day,hour,gender,minute,lunar,leap_month,birth_place
+A001,홍길동,1990,5,15,14,male,30,false,false,서울
+A002,김영희,1992,8,20,9,female,0,false,false,부산
+A003,이철수,1985,11,3,18,male,0,true,false,대구
