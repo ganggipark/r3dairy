@@ -2,183 +2,46 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-/lib/
-/lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Virtual Environment
+.eggs/
+build/
+dist/
+.venv/
 venv/
-ENV/
 env/
-.venv
 
-# FastAPI / uvicorn
-.pytest_cache/
-.coverage
-htmlcov/
-*.log
-
-# Node.js / Next.js
+# Node
 node_modules/
 .next/
-out/
-.vercel
-.turbo
+*.tsbuildinfo
 
-# Build outputs
-*.pyc
-*.pyo
-*.pyd
-.DS_Store
-Thumbs.db
+# Caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # IDE
 .vscode/
 .idea/
 *.swp
-*.swo
-*~
 
-# Environment variables
-.env
-.env.local
-.env.production
-.env.*.local
+# Claude / OMC
+.claude/settings.local.json
+.omc/
 
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# PDF outputs (temporary)
-*.pdf
-!pdf-generator/templates/*.pdf
+# Outputs
+out/
+output/
+diary-gen/output/
+graphify-out/
+screenshots/
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Testing
-coverage/
-.nyc_output/
-
-# Temporary files
-tmp/
-temp/
-
-# Claude Code / OMC
-.claude/settings.json
-.claude/plans/
-.claudeignore
-.omc/
-.playwright-mcp/
-.sisyphus/
-
-# Screenshots
-screenshots/
-
-# Temporary build files
-nul
+# Archives
 *.zip
-*-temp/
-*-backup/
-saju-calculator-temp/
-backend/saju-calculator/cli.mjs
-backend/test_cli_direct.json
-
-# Frontend screenshots
-frontend/*.png
-
-# Session files
-*.backup
-*.old
-SESSION*.txt
-SESSSION*.txt
-
-# Temporary scripts (root only)
-/inspect_*.py
-/test_auth*.py
-/test_direct*.py
-/test_full*.py
-/test_journey*.py
-/verify_*.sh
-/measure_*.py
-/expand_*.py
-/simple-*.js
-/run-test.js
-
-# Deployment docs (temporary)
-/*_CHECKLIST.md
-/*_REPORT.md
-/*_SUMMARY.md
-/CURRENT_TASKS.md
-/*FIX*.md
-/*_ISSUE.md
-/*_GUIDE.md
-/*_RESULT.md
-/NEXT_*.md
-/*_STATUS.md
-/*_SUCCESS.md
-/*_COMPLETE.md
-/*_VERIFICATION.md
-/LOCAL_*.md
-/LOGIN_*.md
-/CORS_*.md
-/PORT_*.md
-/RESPONSIVE_*.md
-
-# Root screenshots
-/*.png
-
-# Playwright reports and test results
-frontend/playwright-report/
-frontend/test-results/
-
-# Test scripts (backend)
-backend/test_*.py
-backend/create_test_user.py
-
-# Test scripts (root)
-browser-test.mjs
-test_*.js
-*.ps1
-
-# Test HTML
-frontend/public/test-login.html
-
-# Experimental folders
-backend/saju-engine/
-saju-engine/
-mcp-servers/
-tests/
-
-# Frontend test specs (ad-hoc)
-frontend/tests/
-
-# Build artifacts (root only)
-/opencode.json
-/package.json
-/playwright.config.ts
-.mcp.json
+*.tar.gz
+*.log
+*.png
