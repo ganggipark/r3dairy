@@ -1,18 +1,15 @@
-"""Generate 1 day content via real API.
-
-Default: deepinfra (Qwen/Qwen3-235B-A22B-Instruct-2507)
-
-Examples:
-    python samples/generate_sample.py
-    python samples/generate_sample.py --provider openai
-    python samples/generate_sample.py --provider anthropic --date 2026-06-01
-"""
+"""Generate 1 day content via real API. saju + qimen + LLM 통합."""
 import argparse
 import os
 import sys
-from datetime import date
+from datetime import date, datetime
 
-from diary import SajuInput, calculate_saju, generate_daily_content
+from diary import (
+    SajuInput,
+    calculate_qimen,
+    calculate_saju,
+    generate_daily_content,
+)
 
 
 KEY_VARS = {
@@ -33,15 +30,28 @@ def main():
     if not os.environ.get(key_var):
         sys.exit(f"{key_var} required")
 
-    saju = calculate_saju(
-        SajuInput(year=1990, month=5, day=15, hour=14, gender="male")
-    )
-    print(f"provider : {args.provider}")
-    print(f"사주      : {saju.fullSajuString}\n")
-
+    birth = SajuInput(year=1990, month=5, day=15, hour=14, gender="male")
     target = date.fromisoformat(args.date)
+
+    saju = calculate_saju(birth)
+    qimen = calculate_qimen(
+        datetime(birth.year, birth.month, birth.day, birth.hour, birth.minute),
+        target,
+        target_hour=12,
+    )
+
+    print(f"provider     : {args.provider}")
+    print(f"사주         : {saju.fullSajuString}")
+    print(
+        f"기문 best    : 궁{qimen.bestPalace.palaceNum} "
+        f"{qimen.bestPalace.directionKo} (score {qimen.bestPalace.qualityScore})"
+    )
+    print(f"기문 시간    : {qimen.hourStart}시-{qimen.hourEnd}시")
+    print(f"전체 운      : {qimen.overallQuality}\n")
+
     content = generate_daily_content(
         saju=saju,
+        qimen=qimen,
         target_date=target,
         provider=args.provider,
         model=args.model,

@@ -1,4 +1,4 @@
-"""Saju + Qimen I/O models. Minimal typing; rest via extra='allow'."""
+"""Saju + Qimen + Content models."""
 from __future__ import annotations
 from typing import Literal
 
@@ -41,13 +41,8 @@ class CompleteSajuData(BaseModel):
     fullSajuString: str
 
 
-OverallQuality = Literal["excellent", "good", "neutral", "bad"]
-
-
 class QimenPalace(BaseModel):
-    """9궁 중 한 궁의 기문 정보."""
     model_config = ConfigDict(extra="allow")
-
     palaceNum: int
     directionKo: str
     directionEn: str
@@ -60,29 +55,43 @@ class QimenPalace(BaseModel):
 
 
 class QimenResult(BaseModel):
-    """기문둔갑 1시진 계산 결과 (9궁 + best/avoid)."""
     model_config = ConfigDict(extra="allow")
-
     hourStart: int
     hourEnd: int
     hourBranch: str
     palaces: list[QimenPalace] = Field(..., min_length=9, max_length=9)
     bestPalace: QimenPalace
     avoidPalace: QimenPalace
-    overallQuality: OverallQuality
+    overallQuality: Literal["excellent", "good", "neutral", "bad"]
     userGuidance: str
 
 
-class DailyContent(BaseModel):
-    """1일치 일기 콘텐츠. MVP 9필드, 사주 용어 금지(고객 노출)."""
+class _LLMNarrative(BaseModel):
+    """LLM이 생성하는 7개 narrative 필드 (lucky_*는 Python이 결정)."""
     model_config = ConfigDict(extra="forbid")
 
-    date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
     daily_summary: str = Field(..., min_length=50, max_length=400)
     daily_focus: str = Field(..., min_length=20, max_length=200)
     daily_caution: str = Field(..., min_length=20, max_length=200)
-    lucky_color: str = Field(..., max_length=20)
-    lucky_direction: str = Field(..., max_length=10)
-    lucky_time: str = Field(..., max_length=30)
+    mindfulness: str = Field(..., min_length=80, max_length=300)
+    right_page_hint: str = Field(..., min_length=8, max_length=60)
+    recommended_actions: list[str] = Field(..., min_length=1, max_length=5)
+    things_to_avoid: list[str] = Field(..., min_length=1, max_length=5)
+
+
+class DailyContent(BaseModel):
+    """1일치 일기 콘텐츠 (11 필드). 좌측: 가이드, 우측: 작성 공간 + hint."""
+    model_config = ConfigDict(extra="forbid")
+
+    date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+    lucky_color: str
+    lucky_direction: str
+    lucky_time: str
+
+    daily_summary: str = Field(..., min_length=50, max_length=400)
+    daily_focus: str = Field(..., min_length=20, max_length=200)
+    daily_caution: str = Field(..., min_length=20, max_length=200)
+    mindfulness: str = Field(..., min_length=80, max_length=300)
+    right_page_hint: str = Field(..., min_length=8, max_length=60)
     recommended_actions: list[str] = Field(..., min_length=1, max_length=5)
     things_to_avoid: list[str] = Field(..., min_length=1, max_length=5)
