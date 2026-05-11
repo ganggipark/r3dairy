@@ -11,6 +11,7 @@ from typing import Iterable, Optional
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from weasyprint import CSS, HTML
+from weasyprint.text.fonts import FontConfiguration
 
 from .models import DailyContent
 
@@ -84,11 +85,15 @@ def render_diary(
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    font_config = FontConfiguration()
     css = _STATIC_DIR / "styles.css"
-    stylesheets = [CSS(filename=str(css))] if css.exists() else None
+    stylesheets = (
+        [CSS(filename=str(css), font_config=font_config)] if css.exists() else None
+    )
 
     HTML(string=html_str, base_url=str(_TEMPLATES_DIR)).write_pdf(
         target=str(output_path),
         stylesheets=stylesheets,
+        font_config=font_config,
     )
     return output_path

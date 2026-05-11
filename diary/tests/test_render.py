@@ -114,3 +114,51 @@ def test_render_default_no_cover_back_compat(tmp_path):
     output = tmp_path / "plain.pdf"
     result = render_diary([_mock_day()], output)
     assert result.exists()
+
+
+def test_pretendard_font_files_present():
+    """3 weights committed to repo with sane file sizes."""
+    from diary.render import _STATIC_DIR
+    fonts_dir = _STATIC_DIR / "fonts"
+    for weight in ("Regular", "SemiBold", "Bold"):
+        font_file = fonts_dir / f"Pretendard-{weight}.woff2"
+        assert font_file.exists(), f"missing: {font_file}"
+        assert font_file.stat().st_size > 10_000, f"suspicious size: {font_file}"
+
+
+def test_pdf_embeds_pretendard(tmp_path):
+    """PDF font dictionary contains a Pretendard entry.
+
+    pypdf inspects the actual /Font resources (compressed in PDF streams),
+    so we don't rely on raw byte search through compressed content.
+    Without @font-face the PDF falls back to system fonts (Malgun Gothic
+    on Windows). With FontConfiguration wiring, Pretendard is loaded,
+    subset, and embedded.
+    """
+    from pypdf import PdfReader
+
+    output = tmp_path / "embedded.pdf"
+    render_diary([_mock_day()], output)
+
+    reader = PdfReader(str(output))
+    fonts: set[str] = set()
+    for page in reader.pages:
+        font_dict = page.get("/Resources", {}).get("/Font", {})
+        if hasattr(font_dict, "keys"):
+            for fk in font_dict.keys():
+                obj = font_dict[fk].get_object() if hasattr(font_dict[fk], "get_object") else font_dict[fk]
+                basefont = str(obj.get("/BaseFont", ""))
+                fonts.add(basefont)
+
+    assert any("Pretendard" in f for f in fonts), (
+        f"Pretendard not in PDF /Font resources. Found: {fonts}"
+    )
+
+
+def test_ofl_license_bundled():
+    """OFL license must be distributed with the font (OFL §5)."""
+    from diary.render import _STATIC_DIR
+    ofl = _STATIC_DIR / "fonts" / "OFL.txt"
+    assert ofl.exists()
+    content = ofl.read_text(encoding="utf-8")
+    assert "SIL OPEN FONT LICENSE" in content.upper()
