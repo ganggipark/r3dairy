@@ -56,16 +56,12 @@
         <section class="summary"><p>{{ day.daily_summary }}</p></section>
 
         <div class="lucky-box">
-            <div class="lucky-row">
-                <span class="swatch" style="background: {{ day.lucky_color | color_hex }}"></span>
-                <span class="lucky-label">색</span><span>{{ day.lucky_color }}</span>
-            </div>
-            <div class="lucky-row">
-                <span class="lucky-label">방향</span><span>{{ day.lucky_direction }}</span>
-            </div>
-            <div class="lucky-row">
-                <span class="lucky-label">시간</span><span>{{ day.lucky_time }}</span>
-            </div>
+            <span class="swatch" style="background: {{ day.lucky_color | color_hex }}"></span>
+            <span>{{ day.lucky_color }}</span>
+            <span class="lucky-sep">·</span>
+            <span>{{ day.lucky_direction }}</span>
+            <span class="lucky-sep">·</span>
+            <span>{{ day.lucky_time }}</span>
         </div>
 
         <section class="focus"><h3>오늘의 집중</h3><p>{{ day.daily_focus }}</p></section>
@@ -93,12 +89,13 @@
             </div>
         </section>
         {% endif %}
-        <section class="mindfulness"><h3>마음챙김</h3><p>{{ day.mindfulness }}</p></section>
     </article>
 
     <article class="page right-page">
         <header class="date-mini">{{ day.date }}</header>
-        <div class="hint-top">{{ day.right_page_hint }}</div>
+        {% if day.mindfulness %}
+        <div class="mindfulness-quote">{{ day.mindfulness }}</div>
+        {% endif %}
 
         <div class="time-grid">
         {% for tl in entry.time_lines %}

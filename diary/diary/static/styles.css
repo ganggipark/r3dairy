@@ -37,24 +37,20 @@ body {
 }
 
 .lucky-box {
-    background: #f6f4ef;
-    padding: 3.5mm 5mm;
-    border-radius: 1.5mm;
-    margin: 2.5mm 0 3mm 0;
-    font-size: 8.5pt;
-}
-
-.lucky-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 2.5mm;
-    padding: 0.6mm 0;
+    gap: 2mm;
+    background: #f6f4ef;
+    padding: 1.5mm 3mm;
+    border-radius: 1mm;
+    margin: 2mm 0 3mm 0;
+    font-size: 8.5pt;
+    color: #444;
 }
 
-.lucky-label {
-    color: #888;
-    font-size: 8.5pt;
-    min-width: 8mm;
+.lucky-box .lucky-sep {
+    color: #aaa;
 }
 
 .swatch {
@@ -147,6 +143,18 @@ li {
     color: #777;
     margin-top: 3mm;
     letter-spacing: 0.5pt;
+}
+
+.mindfulness-quote {
+    font-size: 8.5pt;
+    font-style: italic;
+    color: #555;
+    line-height: 1.55;
+    margin: 3mm 0 4mm 0;
+    padding: 2.5mm 3.5mm;
+    border-left: 1.5pt solid #C0B89C;
+    background: #faf8f3;
+    border-radius: 0.5mm;
 }
 
 /* ===== COVER ===== */
