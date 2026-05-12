@@ -66,13 +66,16 @@
 
         <section class="focus"><h3>오늘의 집중</h3><p>{{ day.daily_focus }}</p></section>
         <section class="caution"><h3>오늘의 주의</h3><p>{{ day.daily_caution }}</p></section>
-        <section class="actions">
-            <h3>추천 행동</h3>
-            <ul>{% for a in day.recommended_actions %}<li>{{ a }}</li>{% endfor %}</ul>
-        </section>
-        <section class="avoid">
-            <h3>피할 일</h3>
-            <ul>{% for a in day.things_to_avoid %}<li>{{ a }}</li>{% endfor %}</ul>
+        <section class="action-guide">
+            <h3>오늘의 행동</h3>
+            <p class="ag-line">
+                <span class="ag-tag good">추천</span>
+                {{ day.recommended_actions | join(" · ") }}
+            </p>
+            <p class="ag-line">
+                <span class="ag-tag bad">피할</span>
+                {{ day.things_to_avoid | join(" · ") }}
+            </p>
         </section>
         {% if day.domain_advice %}
         <section class="domains">

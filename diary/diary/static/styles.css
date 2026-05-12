@@ -157,6 +157,44 @@ li {
     border-radius: 0.5mm;
 }
 
+/* ===== Action Guide (combined recommended + avoid) ===== */
+
+.action-guide {
+    margin: 1.5mm 0 2mm 0;
+}
+
+.action-guide h3 {
+    margin-bottom: 1mm;
+}
+
+.action-guide .ag-line {
+    margin: 0.5mm 0;
+    font-size: 8.5pt;
+    line-height: 1.55;
+    color: #333;
+}
+
+.ag-tag {
+    display: inline-block;
+    font-size: 6.8pt;
+    padding: 0.3mm 1.5mm;
+    border-radius: 0.6mm;
+    margin-right: 2mm;
+    font-weight: 600;
+    letter-spacing: 0.3pt;
+    vertical-align: 1pt;
+}
+
+.ag-tag.good {
+    background: #e8f0e6;
+    color: #4a7050;
+}
+
+.ag-tag.bad {
+    background: #f4e6e6;
+    color: #8a4040;
+}
+
 /* ===== COVER ===== */
 
 .cover-front, .cover-back {
