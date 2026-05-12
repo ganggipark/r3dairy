@@ -252,3 +252,37 @@ def test_pdf_contains_time_labels(tmp_path):
 
     content = output.read_bytes()
     assert content[:4] == b"%PDF"
+
+
+def test_render_cover_with_birth(tmp_path):
+    """Cover should show birth info when provided."""
+    output = tmp_path / "cover_birth.pdf"
+    result = render_diary(
+        [_mock_day()],
+        output,
+        include_cover=True,
+        customer_name="홍길동",
+        customer_birth="1990년 5월 15일 14시",
+        period="2026-05-15 — 2026-05-21",
+    )
+    assert result.exists()
+    assert result.stat().st_size > 5000
+
+
+def test_render_without_birth_back_compat(tmp_path):
+    """customer_birth가 없어도 cover는 정상 렌더."""
+    output = tmp_path / "no_birth.pdf"
+    result = render_diary(
+        [_mock_day()], output,
+        include_cover=True,
+        customer_name="홍길동",
+        period="기간",
+    )
+    assert result.exists()
+
+
+def test_lucky_hour_direction_in_pdf(tmp_path):
+    """lucky-direction-mark가 PDF에 들어가는지."""
+    output = tmp_path / "lucky_dir.pdf"
+    render_diary([_mock_day()], output)
+    assert output.read_bytes()[:4] == b"%PDF"

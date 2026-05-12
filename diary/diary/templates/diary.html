@@ -13,6 +13,7 @@
         {% if subtitle %}<div class="cover-subtitle">{{ subtitle }}</div>{% endif %}
         {% if period %}<div class="cover-period">{{ period }}</div>{% endif %}
         {% if customer_name %}<div class="cover-name">{{ customer_name }}</div>{% endif %}
+        {% if customer_birth %}<div class="cover-birth">{{ customer_birth }}</div>{% endif %}
     </div>
 </article>
 <article class="cover-back">
@@ -104,14 +105,11 @@
             <div class="time-line{% if tl.is_lucky %} lucky-hour{% endif %}">
                 <span class="time-label">{{ tl.label }}</span>
                 <span class="time-content"></span>
+                {% if tl.is_lucky %}<span class="lucky-direction-mark">{{ day.lucky_direction }}</span>{% endif %}
             </div>
         {% endfor %}
         </div>
 
-        <footer class="hint-bottom">
-            <span class="swatch small" style="background: {{ day.lucky_color | color_hex }}"></span>
-            <span>{{ day.lucky_color }} · {{ day.lucky_direction }} · {{ day.lucky_time }}</span>
-        </footer>
     </article>
 
 {% endfor %}

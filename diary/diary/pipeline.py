@@ -69,6 +69,14 @@ def _cache_put(cache_dir: Path, cust_id: str, target: date, content: DailyConten
     p.write_text(content.model_dump_json(indent=2), encoding="utf-8")
 
 
+def _format_birth(birth: SajuInput) -> str:
+    """Format birth info for cover: '1990년 5월 15일 14시 (음력)'."""
+    base = f"{birth.year}년 {birth.month}월 {birth.day}일 {birth.hour}시"
+    if birth.isLunar:
+        base += " (음력 윤월)" if birth.isLeapMonth else " (음력)"
+    return base
+
+
 def generate_diary(
     birth: SajuInput,
     start_date: date,
@@ -189,6 +197,7 @@ def generate_diary(
         title=title,
         subtitle=subtitle,
         customer_name=customer_name,
+        customer_birth=_format_birth(birth),
         period=period,
         include_cover=include_cover,
         include_month_dividers=include_month_dividers,
