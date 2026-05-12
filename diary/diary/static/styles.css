@@ -1,6 +1,4 @@
 @page {
-    size: A5;
-    margin: 14mm 13mm 16mm 13mm;
     @bottom-center {
         content: counter(page);
         font-size: 8pt;
@@ -119,15 +117,6 @@ li {
     font-style: italic;
     margin: 4mm 0 7mm 0;
     letter-spacing: 0.2pt;
-}
-
-.writing-space {
-    margin-top: 2mm;
-}
-
-.line {
-    height: 6.2mm;
-    border-bottom: 0.3pt solid #e8e6e0;
 }
 
 .hint-bottom {
@@ -291,4 +280,44 @@ li {
     src: url('fonts/Pretendard-Bold.woff2') format('woff2');
     font-weight: 700;
     font-style: normal;
+}
+
+/* ===== TIME GRID (right page) ===== */
+
+.time-grid {
+    margin-top: 3mm;
+}
+
+.time-line {
+    display: flex;
+    align-items: center;
+    min-height: 7.5mm;
+    border-bottom: 0.3pt solid #e8e6e0;
+    padding: 0.5mm 0;
+}
+
+.time-line .time-label {
+    flex: 0 0 11mm;
+    font-size: 7.5pt;
+    color: #888;
+    text-align: right;
+    padding-right: 2.5mm;
+    font-variant-numeric: tabular-nums;
+}
+
+.time-line .time-content {
+    flex: 1;
+    align-self: stretch;
+}
+
+.time-line.lucky-hour {
+    background: linear-gradient(to right, rgba(212, 168, 72, 0.10), transparent 75%);
+    border-left: 2pt solid #D4A848;
+    padding-left: 2mm;
+    margin-left: -2mm;
+}
+
+.time-line.lucky-hour .time-label {
+    color: #B89030;
+    font-weight: 600;
 }

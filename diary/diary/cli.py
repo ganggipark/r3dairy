@@ -46,6 +46,15 @@ def build_parser() -> argparse.ArgumentParser:
     g_out.add_argument("--customer-name", default=None, help="표지에 표시할 이름")
     g_out.add_argument("--no-cover", action="store_true", help="표지 페이지 제외")
     g_out.add_argument("--no-month-dividers", action="store_true", help="월 구분 페이지 제외")
+    g_out.add_argument("--page-size", default="A5",
+                       choices=["A4", "A5", "A6", "B5", "B6"],
+                       help="용지 크기 (좌우 페이지 동일)")
+    g_out.add_argument("--day-start-hour", type=int, default=7,
+                       choices=range(0, 24), metavar="0-23",
+                       help="우측 페이지 시간 그리드 시작 시")
+    g_out.add_argument("--day-end-hour", type=int, default=23,
+                       choices=range(0, 24), metavar="0-23",
+                       help="우측 페이지 시간 그리드 종료 시")
 
     g_llm = p.add_argument_group("LLM")
     g_llm.add_argument(
@@ -108,6 +117,9 @@ def main(argv: list[str] | None = None) -> int:
             include_month_dividers=not args.no_month_dividers,
             customer_name=args.customer_name,
             subtitle=args.subtitle,
+            page_size=args.page_size,
+            day_start_hour=args.day_start_hour,
+            day_end_hour=args.day_end_hour,
             cache_dir=cache,
             skip_failed=not args.fail_fast,
             progress=on_progress,

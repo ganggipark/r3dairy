@@ -88,6 +88,9 @@ def generate_diary(
     include_month_dividers: bool = True,
     customer_name: str | None = None,
     subtitle: str | None = None,
+    page_size: str = "A5",
+    day_start_hour: int = 7,
+    day_end_hour: int = 23,
 ) -> PipelineResult:
     """End-to-end: 1 customer + N days → 1 PDF.
 
@@ -189,6 +192,9 @@ def generate_diary(
         period=period,
         include_cover=include_cover,
         include_month_dividers=include_month_dividers,
+        page_size=page_size,
+        day_start_hour=day_start_hour,
+        day_end_hour=day_end_hour,
     )
 
     return PipelineResult(

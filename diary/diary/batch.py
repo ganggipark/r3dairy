@@ -75,6 +75,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--max-retries", type=int, default=3)
     p.add_argument("--cache-dir", default=".cache/content")
     p.add_argument("--target-hour", type=int, default=12)
+    p.add_argument("--page-size", default="A5",
+                   choices=["A4", "A5", "A6", "B5", "B6"])
+    p.add_argument("--day-start-hour", type=int, default=7)
+    p.add_argument("--day-end-hour", type=int, default=23)
     p.add_argument("--continue-on-error", action="store_true",
                    help="1명 실패해도 다음 고객 진행")
     p.add_argument("--summary-output", type=Path, default=None,
@@ -139,6 +143,9 @@ def main(argv: list[str] | None = None) -> int:
                 progress=_progress,
                 customer_name=name,
                 title=f"{name}님의 다이어리",
+                page_size=args.page_size,
+                day_start_hour=args.day_start_hour,
+                day_end_hour=args.day_end_hour,
             )
             summary.append({
                 "id": cust_id, "name": name, "status": "ok",

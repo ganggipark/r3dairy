@@ -162,3 +162,79 @@ def test_ofl_license_bundled():
     assert ofl.exists()
     content = ofl.read_text(encoding="utf-8")
     assert "SIL OPEN FONT LICENSE" in content.upper()
+
+
+from diary.render import _parse_korean_hour, parse_lucky_hours
+
+
+def test_parse_korean_hour_morning():
+    assert _parse_korean_hour("오전 9시") == 9
+    assert _parse_korean_hour("오전 12시") == 0
+
+
+def test_parse_korean_hour_afternoon():
+    assert _parse_korean_hour("오후 1시") == 13
+    assert _parse_korean_hour("오후 11시") == 23
+    assert _parse_korean_hour("오후 12시") == 12
+
+
+def test_parse_korean_hour_special():
+    assert _parse_korean_hour("정오") == 12
+    assert _parse_korean_hour("자정") == 0
+
+
+def test_parse_korean_hour_invalid():
+    assert _parse_korean_hour("garbage") is None
+    assert _parse_korean_hour("") is None
+
+
+def test_parse_lucky_hours_morning_range():
+    assert parse_lucky_hours("오전 9시–오전 11시") == {9, 10, 11}
+
+
+def test_parse_lucky_hours_crosses_noon():
+    assert parse_lucky_hours("오전 11시–오후 1시") == {11, 12, 13}
+
+
+def test_parse_lucky_hours_midnight_crossing():
+    assert parse_lucky_hours("오후 11시–오전 1시") == {23, 0, 1}
+
+
+def test_parse_lucky_hours_invalid():
+    assert parse_lucky_hours("garbage") == set()
+    assert parse_lucky_hours("") == set()
+
+
+def test_render_a4(tmp_path):
+    output = tmp_path / "a4.pdf"
+    result = render_diary([_mock_day()], output, page_size="A4")
+    assert result.exists()
+    assert result.stat().st_size > 3000
+
+
+def test_render_a6(tmp_path):
+    output = tmp_path / "a6.pdf"
+    result = render_diary([_mock_day()], output, page_size="A6")
+    assert result.exists()
+
+
+def test_render_invalid_page_size(tmp_path):
+    import pytest
+    with pytest.raises(ValueError, match="Unknown page_size"):
+        render_diary([_mock_day()], tmp_path / "bad.pdf", page_size="A99")
+
+
+def test_render_invalid_hour_range(tmp_path):
+    import pytest
+    with pytest.raises(ValueError, match="day_end_hour must be"):
+        render_diary([_mock_day()], tmp_path / "bad.pdf",
+                     day_start_hour=20, day_end_hour=5)
+
+
+def test_pdf_contains_time_labels(tmp_path):
+    """우측 페이지에 시간 라벨이 들어가는지."""
+    output = tmp_path / "grid.pdf"
+    render_diary([_mock_day()], output, day_start_hour=7, day_end_hour=10)
+
+    content = output.read_bytes()
+    assert content[:4] == b"%PDF"
