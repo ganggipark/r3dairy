@@ -93,9 +93,6 @@
 
     <article class="page right-page">
         <header class="date-mini">{{ day.date }}</header>
-        {% if day.mindfulness %}
-        <div class="mindfulness-quote">{{ day.mindfulness }}</div>
-        {% endif %}
 
         <div class="time-grid">
         {% for tl in entry.time_lines %}
@@ -106,6 +103,9 @@
             </div>
         {% endfor %}
         </div>
+        {% if day.mindfulness %}
+        <div class="mindfulness-quote">{{ day.mindfulness }}</div>
+        {% endif %}
 
     </article>
 

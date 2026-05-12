@@ -70,9 +70,9 @@ class _LLMNarrative(BaseModel):
     """LLM이 생성하는 narrative 필드 (lucky_*는 Python이 결정)."""
     model_config = ConfigDict(extra="forbid")
 
-    daily_summary: str = Field(..., min_length=120, max_length=220)
-    daily_focus: str = Field(..., min_length=70, max_length=140)
-    daily_caution: str = Field(..., min_length=70, max_length=140)
+    daily_summary: str = Field(..., min_length=100, max_length=180)
+    daily_focus: str = Field(..., min_length=60, max_length=100)
+    daily_caution: str = Field(..., min_length=60, max_length=100)
     mindfulness: str = Field(..., min_length=100, max_length=250)
     right_page_hint: str = Field(..., min_length=8, max_length=80)
     recommended_actions: list[str] = Field(..., min_length=1, max_length=6)
@@ -92,9 +92,9 @@ class DailyContent(BaseModel):
     lucky_direction: str
     lucky_time: str
 
-    daily_summary: str = Field(..., min_length=120, max_length=220)
-    daily_focus: str = Field(..., min_length=70, max_length=140)
-    daily_caution: str = Field(..., min_length=70, max_length=140)
+    daily_summary: str = Field(..., min_length=100, max_length=180)
+    daily_focus: str = Field(..., min_length=60, max_length=100)
+    daily_caution: str = Field(..., min_length=60, max_length=100)
     mindfulness: str = Field(..., min_length=100, max_length=250)
     right_page_hint: str = Field(..., min_length=8, max_length=80)
     recommended_actions: list[str] = Field(..., min_length=1, max_length=6)

@@ -44,7 +44,7 @@ body {
     background: #f6f4ef;
     padding: 1.5mm 3mm;
     border-radius: 1mm;
-    margin: 2mm 0 3mm 0;
+    margin: 1.5mm 0 2mm 0;
     font-size: 8.5pt;
     color: #444;
 }
@@ -70,12 +70,12 @@ section h3 {
     font-size: 9.5pt;
     font-weight: 600;
     color: #555;
-    margin: 2mm 0 0.6mm 0;
+    margin: 1.5mm 0 0.3mm 0;
 }
 
 section p {
     text-align: justify;
-    margin-bottom: 1mm;
+    margin-bottom: 0.5mm;
 }
 
 ul {
@@ -120,8 +120,8 @@ li {
     flex-direction: column;
 }
 
-.right-page .time-grid {
-    flex: 1;
+.right-page .mindfulness-quote {
+    margin-top: auto;
 }
 
 .hint-bottom {
@@ -146,12 +146,12 @@ li {
 }
 
 .mindfulness-quote {
-    font-size: 8.5pt;
+    font-size: 8.3pt;
     font-style: italic;
     color: #555;
-    line-height: 1.55;
-    margin: 3mm 0 4mm 0;
-    padding: 2.5mm 3.5mm;
+    line-height: 1.5;
+    margin: 3mm 0 1mm 0;
+    padding: 2mm 3mm;
     border-left: 1.5pt solid #C0B89C;
     background: #faf8f3;
     border-radius: 0.5mm;
@@ -349,7 +349,7 @@ li {
 /* ===== DOMAIN ADVICE (left page) ===== */
 
 .domains {
-    margin: 2mm 0 2mm 0;
+    margin: 1mm 0 1.5mm 0;
 }
 
 .domains h3 {
@@ -360,13 +360,13 @@ li {
 .domain-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5mm;
+    gap: 1mm;
 }
 
 .domain-item {
     background: #f9f7f2;
-    border-left: 1.2pt solid #c0b89c;
-    padding: 1.5mm 2.5mm;
+    border-left: 1pt solid #c0b89c;
+    padding: 1mm 2mm;
     border-radius: 0.5mm;
     page-break-inside: avoid;
 }
@@ -380,7 +380,7 @@ li {
 }
 
 .domain-advice {
-    font-size: 7.8pt;
+    font-size: 7.4pt;
     line-height: 1.45;
     color: #333;
 }
