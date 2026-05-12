@@ -67,20 +67,24 @@ class QimenResult(BaseModel):
 
 
 class _LLMNarrative(BaseModel):
-    """LLM이 생성하는 7개 narrative 필드 (lucky_*는 Python이 결정)."""
+    """LLM이 생성하는 narrative 필드 (lucky_*는 Python이 결정)."""
     model_config = ConfigDict(extra="forbid")
 
-    daily_summary: str = Field(..., min_length=50, max_length=400)
-    daily_focus: str = Field(..., min_length=20, max_length=200)
-    daily_caution: str = Field(..., min_length=20, max_length=200)
-    mindfulness: str = Field(..., min_length=80, max_length=300)
-    right_page_hint: str = Field(..., min_length=8, max_length=60)
-    recommended_actions: list[str] = Field(..., min_length=1, max_length=5)
+    daily_summary: str = Field(..., min_length=120, max_length=400)
+    daily_focus: str = Field(..., min_length=70, max_length=220)
+    daily_caution: str = Field(..., min_length=70, max_length=220)
+    mindfulness: str = Field(..., min_length=120, max_length=500)
+    right_page_hint: str = Field(..., min_length=8, max_length=80)
+    recommended_actions: list[str] = Field(..., min_length=1, max_length=6)
     things_to_avoid: list[str] = Field(..., min_length=1, max_length=5)
+    domain_advice: dict[str, str] = Field(
+        default_factory=dict,
+        description="영역별 짧은 조언. keys: work/relations/health/finance (각 30~100자)",
+    )
 
 
 class DailyContent(BaseModel):
-    """1일치 일기 콘텐츠 (11 필드). 좌측: 가이드, 우측: 작성 공간 + hint."""
+    """1일치 일기 콘텐츠. 좌측: 가이드, 우측: 시간 그리드 + hint."""
     model_config = ConfigDict(extra="forbid")
 
     date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
@@ -88,10 +92,14 @@ class DailyContent(BaseModel):
     lucky_direction: str
     lucky_time: str
 
-    daily_summary: str = Field(..., min_length=50, max_length=400)
-    daily_focus: str = Field(..., min_length=20, max_length=200)
-    daily_caution: str = Field(..., min_length=20, max_length=200)
-    mindfulness: str = Field(..., min_length=80, max_length=300)
-    right_page_hint: str = Field(..., min_length=8, max_length=60)
-    recommended_actions: list[str] = Field(..., min_length=1, max_length=5)
+    daily_summary: str = Field(..., min_length=120, max_length=400)
+    daily_focus: str = Field(..., min_length=70, max_length=220)
+    daily_caution: str = Field(..., min_length=70, max_length=220)
+    mindfulness: str = Field(..., min_length=120, max_length=500)
+    right_page_hint: str = Field(..., min_length=8, max_length=80)
+    recommended_actions: list[str] = Field(..., min_length=1, max_length=6)
     things_to_avoid: list[str] = Field(..., min_length=1, max_length=5)
+    domain_advice: dict[str, str] = Field(
+        default_factory=dict,
+        description="영역별 조언 (work/relations/health/finance)",
+    )

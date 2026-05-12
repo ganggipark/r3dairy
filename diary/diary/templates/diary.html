@@ -77,6 +77,21 @@
             <h3>피할 일</h3>
             <ul>{% for a in day.things_to_avoid %}<li>{{ a }}</li>{% endfor %}</ul>
         </section>
+        {% if day.domain_advice %}
+        <section class="domains">
+            <h3>오늘의 영역별 안내</h3>
+            <div class="domain-grid">
+            {% for key, label in [("work", "일·학업"), ("relations", "관계"), ("health", "건강"), ("finance", "재물")] %}
+                {% if day.domain_advice.get(key) %}
+                <div class="domain-item">
+                    <div class="domain-name">{{ label }}</div>
+                    <div class="domain-advice">{{ day.domain_advice.get(key) }}</div>
+                </div>
+                {% endif %}
+            {% endfor %}
+            </div>
+        </section>
+        {% endif %}
         <section class="mindfulness"><h3>마음챙김</h3><p>{{ day.mindfulness }}</p></section>
     </article>
 

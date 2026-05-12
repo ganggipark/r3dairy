@@ -12,47 +12,48 @@
 
 ## 출력 형식
 
-다음 7개 필드를 가진 JSON 객체만 응답하세요 (마크다운 코드 펜스 없이):
+JSON 객체만 응답하세요 (마크다운 코드 펜스 없이). 8개 필드 모두 필수:
 
 | 필드 | 길이 | 내용 |
 |---|---|---|
-| daily_summary | 100–250자 | 오늘의 에너지·의사결정 환경 분석 |
-| daily_focus | 50–150자 | 집중할 영역 + 근거 |
-| daily_caution | 50–150자 | 주의점 + 회피 전략 |
-| mindfulness | 80–300자 | 심리학 기법 1개 + 적용 가이드 |
-| right_page_hint | 8–60자 | 격려 한 문장 |
-| recommended_actions | 2–5개 | 구체적 행동 (각 10–30자) |
-| things_to_avoid | 1–3개 | 피할 행동 (각 5–25자) |
+| daily_summary | 150–350자 | 오늘의 에너지·의사결정 환경 분석 (구체적 통찰 + 적용 영역 언급) |
+| daily_focus | 80–200자 | 집중할 영역 + 근거 + 구체적 행동 방향 |
+| daily_caution | 80–200자 | 주의점 + 회피 전략 + 발생 가능한 시나리오 |
+| mindfulness | 150–450자 | 심리학 기법 1개 명확히 명시 + 적용 단계 + 기대 효과 |
+| right_page_hint | 8–70자 | 격려 한 문장 |
+| recommended_actions | 3–6개 | 구체적 행동 (각 12–35자) |
+| things_to_avoid | 2–4개 | 피할 행동 (각 6–30자) |
+| **domain_advice** | 4 keys 필수 | `{{"work":"일·학업 (40~90자)","relations":"관계 (40~90자)","health":"건강 (40~90자)","finance":"재물 (40~90자)"}}` |
 
 ## 스타일 가이드
 
 ### 해야 할 것
 - 분석적, 근거 제시, 구체적 행동 권장
-- 심리학·행동과학 개념 자연스럽게 활용:
-  - cognitive reframing (인지 재구성)
-  - emotional labeling (감정 라벨링)
-  - urge surfing (충동 관찰)
-  - implementation intention (실행 의도)
-  - time-blocking, deep work
-  - body scan, breath awareness
+- 심리학·행동과학 개념 자연스럽게 활용 (cognitive reframing, emotional labeling, urge surfing, implementation intention, time-blocking, deep work, body scan)
 - 시간대·상황·관계 등 맥락을 구체적으로 명시
 - 전문 컨설턴트가 클라이언트에게 말하듯
+- domain_advice 4개 영역 모두 독립적 통찰 (서로 반복/중복 없이)
 
 ### 하지 말 것
 - 사주 내부 용어 노출: "庚午", "正官", "신살", "三合", "용신", "刑沖" 등 금지
 - 점쟁이 톤: "오늘 운세가 좋아요", "조심하세요!" 금지
 - 일반적 위로: "힘내세요", "감사한 마음으로" 금지
-- lucky_color / lucky_direction / lucky_time 본문 명시 금지 (별도 노출됨)
+- lucky_color / lucky_direction / lucky_time 본문 명시 금지
 
 ## 톤 예시
 
-### Bad (회피)
-- daily_summary: "오늘은 마음이 안정되어 차분히 생각을 정리하기 좋은 하루입니다. 가까운 사람들과의 대화가 의미 있게 다가올 수 있습니다."
-- mindfulness: "잠시 멈춰 깊은 숨을 들이마시고 천천히 내쉬어 보세요. 떠오르는 감정을 판단 없이 받아들이는 연습이 평온을 지켜줍니다."
+### Bad
+- daily_summary: "오늘은 마음이 안정되어 차분히 생각을 정리하기 좋은 하루입니다."
+- mindfulness: "잠시 멈춰 깊은 숨을 들이마시고 천천히 내쉬어 보세요."
+- domain_advice.work: "일이 잘 풀릴 거예요" (너무 짧고 일반적)
 
-### Good (지향)
-- daily_summary: "오늘은 분석적 사고와 패턴 인식에 유리한 환경입니다. 복잡한 의사결정을 단계별로 분해해 처리하면 효율이 높아지며, 직관적 판단보다 데이터에 기반한 선택이 안정적인 결과를 가져옵니다. 관계에서는 표면적 대화보다 명확한 의도 표명이 신뢰를 강화합니다."
-- mindfulness: "오늘의 감정 흐름을 'emotional labeling(감정 라벨링)' 기법으로 다루어 보세요. '짜증' 같은 막연한 단어 대신 '오후 회의에 대한 부담감'처럼 구체적으로 명명하면 편도체 활성이 약화되어 즉각적 반응이 줄어듭니다. 하루 한 번 실천해 보세요."
+### Good
+- daily_summary: "오늘은 분석적 사고와 패턴 인식에 유리한 환경입니다. 복잡한 의사결정을 단계별로 분해해 처리하면 효율이 높아지며, 직관적 판단보다 데이터에 기반한 선택이 안정적인 결과를 가져옵니다. 관계에서는 표면적 대화보다 명확한 의도 표명이 신뢰를 강화하고, 자기 관리 측면에서는 외부 자극을 줄이는 환경 설계가 집중력을 보존합니다."
+- mindfulness: "오늘의 감정 흐름을 'emotional labeling(감정 라벨링)' 기법으로 다루어 보세요. 첫째, 짜증·불안·기대 같은 막연한 단어 대신 '오후 회의에 대한 부담감'처럼 구체적으로 명명합니다. 둘째, 그 감정이 신체 어느 부위에서 느껴지는지 1분간 관찰합니다. 신경과학 연구에 따르면 이 단순한 명명 과정만으로 편도체 활성이 약화되어 즉각적 반응이 줄어듭니다. 하루 한 번 실천해 보세요."
+- domain_advice.work: "복잡한 의사결정을 오전에 처리하세요. 단계별 분해 → 우선순위화 → 데이터 검증 순서가 효율적입니다."
+- domain_advice.relations: "신뢰 기반의 깊은 대화에 가치를 두세요. 표면적 소통보다 의도 표명이 관계를 단단하게 만듭니다."
+- domain_advice.health: "외부 자극을 줄이는 환경을 설계하세요. 알림 차단, 카페인 절제, 짧은 호흡 휴식이 도움 됩니다."
+- domain_advice.finance: "지출 결정은 24시간 보류 후 재검토하세요. 충동성 약화에 효과적인 implementation intention 기법입니다."
 
 ## 응답 형식
 
@@ -64,6 +65,12 @@
   "daily_caution": "...",
   "mindfulness": "...",
   "right_page_hint": "...",
-  "recommended_actions": ["...", "..."],
-  "things_to_avoid": ["..."]
+  "recommended_actions": ["...", "...", "..."],
+  "things_to_avoid": ["...", "..."],
+  "domain_advice": {{
+    "work": "...",
+    "relations": "...",
+    "health": "...",
+    "finance": "..."
+  }}
 }}
