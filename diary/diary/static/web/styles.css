@@ -1,0 +1,315 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
+:root {
+    --primary: #2a2a2a;
+    --muted: #888;
+    --light: #aaa;
+    --accent: #D4A848;
+    --accent-soft: rgba(212, 168, 72, 0.10);
+    --bg: #fff;
+    --card: #f9f7f2;
+    --card-soft: #faf8f3;
+    --border: #e8e6e0;
+    --olive: #c0b89c;
+    --good-bg: #e8f0e6;
+    --good-fg: #4a7050;
+    --bad-bg: #f4e6e6;
+    --bad-fg: #8a4040;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+
+body {
+    font-family: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif;
+    color: var(--primary);
+    background: var(--bg);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 70px;
+}
+
+.container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 18px;
+}
+
+/* ===== Header ===== */
+.app-header {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+}
+
+.nav-btn {
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 22px;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-btn.disabled {
+    color: var(--border);
+    cursor: default;
+}
+
+.date-title {
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+}
+
+.lucky-bar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    font-size: 14px;
+    color: #555;
+    border-top: 1px solid var(--border);
+}
+
+.lucky-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid #bbb;
+    display: inline-block;
+}
+
+.lucky-swatch.tiny { width: 9px; height: 9px; }
+
+.lucky-bar .sep { color: var(--light); }
+
+/* ===== Calendar page ===== */
+.page-title {
+    font-size: 24px;
+    font-weight: 700;
+    padding: 20px 0 4px 0;
+    letter-spacing: 0.3px;
+}
+
+.birth-line, .period-line {
+    color: var(--muted);
+    font-size: 13px;
+    padding-bottom: 4px;
+}
+
+.period-line { padding-bottom: 18px; }
+
+.month-section { padding: 12px 0; }
+
+.month-header {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+}
+
+.date-list { list-style: none; }
+
+.date-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    color: var(--primary);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border);
+    min-height: 44px;
+}
+
+.date-link-date {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.date-link-lucky {
+    color: var(--muted);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ===== Section ===== */
+.section {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.section:last-child { border-bottom: none; }
+
+.section h2 {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.section p {
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--primary);
+}
+
+/* Action */
+.action-line {
+    margin: 6px 0;
+    font-size: 14px;
+}
+
+.tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-right: 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    vertical-align: 1.5px;
+}
+
+.tag.good { background: var(--good-bg); color: var(--good-fg); }
+.tag.bad { background: var(--bad-bg); color: var(--bad-fg); }
+
+/* Domain */
+.domain-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.domain-card {
+    background: var(--card);
+    border-left: 3px solid var(--olive);
+    padding: 10px 12px;
+    border-radius: 4px;
+}
+
+.domain-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.domain-body {
+    font-size: 13px;
+    line-height: 1.55;
+    color: #333;
+}
+
+/* Mindfulness */
+.mindfulness-quote {
+    background: var(--card-soft);
+    border-left: 3px solid var(--olive);
+    padding: 16px 18px;
+    font-style: italic;
+    color: #444;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.75;
+}
+
+/* Time grid */
+.time-grid { margin-top: 4px; }
+
+.time-line {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    min-height: 38px;
+}
+
+.time-line .time-label {
+    flex: 0 0 56px;
+    font-size: 13px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.time-line .time-bar { flex: 1; }
+
+.time-line.lucky {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding-left: 12px;
+    margin-left: -12px;
+    margin-right: -12px;
+    padding-right: 12px;
+}
+
+.time-line.lucky .time-label {
+    color: #B89030;
+    font-weight: 700;
+}
+
+.dir-mark {
+    flex: 0 0 auto;
+    color: #B89030;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+}
+
+/* Footer */
+.app-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 18px;
+    z-index: 20;
+}
+
+.footer-btn {
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 14px;
+    padding: 8px 14px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Loading */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: var(--muted);
+}
+
+@media (min-width: 720px) {
+    .container { padding: 0 24px; }
+    .page-title { font-size: 28px; }
+}

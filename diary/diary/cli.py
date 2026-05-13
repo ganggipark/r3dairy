@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 from datetime import date
+from pathlib import Path
 
 from .models import SajuInput
 from .pipeline import PipelineProgress, generate_diary
@@ -55,6 +56,8 @@ def build_parser() -> argparse.ArgumentParser:
     g_out.add_argument("--day-end-hour", type=int, default=23,
                        choices=range(0, 24), metavar="0-23",
                        help="우측 페이지 시간 그리드 종료 시")
+    g_out.add_argument("--web-output", type=Path, default=None,
+                       help="모바일/태블릿용 HTML 출력 디렉토리 (옵션)")
 
     g_llm = p.add_argument_group("LLM")
     g_llm.add_argument(
@@ -120,6 +123,7 @@ def main(argv: list[str] | None = None) -> int:
             page_size=args.page_size,
             day_start_hour=args.day_start_hour,
             day_end_hour=args.day_end_hour,
+            web_output=args.web_output,
             cache_dir=cache,
             skip_failed=not args.fail_fast,
             progress=on_progress,

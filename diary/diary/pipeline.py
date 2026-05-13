@@ -99,6 +99,7 @@ def generate_diary(
     page_size: str = "A5",
     day_start_hour: int = 7,
     day_end_hour: int = 23,
+    web_output: Path | str | None = None,
 ) -> PipelineResult:
     """End-to-end: 1 customer + N days → 1 PDF.
 
@@ -205,6 +206,20 @@ def generate_diary(
         day_start_hour=day_start_hour,
         day_end_hour=day_end_hour,
     )
+
+    if web_output:
+        from .customer import customer_id as _cid
+        from .web import render_web
+        cust_id = _cid(birth, length=20)
+        render_web(
+            contents,
+            Path(web_output) / cust_id,
+            customer_id=cust_id,
+            customer_name=customer_name,
+            customer_birth=_format_birth(birth),
+            day_start_hour=day_start_hour,
+            day_end_hour=day_end_hour,
+        )
 
     return PipelineResult(
         output_path=output_path,

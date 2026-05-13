@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{{ entry.day.date }} · {{ customer_name or '다이어리' }}</title>
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="container nav-row">
+            {% if prev_date %}
+            <a href="{{ prev_date }}.html" class="nav-btn">‹</a>
+            {% else %}
+            <span class="nav-btn disabled">‹</span>
+            {% endif %}
+            <div class="date-title">{{ entry.day.date }}</div>
+            {% if next_date %}
+            <a href="{{ next_date }}.html" class="nav-btn">›</a>
+            {% else %}
+            <span class="nav-btn disabled">›</span>
+            {% endif %}
+        </div>
+        <div class="container lucky-bar">
+            <span class="lucky-swatch" style="background: {{ entry.day.lucky_color | color_hex }}"></span>
+            <span>{{ entry.day.lucky_color }}</span>
+            <span class="sep">·</span>
+            <span>{{ entry.day.lucky_direction }}</span>
+            <span class="sep">·</span>
+            <span>{{ entry.day.lucky_time }}</span>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="section">
+            <h2>오늘의 흐름</h2>
+            <p>{{ entry.day.daily_summary }}</p>
+        </section>
+
+        <section class="section">
+            <h2>오늘의 집중</h2>
+            <p>{{ entry.day.daily_focus }}</p>
+        </section>
+
+        <section class="section">
+            <h2>오늘의 주의</h2>
+            <p>{{ entry.day.daily_caution }}</p>
+        </section>
+
+        <section class="section">
+            <h2>오늘의 행동</h2>
+            <p class="action-line">
+                <span class="tag good">추천</span>
+                {{ entry.day.recommended_actions | join(" · ") }}
+            </p>
+            <p class="action-line">
+                <span class="tag bad">피할</span>
+                {{ entry.day.things_to_avoid | join(" · ") }}
+            </p>
+        </section>
+
+        {% if entry.day.domain_advice %}
+        <section class="section">
+            <h2>오늘의 영역별 안내</h2>
+            <div class="domain-grid">
+                {% for key, label in [("work", "일·학업"), ("relations", "관계"), ("health", "건강"), ("finance", "재물")] %}
+                {% if entry.day.domain_advice.get(key) %}
+                <div class="domain-card">
+                    <div class="domain-label">{{ label }}</div>
+                    <div class="domain-body">{{ entry.day.domain_advice.get(key) }}</div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="section">
+            <h2>오늘의 시간</h2>
+            <div class="time-grid">
+                {% for tl in entry.time_lines %}
+                <div class="time-line{% if tl.is_lucky %} lucky{% endif %}">
+                    <span class="time-label">{{ tl.label }}</span>
+                    <span class="time-bar"></span>
+                    {% if tl.is_lucky %}<span class="dir-mark">{{ entry.day.lucky_direction }}</span>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        {% if entry.day.mindfulness %}
+        <section class="section">
+            <div class="mindfulness-quote">{{ entry.day.mindfulness }}</div>
+        </section>
+        {% endif %}
+    </main>
+
+    <footer class="app-footer container">
+        <a href="calendar.html" class="footer-btn">📅 캘린더</a>
+        <a href="index.html" class="footer-btn">📍 오늘</a>
+    </footer>
+</body>
+</html>

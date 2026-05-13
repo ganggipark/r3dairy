@@ -15,7 +15,9 @@ from .pipeline import (
     generate_diary,
 )
 from .qimen import QimenEngineError, calculate_qimen
+from .customer import customer_id
 from .render import color_to_hex, render_diary
+from .web import render_web
 from .retry import is_retryable, with_retry
 from .saju import SajuEngineError, calculate_saju
 
@@ -26,6 +28,8 @@ __all__ = [
     "render_diary",
     "generate_diary",
     "color_to_hex",
+    "render_web",
+    "customer_id",
     "with_retry",
     "is_retryable",
     "CompleteSajuData",

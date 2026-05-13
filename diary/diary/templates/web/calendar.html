@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>캘린더 · {{ customer_name or '다이어리' }}</title>
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="container">
+            <h1 class="page-title">{{ customer_name or '다이어리' }}</h1>
+            {% if customer_birth %}<p class="birth-line">{{ customer_birth }}</p>{% endif %}
+            <p class="period-line">{{ start_date }} ~ {{ end_date }}</p>
+        </div>
+    </header>
+
+    <main class="container">
+        {% for month, month_entries in entries_by_month %}
+        <section class="section month-section">
+            <h2 class="month-header">{{ month }}</h2>
+            <ul class="date-list">
+                {% for entry in month_entries %}
+                <li>
+                    <a href="{{ entry.day.date }}.html" class="date-link">
+                        <span class="date-link-date">{{ entry.day.date }}</span>
+                        <span class="date-link-lucky">
+                            <span class="lucky-swatch tiny" style="background: {{ entry.day.lucky_color | color_hex }}"></span>
+                            {{ entry.day.lucky_direction }} · {{ entry.day.lucky_time }}
+                        </span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endfor %}
+    </main>
+
+    <footer class="app-footer container">
+        <a href="index.html" class="footer-btn">📍 오늘</a>
+    </footer>
+</body>
+</html>
