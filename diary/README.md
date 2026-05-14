@@ -88,6 +88,19 @@ diary-batch --customers samples\sample_customers.csv `
 | **월 구분** | 큰 월 번호 / 연도 | "이번 달의 다짐" 18줄 |
 | **일별** | 날짜 / 요약 / 색·방향·시간 / 집중·주의 / 추천·피할 / 마음챙김 | 작은 날짜 / 격려문 / 28줄 작성 / 코너 힌트 |
 
+## 모바일 컴패니언 (Web)
+
+```bash
+diary --year 1971 --month 11 --day 17 --hour 4 --gender male \
+      --customer-name "박준수" --start 2026-05-15 --days 365 \
+      -o output/park_junsoo.pdf \
+      --web-output ../web-deploy/public/d
+
+cd ../web-deploy && vercel deploy --prod
+```
+
+상세: [`../docs/DEPLOY_WEB.md`](../docs/DEPLOY_WEB.md)
+
 ## 인계/운영 문서
 
 - [`docs/DEPLOY.md`](docs/DEPLOY.md) — 새 PC 셋업 가이드 (Windows 기준)

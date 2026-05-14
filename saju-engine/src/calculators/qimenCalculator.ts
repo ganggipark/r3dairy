@@ -374,7 +374,10 @@ function arrangeStemsOnPlates(
 /**
  * 궁의 종합 점수 계산
  */
-function calculatePalaceQuality(palace: QimenPalace): number {
+function calculatePalaceQuality(
+  palace: QimenPalace,
+  yongSinScore?: Record<string, number>
+): number {
   let score = 50;
   
   // 문의 길흉
@@ -416,7 +419,24 @@ function calculatePalaceQuality(palace: QimenPalace): number {
     score = 10;
   }
   
-  return Math.max(0, Math.min(100, score));
+  // ===== M21: 사주 용신 기반 개인화 보정 =====
+  if (yongSinScore) {
+    const KO_TO_HAN: Record<string, string> = {목:'木',화:'火',토:'土',금:'金',수:'水'};
+    const HAN_TO_KO: Record<string, string> = {木:'목',火:'화',土:'토',金:'금',水:'수'};
+    const lookupYS = (e: string): number => {
+      if (yongSinScore[e] !== undefined) return yongSinScore[e];
+      if (yongSinScore[KO_TO_HAN[e]] !== undefined) return yongSinScore[KO_TO_HAN[e]];
+      if (yongSinScore[HAN_TO_KO[e]] !== undefined) return yongSinScore[HAN_TO_KO[e]];
+      return 50;
+    };
+    const heavenWeight = lookupYS(heavenElem);
+    const earthWeight = lookupYS(earthElem);
+    // 0-100 → -20 ~ +20 범위 보정
+    const personalAdjust = ((heavenWeight + earthWeight) / 2 - 50) * 0.4;
+    score = score + personalAdjust;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(score)));
 }
 
 // ============================================================
@@ -429,7 +449,8 @@ function calculatePalaceQuality(palace: QimenPalace): number {
 export function calculateCompleteQimen(
   birthDate: Date,
   targetDate: Date,
-  targetHour: number
+  targetHour: number,
+  yongSinScore?: Record<string, number>
 ): CompleteQimenResult {
   // 1. 일간지와 시간지 계산
   const [dayStem, dayBranch] = getDayStemBranch(targetDate);
@@ -465,7 +486,7 @@ export function calculateCompleteQimen(
       qualityScore: 0
     };
     
-    palace.qualityScore = calculatePalaceQuality(palace);
+    palace.qualityScore = calculatePalaceQuality(palace, yongSinScore);
     palaces.push(palace);
   }
   

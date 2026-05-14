@@ -153,7 +153,10 @@ def generate_diary(
     def _work_day(target: date) -> tuple[date, DailyContent | BaseException]:
         try:
             _emit("qimen", target)
-            qimen = calculate_qimen(birth_dt, target, target_hour=target_hour)
+            qimen = calculate_qimen(
+                birth_dt, target, target_hour=target_hour,
+                yong_sin_score=(saju.yongSin.yongSinScore if saju.yongSin else None),
+            )
             content = with_retry(
                 lambda: generate_daily_content(
                     saju=saju, qimen=qimen, target_date=target,

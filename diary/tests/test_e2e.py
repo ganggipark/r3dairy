@@ -25,7 +25,9 @@ def test_e2e_subprocess_smoke():
     assert "ohHaeng" in extra
     assert "sipSung" in extra
     assert "gyeokGuk" in extra
-    assert "yongSin" in extra
+    # M21: yongSin promoted from model_extra to explicit YongSinAnalysis field
+    assert result.yongSin is not None
+    assert result.yongSin.yongSinScore
 
 
 def test_known_birthdate_pillars():

@@ -33,12 +33,24 @@ class FourPillars(BaseModel):
     time: Pillar
 
 
+class YongSinAnalysis(BaseModel):
+    """사주 용신/기신/희신 분석 (M21)."""
+    model_config = ConfigDict(extra="allow")
+    yongSin: list[str] = Field(default_factory=list)
+    giSin: list[str] = Field(default_factory=list)
+    huiSin: list[str] = Field(default_factory=list)
+    yongSinReason: str = ""
+    giSinReason: str = ""
+    yongSinScore: dict[str, float] = Field(default_factory=dict)
+
+
 class CompleteSajuData(BaseModel):
     model_config = ConfigDict(extra="allow")
     version: str
     isComplete: bool
     fourPillars: FourPillars
     fullSajuString: str
+    yongSin: YongSinAnalysis | None = Field(default=None)
 
 
 class QimenPalace(BaseModel):

@@ -20,6 +20,10 @@ node_modules/
 .mypy_cache/
 .ruff_cache/
 
+# Vercel local config
+web-deploy/.vercel/
+web-deploy/public/d/
+
 # IDE
 .vscode/
 .idea/

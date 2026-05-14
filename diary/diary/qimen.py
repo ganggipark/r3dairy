@@ -16,6 +16,7 @@ def calculate_qimen(
     birth_datetime: datetime,
     target_date: _date,
     target_hour: int = 12,
+    yong_sin_score: dict[str, float] | None = None,
 ) -> QimenResult:
     """Call qimen-cli.js for a specific date and hour.
 
@@ -36,6 +37,7 @@ def calculate_qimen(
         "birthDate": birth_datetime.isoformat(),
         "targetDate": target_date.isoformat(),
         "targetHour": target_hour,
+        "yongSinScore": yong_sin_score,
     })
 
     try:
