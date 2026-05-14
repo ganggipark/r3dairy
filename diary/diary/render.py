@@ -61,14 +61,24 @@ def _parse_korean_hour(text: str) -> int | None:
 
 
 def parse_lucky_hours(lucky_time: str) -> set[int]:
-    """'오전 11시–오후 1시' → {11, 12, 13}. Handles midnight crossing."""
+    """'오전 11시–오후 1시' / '오후 1시–3시' / '오전 7시–9시' → {hours}.
+
+    M23 fix: 두 번째 토큰에 오전/오후 prefix가 없으면 첫 번째 prefix를 상속.
+    _format_lucky_time이 같은 오전/오후일 때 prefix를 한 번만 적어
+    이전 정규식이 두 번째 토큰을 인식하지 못하던 버그 수정.
+    """
     if not lucky_time:
         return set()
     parts = re.split(r"\s*[–—~\-]\s*", lucky_time, maxsplit=1)
     if len(parts) != 2:
         return set()
-    start = _parse_korean_hour(parts[0])
-    end = _parse_korean_hour(parts[1])
+    left, right = parts[0].strip(), parts[1].strip()
+    if not re.match(r"^(오전|오후|정오|자정)", right):
+        m_left = re.match(r"^(오전|오후)", left)
+        if m_left:
+            right = f"{m_left.group(1)} {right}"
+    start = _parse_korean_hour(left)
+    end = _parse_korean_hour(right)
     if start is None or end is None:
         return set()
     if end >= start:
