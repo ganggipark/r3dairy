@@ -554,17 +554,33 @@ export function calculateCompleteQimen(
  */
 export function getDailyCompleteQimen(
   birthDate: Date,
-  targetDate: Date
+  targetDate: Date,
+  yongSinScore?: Record<string, number>
 ): CompleteQimenResult[] {
   const results: CompleteQimenResult[] = [];
-  
+
   for (let hourIdx = 0; hourIdx < 12; hourIdx++) {
     const targetHour = hourIdx === 0 ? 23 : hourIdx * 2 - 1;
-    const result = calculateCompleteQimen(birthDate, targetDate, targetHour);
+    const result = calculateCompleteQimen(birthDate, targetDate, targetHour, yongSinScore);
     results.push(result);
   }
-  
+
   return results;
+}
+
+/**
+ * M22: 하루 12시진 중 본인에게 가장 길한 시진의 기문 결과 반환.
+ * yongSinScore가 있으면 사주 가중치 적용 → 사람마다 best hour 달라짐.
+ */
+export function getDailyBestQimen(
+  birthDate: Date,
+  targetDate: Date,
+  yongSinScore?: Record<string, number>
+): CompleteQimenResult {
+  const all = getDailyCompleteQimen(birthDate, targetDate, yongSinScore);
+  return all.reduce((best, cur) =>
+    cur.bestPalace.qualityScore > best.bestPalace.qualityScore ? cur : best
+  );
 }
 
 /**

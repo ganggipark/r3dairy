@@ -1,10 +1,16 @@
 #!/usr/bin/env node
 /**
  * Qimen CLI — stdin JSON → stdout JSON
- * Input:  { birthDate, targetDate, targetHour?, yongSinScore? }
- *         yongSinScore: 사주 용신 분석 (M21) - 오행별 0-100 점수
+ * Input:
+ *   { birthDate, targetDate, targetHour?, yongSinScore?, dailyBest? }
+ *
+ *   dailyBest=true (M22): 하루 12시진 중 최고 점수 시진 반환
+ *   dailyBest=false (기본): targetHour 단일 시점 반환 (하위호환)
  */
-const { calculateCompleteQimen } = require('./dist/calculators/qimenCalculator');
+const {
+  calculateCompleteQimen,
+  getDailyBestQimen
+} = require('./dist/calculators/qimenCalculator');
 
 (async () => {
   try {
@@ -16,10 +22,16 @@ const { calculateCompleteQimen } = require('./dist/calculators/qimenCalculator')
     }
     const birth = new Date(input.birthDate);
     const target = new Date(input.targetDate);
-    const hour = input.targetHour ?? 12;
     if (isNaN(birth.getTime())) throw new Error(`invalid birthDate: ${input.birthDate}`);
     if (isNaN(target.getTime())) throw new Error(`invalid targetDate: ${input.targetDate}`);
-    const result = calculateCompleteQimen(birth, target, hour, input.yongSinScore);
+
+    let result;
+    if (input.dailyBest) {
+      result = getDailyBestQimen(birth, target, input.yongSinScore);
+    } else {
+      const hour = input.targetHour ?? 12;
+      result = calculateCompleteQimen(birth, target, hour, input.yongSinScore);
+    }
     process.stdout.write(JSON.stringify(result));
     process.exit(0);
   } catch (e) {

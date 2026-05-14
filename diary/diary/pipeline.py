@@ -156,6 +156,7 @@ def generate_diary(
             qimen = calculate_qimen(
                 birth_dt, target, target_hour=target_hour,
                 yong_sin_score=(saju.yongSin.yongSinScore if saju.yongSin else None),
+                daily_best=True,  # M22: 12시진 중 최고 점수 시진 자동 선택
             )
             content = with_retry(
                 lambda: generate_daily_content(

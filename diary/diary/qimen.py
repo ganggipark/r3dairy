@@ -17,6 +17,7 @@ def calculate_qimen(
     target_date: _date,
     target_hour: int = 12,
     yong_sin_score: dict[str, float] | None = None,
+    daily_best: bool = False,
 ) -> QimenResult:
     """Call qimen-cli.js for a specific date and hour.
 
@@ -38,6 +39,7 @@ def calculate_qimen(
         "targetDate": target_date.isoformat(),
         "targetHour": target_hour,
         "yongSinScore": yong_sin_score,
+        "dailyBest": daily_best,
     })
 
     try:
