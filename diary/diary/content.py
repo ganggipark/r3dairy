@@ -128,7 +128,7 @@ def _default_client(provider: Provider):
         return Anthropic()
     if provider == "deepinfra":
         from openai import OpenAI
-        key = os.environ.get("DEEPINFRA_API_KEY")
+        key = os.environ.get("DEEPINFRA_API_KEY", "").strip()
         if not key:
             raise ContentGenerationError("DEEPINFRA_API_KEY required")
         return OpenAI(api_key=key, base_url=DEEPINFRA_BASE_URL)
