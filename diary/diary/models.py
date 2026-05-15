@@ -93,6 +93,10 @@ class _LLMNarrative(BaseModel):
         default_factory=dict,
         description="영역별 짧은 조언. keys: work/relations/health/finance (각 30~100자)",
     )
+    reflection_questions: list[str] = Field(
+        default_factory=list, max_length=5,
+        description="자기성찰 질문 3개 (각 15-40자)",
+    )
 
 
 class DailyContent(BaseModel):
@@ -109,6 +113,20 @@ class DailyContent(BaseModel):
     lucky_time_workday: str | None = None
     hour_start_workday: int | None = None
     hour_end_workday: int | None = None
+    # M25: 일진통변 + 신살 + 자기성찰
+    ilji_pillar: str | None = Field(default=None, description="오늘 일주 (예: '병자')")
+    ilji_relation: str | None = Field(
+        default=None, max_length=200,
+        description="본인 사주 vs 오늘 일진 천간/지지 관계 해석",
+    )
+    sinsal_alerts: list[str] = Field(
+        default_factory=list,
+        description="발동 신살 (예: ['천을귀인 발동'])",
+    )
+    reflection_questions: list[str] = Field(
+        default_factory=list,
+        description="자기성찰 질문 3개",
+    )
 
     daily_summary: str = Field(..., min_length=100, max_length=180)
     daily_focus: str = Field(..., min_length=60, max_length=100)

@@ -434,3 +434,68 @@ li {
     border-left: 1pt solid #C9A961;
     letter-spacing: 0.2pt;
 }
+
+
+/* ===== M25: 일진 + 자기성찰 ===== */
+.ilji-section {
+    margin: 2mm 0 1.5mm 0;
+    padding: 2mm 2.5mm;
+    background: rgba(46, 74, 127, 0.04);
+    border-left: 2pt solid #2E4A7F;
+    border-radius: 1mm;
+}
+.ilji-header {
+    font-size: 8pt;
+    color: #2E4A7F;
+    letter-spacing: 0.5pt;
+    font-weight: 600;
+    margin: 0 0 0.8mm 0;
+    text-transform: uppercase;
+}
+.ilji-pillar {
+    font-size: 8.5pt;
+    font-weight: 600;
+    color: #444;
+    margin: 0 0 0.5mm 0;
+}
+.ilji-relation {
+    font-size: 8pt;
+    color: #555;
+    line-height: 1.5;
+    margin: 0;
+}
+.sinsal-line { margin-top: 1mm; }
+.sinsal-tag {
+    display: inline-block;
+    font-size: 7pt;
+    background: #D4A848;
+    color: #fff;
+    padding: 0.3mm 1.5mm;
+    border-radius: 1mm;
+    margin-right: 1mm;
+    font-weight: 600;
+    letter-spacing: 0.3pt;
+}
+.reflection-section {
+    margin-top: 2mm;
+    padding: 2mm 2.5mm;
+    background: rgba(212, 168, 72, 0.04);
+    border-left: 2pt solid #C9A961;
+    border-radius: 1mm;
+}
+.reflection-header {
+    font-size: 8pt;
+    color: #8a7340;
+    letter-spacing: 0.5pt;
+    font-weight: 600;
+    margin: 0 0 1mm 0;
+    text-transform: uppercase;
+}
+.reflection-list {
+    margin: 0;
+    padding-left: 4mm;
+    font-size: 8pt;
+    line-height: 1.55;
+    color: #444;
+}
+.reflection-list li { margin: 0.5mm 0; }

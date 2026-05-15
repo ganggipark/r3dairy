@@ -63,10 +63,23 @@
             <span class="lucky-sep">·</span>
             <span>{{ day.lucky_time }}</span>
         </div>
-        {% if day.lucky_time_workday %}
+        {% if day.lucky_time_workday and day.lucky_time_workday != day.lucky_time %}
         <div class="lucky-workday-aux">
             일과시간 추천 · {{ day.lucky_time_workday }} · {{ day.lucky_direction_workday }}
         </div>
+        {% endif %}
+
+        {% if day.ilji_pillar or day.ilji_relation or day.sinsal_alerts %}
+        <section class="ilji-section">
+            <h3 class="ilji-header">오늘의 일진과 사주 관계</h3>
+            {% if day.ilji_pillar %}<p class="ilji-pillar">오늘 일주 · {{ day.ilji_pillar }}</p>{% endif %}
+            {% if day.ilji_relation %}<p class="ilji-relation">{{ day.ilji_relation }}</p>{% endif %}
+            {% if day.sinsal_alerts %}
+            <p class="sinsal-line">
+                {% for s in day.sinsal_alerts %}<span class="sinsal-tag">{{ s }}</span>{% endfor %}
+            </p>
+            {% endif %}
+        </section>
         {% endif %}
 
         <section class="focus"><h3>오늘의 집중</h3><p>{{ day.daily_focus }}</p></section>
@@ -95,6 +108,15 @@
                 {% endif %}
             {% endfor %}
             </div>
+        </section>
+        {% endif %}
+
+        {% if day.reflection_questions %}
+        <section class="reflection-section">
+            <h3 class="reflection-header">오늘의 자기성찰 질문</h3>
+            <ol class="reflection-list">
+                {% for q in day.reflection_questions %}<li>{{ q }}</li>{% endfor %}
+            </ol>
         </section>
         {% endif %}
     </article>

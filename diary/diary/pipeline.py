@@ -17,7 +17,7 @@ from .models import DailyContent, SajuInput
 from .qimen import calculate_qimen
 from .render import render_diary
 from .retry import with_retry
-from .saju import calculate_saju
+from .saju import calculate_saju, get_daily_pillar
 
 Stage = Literal["saju", "qimen", "content", "render", "cache_hit"]
 
@@ -163,10 +163,12 @@ def generate_diary(
                 yong_sin_score=(saju.yongSin.yongSinScore if saju.yongSin else None),
                 workday_range=(day_start_hour, day_end_hour),
             )
+            today_pillar = get_daily_pillar(target)
             content = with_retry(
                 lambda: generate_daily_content(
                     saju=saju, qimen=qimen, target_date=target,
                     qimen_workday=qimen_workday,
+                    today_pillar=today_pillar,
                     provider=provider, model=model,
                 ),
                 max_attempts=max_retries,

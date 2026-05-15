@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import functools
 import json
 import os
 import subprocess
+from datetime import date as _date
 from pathlib import Path
 
 from .models import CompleteSajuData, SajuInput
@@ -58,3 +60,19 @@ def calculate_saju(birth: SajuInput) -> CompleteSajuData:
         ) from e
 
     return CompleteSajuData.model_validate(data)
+
+
+@functools.lru_cache(maxsize=512)
+def get_daily_pillar(target_date: _date) -> tuple[str, str]:
+    """M25: 양력 날짜의 일주(천간, 지지) 한글. 365일 호출 시 lru_cache로 중복 제거.
+
+    정오 호출 — 시진과 무관하게 일주만 추출.
+    """
+    if not isinstance(target_date, _date):
+        raise TypeError("target_date must be datetime.date")
+    dummy = SajuInput(
+        year=target_date.year, month=target_date.month, day=target_date.day,
+        hour=12, minute=0, gender="male",
+    )
+    saju = calculate_saju(dummy)
+    return saju.fourPillars.day.gan, saju.fourPillars.day.ji

@@ -335,3 +335,24 @@ body {
     background: rgba(255,255,255,0.6);
     border-radius: 3px;
 }
+
+
+/* ===== M25 Web: 일진 + 자기성찰 ===== */
+.ilji-section { background: rgba(46, 74, 127, 0.04); border-left: 3px solid #2E4A7F; padding-left: 12px; }
+.ilji-pillar { font-weight: 600; color: #2E4A7F; font-size: 14px; margin-bottom: 4px; }
+.ilji-relation { font-size: 14px; line-height: 1.7; color: #444; }
+.sinsal-line { margin-top: 8px; }
+.sinsal-tag {
+    display: inline-block;
+    font-size: 11px;
+    background: var(--accent);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 4px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.reflection-section { background: rgba(212, 168, 72, 0.04); border-left: 3px solid var(--accent); padding-left: 12px; }
+.reflection-list { padding-left: 20px; font-size: 14px; line-height: 1.7; color: #444; }
+.reflection-list li { margin: 6px 0; }

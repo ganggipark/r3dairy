@@ -145,6 +145,7 @@ def generate_daily_content(
     target_date: _date,
     *,
     qimen_workday: QimenResult | None = None,
+    today_pillar: tuple[str, str] | None = None,
     provider: Provider = "deepinfra",
     client=None,
     model: Optional[str] = None,
@@ -189,23 +190,122 @@ def generate_daily_content(
         raise ContentGenerationError(f"Narrative schema violation: {e}") from e
 
     lucky_main = _compute_lucky(qimen)
+    # M25: workday 항상 저장 (표시 단계에서 중복 회피)
     workday_extra: dict[str, object] = {}
     if qimen_workday is not None:
         lucky_wk = _compute_lucky(qimen_workday)
-        if (lucky_wk["lucky_color"] != lucky_main["lucky_color"]
-            or lucky_wk["lucky_direction"] != lucky_main["lucky_direction"]
-            or lucky_wk["lucky_time"] != lucky_main["lucky_time"]):
-            workday_extra = {
-                "lucky_color_workday": lucky_wk["lucky_color"],
-                "lucky_direction_workday": lucky_wk["lucky_direction"],
-                "lucky_time_workday": lucky_wk["lucky_time"],
-                "hour_start_workday": qimen_workday.hourStart,
-                "hour_end_workday": qimen_workday.hourEnd,
-            }
+        workday_extra = {
+            "lucky_color_workday": lucky_wk["lucky_color"],
+            "lucky_direction_workday": lucky_wk["lucky_direction"],
+            "lucky_time_workday": lucky_wk["lucky_time"],
+            "hour_start_workday": qimen_workday.hourStart,
+            "hour_end_workday": qimen_workday.hourEnd,
+        }
+
+    # M25: 일진통변 + 신살
+    ilji_extra: dict[str, object] = {}
+    if today_pillar is not None:
+        today_gan, today_ji = today_pillar
+        my_day = saju.fourPillars.day
+        ilji_data = _compute_ilji_relation(my_day.gan, my_day.ji, today_gan, today_ji)
+        sinsal_alerts = _extract_sinsal_alerts(my_day.gan, my_day.ji, today_ji)
+        ilji_extra = {
+            "ilji_pillar": ilji_data["today_pillar"],
+            "ilji_relation": " ".join(ilji_data["relations"]) or None,
+            "sinsal_alerts": sinsal_alerts,
+        }
 
     return DailyContent(
         date=target_date.isoformat(),
         **lucky_main,
         **workday_extra,
+        **ilji_extra,
         **narrative.model_dump(),
     )
+
+
+# ===== M25: 일진통변 + 신살 데이터/함수 =====
+_BRANCH_CHONG = frozenset({
+    frozenset(("자","오")), frozenset(("축","미")), frozenset(("인","신")),
+    frozenset(("묘","유")), frozenset(("진","술")), frozenset(("사","해")),
+})
+_BRANCH_YUKHAP = frozenset({
+    frozenset(("자","축")), frozenset(("인","해")), frozenset(("묘","술")),
+    frozenset(("진","유")), frozenset(("사","신")), frozenset(("오","미")),
+})
+_STEM_OHHAENG = {
+    "갑":"목","을":"목","병":"화","정":"화","무":"토","기":"토",
+    "경":"금","신":"금","임":"수","계":"수",
+}
+_SHENG = {"목":"화","화":"토","토":"금","금":"수","수":"목"}
+_KE = {"목":"토","토":"수","수":"화","화":"금","금":"목"}
+
+# 신살 — 명리 정통 규칙 (일간 기준 지지 매핑)
+_CHEON_EUL_GUI_IN = {
+    "갑": ("축","미"), "무": ("축","미"), "경": ("축","미"),
+    "을": ("자","신"), "기": ("자","신"),
+    "병": ("유","해"), "정": ("유","해"),
+    "임": ("사","묘"), "계": ("사","묘"),
+    "신": ("인","오"),
+}
+_MUN_CHANG = {
+    "갑":"사","을":"오","병":"신","정":"유","무":"신",
+    "기":"유","경":"해","신":"자","임":"인","계":"묘",
+}
+# 일지 三合국 → 도화/역마 지지
+_SAMHAP_GROUPS = {
+    frozenset(("신","자","진")): {"도화":"유","역마":"인"},
+    frozenset(("인","오","술")): {"도화":"묘","역마":"신"},
+    frozenset(("해","묘","미")): {"도화":"자","역마":"사"},
+    frozenset(("사","유","축")): {"도화":"오","역마":"해"},
+}
+
+
+def _compute_ilji_relation(my_gan: str, my_ji: str,
+                            today_gan: str, today_ji: str) -> dict:
+    """본인 일주 vs 오늘 일주의 천간(생극)/지지(충합) 관계."""
+    notes = []
+    my_oh = _STEM_OHHAENG.get(my_gan, "")
+    today_oh = _STEM_OHHAENG.get(today_gan, "")
+    if my_oh and today_oh:
+        if my_oh == today_oh:
+            notes.append(f"천간 비견({today_oh}) — 협력과 경쟁이 동시에 작용")
+        elif _SHENG.get(today_oh) == my_oh:
+            notes.append(f"천간 인성({today_oh}→{my_oh}) — 도움과 배움의 기운")
+        elif _SHENG.get(my_oh) == today_oh:
+            notes.append(f"천간 식상({my_oh}→{today_oh}) — 표현과 활동의 날")
+        elif _KE.get(today_oh) == my_oh:
+            notes.append(f"천간 관성({today_oh}이 {my_oh}를 극) — 규율과 책임")
+        elif _KE.get(my_oh) == today_oh:
+            notes.append(f"천간 재성({my_oh}이 {today_oh}를 극) — 결과·성취")
+
+    pair = frozenset((my_ji, today_ji))
+    if my_ji == today_ji:
+        notes.append(f"일지 {my_ji} 복음(伏吟) — 익숙함과 정체 사이")
+    elif pair in _BRANCH_CHONG:
+        notes.append(f"일지 {my_ji}{today_ji} 충(冲) — 변동과 결단의 날")
+    elif pair in _BRANCH_YUKHAP:
+        notes.append(f"일지 {my_ji}{today_ji} 합(合) — 협조와 결합")
+
+    return {
+        "today_pillar": f"{today_gan}{today_ji}",
+        "my_pillar": f"{my_gan}{my_ji}",
+        "relations": notes,
+    }
+
+
+def _extract_sinsal_alerts(my_gan: str, my_ji: str, today_ji: str) -> list[str]:
+    """오늘 일지(today_ji)가 본인 일주 기준 신살 위치에 해당하면 발동 알림."""
+    alerts = []
+    if today_ji in _CHEON_EUL_GUI_IN.get(my_gan, ()):
+        alerts.append("천을귀인 발동 — 귀인의 도움 가능")
+    if today_ji == _MUN_CHANG.get(my_gan):
+        alerts.append("문창귀인 발동 — 학습·시험·표현에 길")
+    for group, sinsals in _SAMHAP_GROUPS.items():
+        if my_ji in group:
+            if today_ji == sinsals["도화"]:
+                alerts.append("도화살 발동 — 인기·매력·인간관계 활성")
+            if today_ji == sinsals["역마"]:
+                alerts.append("역마살 발동 — 이동·변화·새 만남")
+            break
+    return alerts
