@@ -170,7 +170,7 @@ li {
 .action-guide .ag-line {
     margin: 0.5mm 0;
     font-size: 8.5pt;
-    line-height: 1.55;
+    line-height: 1.4;
     color: #333;
 }
 
@@ -404,7 +404,7 @@ li {
 .domain-item {
     background: #f9f7f2;
     border-left: 1pt solid #c0b89c;
-    padding: 1mm 2mm;
+    padding: 0.8mm 1.8mm;
     border-radius: 0.5mm;
     page-break-inside: avoid;
 }
@@ -419,7 +419,7 @@ li {
 
 .domain-advice {
     font-size: 7.4pt;
-    line-height: 1.45;
+    line-height: 1.4;
     color: #333;
 }
 
@@ -499,3 +499,19 @@ li {
     color: #444;
 }
 .reflection-list li { margin: 0.5mm 0; }
+
+
+/* M26.1: 좌·우 페이지 1페이지 강제 fit */
+.left-page {
+    max-height: 173mm;
+    overflow: hidden;
+    page-break-inside: avoid;
+}
+.left-page section {
+    page-break-inside: avoid;
+}
+.right-page {
+    max-height: 173mm;
+    overflow: hidden;
+    page-break-inside: avoid;
+}

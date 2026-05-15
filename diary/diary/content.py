@@ -191,6 +191,7 @@ def generate_daily_content(
 
     # M26: 영문 잔존 sanitize
     narrative.daily_summary = _sanitize_english(narrative.daily_summary)
+    narrative.daily_summary = _ensure_safe_opener(narrative.daily_summary)
     narrative.daily_focus = _sanitize_english(narrative.daily_focus)
     narrative.daily_caution = _sanitize_english(narrative.daily_caution)
     narrative.mindfulness = _sanitize_english(narrative.mindfulness)
@@ -234,6 +235,27 @@ def generate_daily_content(
         **ilji_extra,
         **narrative.model_dump(),
     )
+
+
+# ===== M26.1: 시작 문구 안전성 검사 =====
+_FORBIDDEN_OPENERS = ("충", "극", "살", "흉", "파", "형", "해(", "손", "망", "절")
+_SAFE_PREFIXES = (
+    "오늘 하루의 흐름을 살피며, ",
+    "차분히 일진을 짚어보면, ",
+    "기운의 결을 따라가 보면, ",
+)
+
+
+def _ensure_safe_opener(text, fallback_idx: int = 0):
+    """첫 15자에 금지 단어 있으면 안전 prefix 부착."""
+    if not text or not isinstance(text, str):
+        return text
+    head = text.strip()[:15]
+    for w in _FORBIDDEN_OPENERS:
+        if head.startswith(w):
+            prefix = _SAFE_PREFIXES[fallback_idx % len(_SAFE_PREFIXES)]
+            return prefix + text.lstrip()
+    return text
 
 
 # ===== M26: 영문 잔존 검출/치환 =====
