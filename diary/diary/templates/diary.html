@@ -111,14 +111,6 @@
         </section>
         {% endif %}
 
-        {% if day.reflection_questions %}
-        <section class="reflection-section">
-            <h3 class="reflection-header">오늘의 자기성찰 질문</h3>
-            <ol class="reflection-list">
-                {% for q in day.reflection_questions %}<li>{{ q }}</li>{% endfor %}
-            </ol>
-        </section>
-        {% endif %}
     </article>
 
     <article class="page right-page">
@@ -133,6 +125,16 @@
             </div>
         {% endfor %}
         </div>
+
+        {% if day.reflection_questions %}
+        <section class="reflection-section">
+            <h3 class="reflection-header">오늘의 자기성찰 질문</h3>
+            <ol class="reflection-list">
+                {% for q in day.reflection_questions %}<li>{{ q }}</li>{% endfor %}
+            </ol>
+        </section>
+        {% endif %}
+
         {% if day.mindfulness %}
         <div class="mindfulness-quote">{{ day.mindfulness }}</div>
         {% endif %}

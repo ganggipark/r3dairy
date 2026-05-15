@@ -98,15 +98,6 @@
         </section>
         {% endif %}
 
-        {% if entry.day.reflection_questions %}
-        <section class="section reflection-section">
-            <h2>오늘의 자기성찰 질문</h2>
-            <ol class="reflection-list">
-                {% for q in entry.day.reflection_questions %}<li>{{ q }}</li>{% endfor %}
-            </ol>
-        </section>
-        {% endif %}
-
         <section class="section">
             <h2>오늘의 시간</h2>
             <div class="time-grid">
@@ -119,6 +110,15 @@
                 {% endfor %}
             </div>
         </section>
+
+        {% if entry.day.reflection_questions %}
+        <section class="section reflection-section">
+            <h2>오늘의 자기성찰 질문</h2>
+            <ol class="reflection-list">
+                {% for q in entry.day.reflection_questions %}<li>{{ q }}</li>{% endfor %}
+            </ol>
+        </section>
+        {% endif %}
 
         {% if entry.day.mindfulness %}
         <section class="section">

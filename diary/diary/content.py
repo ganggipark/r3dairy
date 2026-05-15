@@ -189,6 +189,18 @@ def generate_daily_content(
     except Exception as e:
         raise ContentGenerationError(f"Narrative schema violation: {e}") from e
 
+    # M26: 영문 잔존 sanitize
+    narrative.daily_summary = _sanitize_english(narrative.daily_summary)
+    narrative.daily_focus = _sanitize_english(narrative.daily_focus)
+    narrative.daily_caution = _sanitize_english(narrative.daily_caution)
+    narrative.mindfulness = _sanitize_english(narrative.mindfulness)
+    narrative.recommended_actions = [_sanitize_english(a) for a in narrative.recommended_actions]
+    narrative.things_to_avoid = [_sanitize_english(a) for a in narrative.things_to_avoid]
+    if narrative.domain_advice:
+        narrative.domain_advice = {k: _sanitize_english(v) for k, v in narrative.domain_advice.items()}
+    if narrative.reflection_questions:
+        narrative.reflection_questions = [_sanitize_english(q) for q in narrative.reflection_questions]
+
     lucky_main = _compute_lucky(qimen)
     # M25: workday 항상 저장 (표시 단계에서 중복 회피)
     workday_extra: dict[str, object] = {}
@@ -222,6 +234,81 @@ def generate_daily_content(
         **ilji_extra,
         **narrative.model_dump(),
     )
+
+
+# ===== M26: 영문 잔존 검출/치환 =====
+_EN_TO_KO_MAP = {
+    "time-blocking": "시간 구획 관리",
+    "time blocking": "시간 구획 관리",
+    "implementation intention": "실행 의도",
+    "implementation intentions": "실행 의도",
+    "deep work": "몰입 작업",
+    "deepwork": "몰입 작업",
+    "body scan": "신체 점검",
+    "bodyscan": "신체 점검",
+    "urge surfing": "충동 관찰",
+    "mindfulness": "마음챙김",
+    "self-compassion": "자기 자비",
+    "pomodoro": "집중-휴식 주기",
+    "growth mindset": "성장 관점",
+    "fixed mindset": "고정 관점",
+    "executive function": "실행 기능",
+    "working memory": "작업 기억",
+    "default mode network": "기본 신경망",
+    "flow state": "몰입 상태",
+}
+
+
+def _sanitize_english(text):
+    """영문 학술 용어 → 한글 치환. 괄호 영문 병기 제거."""
+    if not text or not isinstance(text, str):
+        return text
+    out = text
+    for en, ko in _EN_TO_KO_MAP.items():
+        # 좌측: 영문/숫자 직후 매치 금지. 우측: 또 다른 영문이 이어지면 금지
+        # (한글 받침조사 '을/를' 등이 붙어도 OK — \b는 한글을 word-char로 보아 실패함)
+        pat = re.compile(r"(?<![a-zA-Z0-9])" + re.escape(en) + r"(?![a-zA-Z])",
+                          re.IGNORECASE)
+        out = pat.sub(ko, out)
+    out = re.sub(r"\s*\([A-Za-z][\w\s-]*\)", "", out)
+    return out
+
+
+# ===== M26: 한글 조사 자동 처리 =====
+def _josa_iga(word: str) -> str:
+    """주격 조사: 받침 있으면 '이', 없으면 '가'."""
+    if not word: return "가"
+    code = ord(word[-1]) - 0xAC00
+    if 0 <= code <= 11171:
+        return "이" if code % 28 != 0 else "가"
+    return "가"
+
+
+def _josa_eulreul(word: str) -> str:
+    """목적격: 받침 있으면 '을', 없으면 '를'."""
+    if not word: return "를"
+    code = ord(word[-1]) - 0xAC00
+    if 0 <= code <= 11171:
+        return "을" if code % 28 != 0 else "를"
+    return "를"
+
+
+def _josa_eunneun(word: str) -> str:
+    """대조: 받침 있으면 '은', 없으면 '는'."""
+    if not word: return "는"
+    code = ord(word[-1]) - 0xAC00
+    if 0 <= code <= 11171:
+        return "은" if code % 28 != 0 else "는"
+    return "는"
+
+
+def _josa_wagwa(word: str) -> str:
+    """접속: 받침 있으면 '과', 없으면 '와'."""
+    if not word: return "와"
+    code = ord(word[-1]) - 0xAC00
+    if 0 <= code <= 11171:
+        return "과" if code % 28 != 0 else "와"
+    return "와"
 
 
 # ===== M25: 일진통변 + 신살 데이터/함수 =====
@@ -263,29 +350,34 @@ _SAMHAP_GROUPS = {
 
 def _compute_ilji_relation(my_gan: str, my_ji: str,
                             today_gan: str, today_ji: str) -> dict:
-    """본인 일주 vs 오늘 일주의 천간(생극)/지지(충합) 관계."""
+    """본인 일주 vs 오늘 일주의 천간/지지 관계 (M26: 한글 조사 자연어)."""
     notes = []
     my_oh = _STEM_OHHAENG.get(my_gan, "")
     today_oh = _STEM_OHHAENG.get(today_gan, "")
+
     if my_oh and today_oh:
+        i_today = _josa_iga(today_oh)
+        i_my = _josa_iga(my_oh)
+        eul_today = _josa_eulreul(today_oh)
+        eul_my = _josa_eulreul(my_oh)
         if my_oh == today_oh:
-            notes.append(f"천간 비견({today_oh}) — 협력과 경쟁이 동시에 작용")
+            notes.append(f"천간 비견 — 같은 {today_oh} 기운, 협력과 경쟁이 함께")
         elif _SHENG.get(today_oh) == my_oh:
-            notes.append(f"천간 인성({today_oh}→{my_oh}) — 도움과 배움의 기운")
+            notes.append(f"천간 인성 — {today_oh}{i_today} {my_oh}{eul_my} 생함, 배움과 도움의 기운")
         elif _SHENG.get(my_oh) == today_oh:
-            notes.append(f"천간 식상({my_oh}→{today_oh}) — 표현과 활동의 날")
+            notes.append(f"천간 식상 — {my_oh}{i_my} {today_oh}{eul_today} 생함, 표현과 활동의 흐름")
         elif _KE.get(today_oh) == my_oh:
-            notes.append(f"천간 관성({today_oh}이 {my_oh}를 극) — 규율과 책임")
+            notes.append(f"천간 관성 — {today_oh}{i_today} {my_oh}{eul_my} 극함, 규율과 책임")
         elif _KE.get(my_oh) == today_oh:
-            notes.append(f"천간 재성({my_oh}이 {today_oh}를 극) — 결과·성취")
+            notes.append(f"천간 재성 — {my_oh}{i_my} {today_oh}{eul_today} 극함, 결과와 성취 추구")
 
     pair = frozenset((my_ji, today_ji))
     if my_ji == today_ji:
-        notes.append(f"일지 {my_ji} 복음(伏吟) — 익숙함과 정체 사이")
+        notes.append(f"일지 복음 — 같은 {my_ji} 반복, 익숙함과 정체 경계")
     elif pair in _BRANCH_CHONG:
-        notes.append(f"일지 {my_ji}{today_ji} 충(冲) — 변동과 결단의 날")
+        notes.append(f"일지 {my_ji}{today_ji} 충 — 변동과 결단이 작동하는 날")
     elif pair in _BRANCH_YUKHAP:
-        notes.append(f"일지 {my_ji}{today_ji} 합(合) — 협조와 결합")
+        notes.append(f"일지 {my_ji}{today_ji} 합 — 협조와 결합의 흐름")
 
     return {
         "today_pillar": f"{today_gan}{today_ji}",

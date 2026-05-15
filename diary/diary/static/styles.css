@@ -438,14 +438,14 @@ li {
 
 /* ===== M25: 일진 + 자기성찰 ===== */
 .ilji-section {
-    margin: 2mm 0 1.5mm 0;
-    padding: 2mm 2.5mm;
+    margin: 1.5mm 0;
+    padding: 1.5mm 2.5mm;
     background: rgba(46, 74, 127, 0.04);
     border-left: 2pt solid #2E4A7F;
     border-radius: 1mm;
 }
 .ilji-header {
-    font-size: 8pt;
+    font-size: 7.5pt;
     color: #2E4A7F;
     letter-spacing: 0.5pt;
     font-weight: 600;
@@ -461,7 +461,7 @@ li {
 .ilji-relation {
     font-size: 8pt;
     color: #555;
-    line-height: 1.5;
+    line-height: 1.45;
     margin: 0;
 }
 .sinsal-line { margin-top: 1mm; }
