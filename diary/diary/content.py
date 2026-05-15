@@ -200,7 +200,10 @@ def generate_daily_content(
     if narrative.domain_advice:
         narrative.domain_advice = {k: _sanitize_english(v) for k, v in narrative.domain_advice.items()}
     if narrative.reflection_questions:
-        narrative.reflection_questions = [_sanitize_english(q) for q in narrative.reflection_questions]
+        narrative.reflection_questions = [
+            _ensure_question_form(_sanitize_english(q))
+            for q in narrative.reflection_questions
+        ]
 
     lucky_main = _compute_lucky(qimen)
     # M25: workday 항상 저장 (표시 단계에서 중복 회피)
@@ -224,7 +227,7 @@ def generate_daily_content(
         sinsal_alerts = _extract_sinsal_alerts(my_day.gan, my_day.ji, today_ji)
         ilji_extra = {
             "ilji_pillar": ilji_data["today_pillar"],
-            "ilji_relation": " ".join(ilji_data["relations"]) or None,
+            "ilji_relation": " · ".join(ilji_data["relations"][:2]) or None,
             "sinsal_alerts": sinsal_alerts,
         }
 
@@ -235,6 +238,36 @@ def generate_daily_content(
         **ilji_extra,
         **narrative.model_dump(),
     )
+
+
+# ===== M26.2: 자기성찰 질문 의문형 보정 =====
+def _ensure_question_form(text):
+    """문장 끝이 의문형이 아니면 의문형으로 변환."""
+    if not text or not isinstance(text, str):
+        return text
+    s = text.strip()
+    if not s:
+        return s
+    if s.endswith(("?", "까?", "나요?", "는지?", "은지?", "다?")):
+        return s
+    replacements = [
+        ("돌아보세요.", "어떠셨나요?"),
+        ("돌아보세요", "어떠셨나요?"),
+        ("해보세요.", "해보셨나요?"),
+        ("해보세요", "해보셨나요?"),
+        ("하세요.", "하셨나요?"),
+        ("하세요", "하셨나요?"),
+        ("이다.", "인가요?"),
+        ("입니다.", "인가요?"),
+        ("입니다", "인가요?"),
+        ("다.", "나요?"),
+    ]
+    for old, new in replacements:
+        if s.endswith(old):
+            return s[:-len(old)] + new
+    if s.endswith("."):
+        return s[:-1] + "?"
+    return s + "?"
 
 
 # ===== M26.1: 시작 문구 안전성 검사 =====
@@ -282,17 +315,22 @@ _EN_TO_KO_MAP = {
 
 
 def _sanitize_english(text):
-    """영문 학술 용어 → 한글 치환. 괄호 영문 병기 제거."""
+    """영문 학술 용어 → 한글 치환 (M26.2 순서 개선).
+
+    1) 괄호 영문 병기 먼저 제거 — 영문이 한글로 치환되기 전에 통째로 삭제
+       하여 '한글 (English)' → '한글' (중복 회피).
+    2) 영문 학술 용어 → 한글 치환.
+    3) 한글 중복 'X(X)' 패턴 정리.
+    """
     if not text or not isinstance(text, str):
         return text
     out = text
+    out = re.sub(r"\s*\([A-Za-z][\w\s-]*\)", "", out)
     for en, ko in _EN_TO_KO_MAP.items():
-        # 좌측: 영문/숫자 직후 매치 금지. 우측: 또 다른 영문이 이어지면 금지
-        # (한글 받침조사 '을/를' 등이 붙어도 OK — \b는 한글을 word-char로 보아 실패함)
         pat = re.compile(r"(?<![a-zA-Z0-9])" + re.escape(en) + r"(?![a-zA-Z])",
                           re.IGNORECASE)
         out = pat.sub(ko, out)
-    out = re.sub(r"\s*\([A-Za-z][\w\s-]*\)", "", out)
+    out = re.sub(r"([가-힣\s]{2,8})\s*\(\1\)", r"\1", out)
     return out
 
 

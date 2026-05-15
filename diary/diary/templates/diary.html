@@ -73,7 +73,13 @@
         <section class="ilji-section">
             <h3 class="ilji-header">오늘의 일진과 사주 관계</h3>
             {% if day.ilji_pillar %}<p class="ilji-pillar">오늘 일주 · {{ day.ilji_pillar }}</p>{% endif %}
-            {% if day.ilji_relation %}<p class="ilji-relation">{{ day.ilji_relation }}</p>{% endif %}
+            {% if day.ilji_relation %}
+            <p class="ilji-relation">
+                {% if " · " in day.ilji_relation %}
+                {% for line in day.ilji_relation.split(" · ") %}<span class="ilji-line">{{ line }}</span>{% endfor %}
+                {% else %}{{ day.ilji_relation }}{% endif %}
+            </p>
+            {% endif %}
             {% if day.sinsal_alerts %}
             <p class="sinsal-line">
                 {% for s in day.sinsal_alerts %}<span class="sinsal-tag">{{ s }}</span>{% endfor %}

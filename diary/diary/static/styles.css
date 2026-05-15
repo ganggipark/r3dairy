@@ -146,12 +146,12 @@ li {
 }
 
 .mindfulness-quote {
-    font-size: 8.3pt;
+    font-size: 7.8pt;
     font-style: italic;
     color: #555;
     line-height: 1.5;
     margin: 3mm 0 1mm 0;
-    padding: 2mm 3mm;
+    padding: 1.8mm 2.5mm;
     border-left: 1.5pt solid #C0B89C;
     background: #faf8f3;
     border-radius: 0.5mm;
@@ -511,7 +511,17 @@ li {
     page-break-inside: avoid;
 }
 .right-page {
-    max-height: 173mm;
-    overflow: hidden;
     page-break-inside: avoid;
+    /* M26.2: overflow 해제 — 마음챙김 텍스트 잘림 방지 */
 }
+
+
+/* M26.2: ilji 두 관계 줄바꿈 표시 */
+.ilji-line {
+    display: block;
+    margin-bottom: 0.4mm;
+    font-size: 7.8pt;
+    color: #555;
+    line-height: 1.4;
+}
+.ilji-line:last-child { margin-bottom: 0; }
