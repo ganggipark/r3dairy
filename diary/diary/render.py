@@ -98,7 +98,9 @@ def _enrich_entries(
     for day in contents:
         current_month = day.date[:7]
         starts_new_month = with_month_dividers and current_month != prev_month
-        lucky_hours = parse_lucky_hours(day.lucky_time)
+        # M24: workday best가 있으면 그것 기준으로 그리드 강조 (일과 시간 내 활용 가능)
+        workday_str = getattr(day, "lucky_time_workday", None) or day.lucky_time
+        lucky_hours = parse_lucky_hours(workday_str)
         time_lines = [
             {
                 "hour": h,

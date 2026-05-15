@@ -18,6 +18,7 @@ def calculate_qimen(
     target_hour: int = 12,
     yong_sin_score: dict[str, float] | None = None,
     daily_best: bool = False,
+    workday_range: tuple[int, int] | None = None,
 ) -> QimenResult:
     """Call qimen-cli.js for a specific date and hour.
 
@@ -40,6 +41,7 @@ def calculate_qimen(
         "targetHour": target_hour,
         "yongSinScore": yong_sin_score,
         "dailyBest": daily_best,
+        "workdayRange": list(workday_range) if workday_range else None,
     })
 
     try:

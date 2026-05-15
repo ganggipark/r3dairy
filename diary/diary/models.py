@@ -103,6 +103,12 @@ class DailyContent(BaseModel):
     lucky_color: str
     lucky_direction: str
     lucky_time: str
+    # M24: 일과시간(07-23) 내 추천. 메인과 같으면 None (중복 회피)
+    lucky_color_workday: str | None = None
+    lucky_direction_workday: str | None = None
+    lucky_time_workday: str | None = None
+    hour_start_workday: int | None = None
+    hour_end_workday: int | None = None
 
     daily_summary: str = Field(..., min_length=100, max_length=180)
     daily_focus: str = Field(..., min_length=60, max_length=100)

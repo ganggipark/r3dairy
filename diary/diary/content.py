@@ -144,6 +144,7 @@ def generate_daily_content(
     qimen: QimenResult,
     target_date: _date,
     *,
+    qimen_workday: QimenResult | None = None,
     provider: Provider = "deepinfra",
     client=None,
     model: Optional[str] = None,
@@ -187,8 +188,24 @@ def generate_daily_content(
     except Exception as e:
         raise ContentGenerationError(f"Narrative schema violation: {e}") from e
 
+    lucky_main = _compute_lucky(qimen)
+    workday_extra: dict[str, object] = {}
+    if qimen_workday is not None:
+        lucky_wk = _compute_lucky(qimen_workday)
+        if (lucky_wk["lucky_color"] != lucky_main["lucky_color"]
+            or lucky_wk["lucky_direction"] != lucky_main["lucky_direction"]
+            or lucky_wk["lucky_time"] != lucky_main["lucky_time"]):
+            workday_extra = {
+                "lucky_color_workday": lucky_wk["lucky_color"],
+                "lucky_direction_workday": lucky_wk["lucky_direction"],
+                "lucky_time_workday": lucky_wk["lucky_time"],
+                "hour_start_workday": qimen_workday.hourStart,
+                "hour_end_workday": qimen_workday.hourEnd,
+            }
+
     return DailyContent(
         date=target_date.isoformat(),
-        **_compute_lucky(qimen),
+        **lucky_main,
+        **workday_extra,
         **narrative.model_dump(),
     )

@@ -584,6 +584,29 @@ export function getDailyBestQimen(
 }
 
 /**
+ * M24: 일과시간(workdayStart~workdayEnd) 내 최적 시진.
+ * getDailyBestQimen이 새벽 시진을 반환할 때 보조 추천용.
+ * 범위 내 시진이 없으면 전체 best로 폴백.
+ */
+export function getDailyBestQimenInRange(
+  birthDate: Date,
+  targetDate: Date,
+  workdayStart: number,
+  workdayEnd: number,
+  yongSinScore?: Record<string, number>
+): CompleteQimenResult {
+  const all = getDailyCompleteQimen(birthDate, targetDate, yongSinScore);
+  const inRange = all.filter(r => {
+    if (r.hourEnd < r.hourStart) return false;
+    return r.hourStart >= workdayStart && r.hourEnd <= workdayEnd;
+  });
+  const pool = inRange.length > 0 ? inRange : all;
+  return pool.reduce((best, cur) =>
+    cur.bestPalace.qualityScore > best.bestPalace.qualityScore ? cur : best
+  );
+}
+
+/**
  * 일일 기문둔갑 요약
  */
 export function getQimenSummary(

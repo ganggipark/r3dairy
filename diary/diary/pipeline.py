@@ -158,9 +158,15 @@ def generate_diary(
                 yong_sin_score=(saju.yongSin.yongSinScore if saju.yongSin else None),
                 daily_best=True,  # M22: 12시진 중 최고 점수 시진 자동 선택
             )
+            qimen_workday = calculate_qimen(
+                birth_dt, target,
+                yong_sin_score=(saju.yongSin.yongSinScore if saju.yongSin else None),
+                workday_range=(day_start_hour, day_end_hour),
+            )
             content = with_retry(
                 lambda: generate_daily_content(
                     saju=saju, qimen=qimen, target_date=target,
+                    qimen_workday=qimen_workday,
                     provider=provider, model=model,
                 ),
                 max_attempts=max_retries,

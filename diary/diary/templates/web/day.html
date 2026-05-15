@@ -30,6 +30,15 @@
             <span class="sep">·</span>
             <span>{{ entry.day.lucky_time }}</span>
         </div>
+        {% if entry.day.lucky_time_workday %}
+        <div class="container lucky-workday-aux">
+            <span class="aux-label">일과 추천</span>
+            <span class="lucky-swatch tiny" style="background: {{ entry.day.lucky_color_workday | color_hex }}"></span>
+            <span>{{ entry.day.lucky_time_workday }}</span>
+            <span class="sep">·</span>
+            <span>{{ entry.day.lucky_direction_workday }}</span>
+        </div>
+        {% endif %}
     </header>
 
     <main class="container">

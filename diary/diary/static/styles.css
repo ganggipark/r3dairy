@@ -422,3 +422,15 @@ li {
     line-height: 1.45;
     color: #333;
 }
+
+
+/* ===== M24: workday 보조 lucky 표시 ===== */
+.lucky-workday-aux {
+    font-size: 7pt;
+    color: #6E5A2C;
+    margin-top: 1mm;
+    padding: 0.8mm 2mm;
+    background: rgba(212, 168, 72, 0.06);
+    border-left: 1pt solid #C9A961;
+    letter-spacing: 0.2pt;
+}

@@ -63,6 +63,11 @@
             <span class="lucky-sep">·</span>
             <span>{{ day.lucky_time }}</span>
         </div>
+        {% if day.lucky_time_workday %}
+        <div class="lucky-workday-aux">
+            일과시간 추천 · {{ day.lucky_time_workday }} · {{ day.lucky_direction_workday }}
+        </div>
+        {% endif %}
 
         <section class="focus"><h3>오늘의 집중</h3><p>{{ day.daily_focus }}</p></section>
         <section class="caution"><h3>오늘의 주의</h3><p>{{ day.daily_caution }}</p></section>

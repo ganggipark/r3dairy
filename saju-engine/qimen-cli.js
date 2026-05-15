@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
  * Qimen CLI — stdin JSON → stdout JSON
- * Input:
- *   { birthDate, targetDate, targetHour?, yongSinScore?, dailyBest? }
- *
- *   dailyBest=true (M22): 하루 12시진 중 최고 점수 시진 반환
- *   dailyBest=false (기본): targetHour 단일 시점 반환 (하위호환)
+ * Input modes:
+ *   { dailyBest: true, yongSinScore? }              — 12시진 중 best
+ *   { workdayRange: [start, end], yongSinScore? }   — 일과시간 내 best (M24)
+ *   { targetHour: number, yongSinScore? }           — 단일 시점 (기본)
  */
 const {
   calculateCompleteQimen,
-  getDailyBestQimen
+  getDailyBestQimen,
+  getDailyBestQimenInRange,
 } = require('./dist/calculators/qimenCalculator');
 
 (async () => {
@@ -26,7 +26,10 @@ const {
     if (isNaN(target.getTime())) throw new Error(`invalid targetDate: ${input.targetDate}`);
 
     let result;
-    if (input.dailyBest) {
+    if (input.workdayRange && Array.isArray(input.workdayRange)) {
+      const [ws, we] = input.workdayRange;
+      result = getDailyBestQimenInRange(birth, target, ws, we, input.yongSinScore);
+    } else if (input.dailyBest) {
       result = getDailyBestQimen(birth, target, input.yongSinScore);
     } else {
       const hour = input.targetHour ?? 12;
